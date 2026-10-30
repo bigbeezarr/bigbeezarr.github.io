@@ -131,8 +131,8 @@ CHAPTERS = [
       {"id": "vj", "title": "VJ", "city": "mix", "place": "Dakar · Montréal",
        "sub": T("Le même artiste, sur scène dans mes deux villes.", "The same artist, on stage in both my cities."),
        "eds": [
-         {"year": "2026", "label": "Maggu VJ", "city": "sn", "place": "Dakar", "sub": T("Concert"), "imgs": r(118, 133)},
-         {"year": "2025", "city": "mtl", "place": "Montréal", "sub": T("Concert"), "imgs": r(94, 105)},
+         {"year": "2026", "label": "Maggu VJ", "city": "sn", "place": "Dakar", "sub": T("Concert"), "imgs": r(118, 133) + [441]},
+         {"year": "2025", "city": "mtl", "place": "Montréal", "sub": T("Concert"), "imgs": [ids["vj262"] if i == 104 else i for i in r(94, 105)]},
        ]},
       {"id": "canabasse", "title": "Canabasse & Astar", "city": "mtl", "place": "Montréal", "year": "2026",
        "sub": T("Concert"), "imgs": [4] + r(106, 117)},
@@ -147,6 +147,8 @@ CHAPTERS = [
     "projects": [
       {"id": "mad", "title": "MAD Festival", "city": "mtl", "place": "Montréal", "year": "2025",
        "sub": T("Défilés, backstage, coiffure et maquillage, public, pendant quatre jours", "Runway shows, backstage, hair and makeup, and the crowd, over four days"),
+       "credits": [{"k": T("Marques", "Brands"), "names": ["1er Mai", "Amesika", "Bleu Ciel", "Collège LaSalle", "Fae and Geist", "Frikiton", "From Us To You",
+                    "Gaba Collective", "Guillaume Chaigne", "Hawa B", "La Dame de Feu", "Lakuachimoto", "Mlle Heri", "Né à Montréal", "Nkundi", "Vidalola"]}],
        "imgs": ids["mad"]},
       {"id": "naf", "title": "Jelani · New Africa Fashion", "city": "sn", "place": "Dakar", "year": "2026",
        "sub": T("Lookbook et shoot créatif pour l'édition 2026, dans les rues de Dakar. Les photos sont groupées par tenue.",
@@ -172,28 +174,30 @@ CHAPTERS = [
   },
   {
     "id": "entre-deux-villes", "city": "mix", "name": T("Entre deux villes", "Between two cities"), "short": T("Deux villes", "Two cities"),
-    "intro": T("La rue, les paysages et les portraits, à Dakar comme à Montréal.", "Street, landscapes and portraits, in Dakar and in Montréal."),
+    "intro": T("La rue et les paysages, à Dakar comme à Montréal.", "Streets and landscapes, in Dakar and in Montréal."),
     "projects": [
-      {"id": "rue", "title": T("Rue, paysages, portraits", "Street, landscapes, portraits"), "city": "mix", "place": "Dakar · Montréal", "year": "",
-       "sub": T("", ""), "imgs": [145, 146, 147, 148, 149, 151, 153, 154, 155, 156, 157, 158]},
+      {"id": "rue", "title": T("Rues et paysages", "Streets and landscapes"), "city": "mix", "place": "Dakar · Montréal", "year": "",
+       "sub": T("", ""), "imgs": [153, 154, 155, 156, 157, 158] + ids["rue2"]},
     ]
   },
 ]
 
 H = ids["heroNew"]
-C = ids["celebs"]
-HERO = [H[0], H[1], C[0], 3, C[1], H[2], C[2], H[3]]
+C = ids["celebs"]; K = ids["cards2"]
+HERO = [H[0], K["Tiakola"], K["Dudu"], 3, C[1], K["Astar"], H[2], K["VJ"], H[3]]
 ME = 159
-WALL = [2, 6, 7] + ids["wall"]
+WALL = [2, 6, 7, 145, 146, 147, 148, 149, 151] + ids["wall"]
+CAP = {228: "Collège LaSalle", 229: "Bleu Ciel", 230: "Bleu Ciel", 231: "1er Mai", 232: "Frikiton", 234: "Amesika", 235: "Nkundi", 236: "Né à Montréal"}
 HERO_LAB = {
   H[0]: {"name": "SDM", "meta": T("Concert à Montréal, 2025", "Concert in Montréal, 2025")},
-  H[1]: {"name": "Adja", "meta": T("Photos de presse, Montréal 2025", "Press shots, Montréal 2025")},
+  K["Tiakola"]: {"name": "Tiakola", "meta": T("MAD Festival, Montréal 2025")},
+  K["Astar"]: {"name": "Astar", "meta": T("Concert Canabasse & Astar, Montréal 2026")},
+  K["VJ"]: {"name": "VJ", "meta": T("Concert de Maggu VJ, Dakar 2026", "Maggu VJ concert, Dakar 2026")},
+  K["Dudu"]: {"name": "Dudu fait des vidéos", "meta": T("Jelani · New Africa Fashion, Dakar 2026")},
   H[2]: {"name": "Youssef Swatts", "meta": T("Concert à Montréal, 2025", "Concert in Montréal, 2025")},
   H[3]: {"name": "Canabasse", "meta": T("5AM in MTL, Montréal 2026")},
-  C[0]: {"name": "Dudu fait des vidéos", "meta": T("Jelani · New Africa Fashion, Dakar 2026")},
   3: {"name": "Uncle Waffles", "meta": T("")},
   C[1]: {"name": "Wally Seck", "meta": T("Dakar 2026")},
-  C[2]: {"name": "Mia Guissé", "meta": T("Concert de Maggu VJ, Dakar 2026", "Maggu VJ concert, Dakar 2026")},
 }
 ABOUT = [11, 12, 13, 14, 15]
 
@@ -277,10 +281,23 @@ for c in CHAPTERS:
         for e in p.get("eds", [p]):
             if e.get("order") != "fixed": e["imgs"] = gradient(e["imgs"])
 ABOUT = gradient(ABOUT)
-WALL = gradient(WALL)
+def scatter(ids):
+    # black and white spread evenly among the colour photos, hues stepped so neighbours differ
+    mono = sorted([i for i in ids if colors[str(i)][1] < 0.035], key=lambda i: colors[str(i)][2])
+    chrom = sorted([i for i in ids if i not in mono], key=lambda i: colors[str(i)][0])
+    g = 0.6180339887
+    mono = [mono[k] for k in sorted(range(len(mono)), key=lambda k: (k * g) % 1)]
+    chrom = [chrom[k] for k in sorted(range(len(chrom)), key=lambda k: (k * g) % 1)]
+    N = len(ids); keyed = []
+    for k, i in enumerate(chrom): keyed.append(((k + .5) * N / max(1, len(chrom)), i))
+    for k, i in enumerate(mono):
+        jit = (((i * 2654435761) >> 7) % 1000 / 1000 - .5) * .7
+        keyed.append(((k + .5 + jit) * N / max(1, len(mono)), i))
+    return [i for _, i in sorted(keyed)]
+WALL = scatter(WALL)
 
 DATA = {
-  "hero": HERO, "heroLab": {str(k): v for k, v in HERO_LAB.items()}, "about": ABOUT, "wall": WALL, "me": ME, "chapters": CHAPTERS,
+  "hero": HERO, "heroLab": {str(k): v for k, v in HERO_LAB.items()}, "about": ABOUT, "wall": WALL, "me": ME, "cap": {str(k): v for k, v in CAP.items()}, "chapters": CHAPTERS,
   "img": {str(i): [meta[i]["w"], meta[i]["h"], meta[i]["q"], colors[str(i)][3]] for i in meta},
   "total": len(meta),
 }

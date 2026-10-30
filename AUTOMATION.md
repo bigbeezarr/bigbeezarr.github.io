@@ -152,10 +152,6 @@ Claude-Session: <this run's session link>
 
 - Only after both pushes succeeded, on the Mac: `python3 scan_new.py --mark-all`
   (records the new and skipped photos as known so the next run does not see them again).
-- If the Artifact tool is available, also update the preview at https://claude.ai/artifact/1Eq3Sp3U7wPv2TvSn9ZG1z:
-  copy the new `../site/img/f/NNN.webp` files into `src/img/f/`, then publish `src/index.html` with that `url`,
-  `root` = the `src` folder and `files` mapping each `img/f/NNN.webp` to itself. Skip this step if the tool is missing.
-  The preview holds at most 511 files: if the publish is refused for size or file count, skip it and say so in the report
-  (GitHub Pages is the real site).
+- Do not update the claude.ai preview artifact: it is over its 511-file limit. GitHub Pages is the site.
 - Report in French, short: projects and years updated with the number of photos, new projects,
   folders skipped and why, and the link https://bigbeezarr.github.io. GitHub Pages takes about a minute.
