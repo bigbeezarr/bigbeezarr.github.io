@@ -1059,7 +1059,7 @@ DATA.chapters.forEach((c, ci) => {
     if (p.credits) {
       const cr = mk("div", "p-credits", ph);
       const esc = v => String(v).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
-      onLang(() => cr.innerHTML = p.credits.map(r => `<span class="cr-k">${esc(L(r.k))}</span><span class="pc-v">${r.names.map(n => `<span>${esc(n)}</span>`).join("")}</span>`).join(""));
+      onLang(() => cr.innerHTML = p.credits.map(r => `<span class="cr-k">${esc(L(r.k))}</span><span class="pc-v">${r.names.map(n => `<span>${esc(L(n))}</span>`).join("")}</span>`).join(""));
     }
     if (p.eds && eds.length > 1 && !p.looks) {
       yrs = mk("nav", "yrs", ph);
