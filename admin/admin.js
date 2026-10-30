@@ -1,7 +1,11 @@
 /* Tableau de bord BIGBEEZARR : galeries, import en masse, réglages d'accès, invités, visages, statistiques. */
 (() => {
 "use strict";
-const API = (window.BBZ_API || "").replace(/\/$/, "");
+// Ne jamais s'afficher encadrée dans une autre page (protection contre le détournement de clic).
+if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location = window.location.href; } catch (e) {} }
+const API_RAW = String(window.BBZ_API || "").replace(/\/$/, "");
+// Seulement une adresse https (ou le serveur local de test) : jamais d'autre protocole.
+const API = /^https:\/\/[a-z0-9.-]+(:\d+)?$/i.test(API_RAW) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(API_RAW) ? API_RAW : "";
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const nb = " ";

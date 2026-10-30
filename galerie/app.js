@@ -1,7 +1,11 @@
 /* Galerie client BIGBEEZARR : accès, grille, sélection, téléchargements d'originaux, recherche par visage. */
 (() => {
 "use strict";
-const API = (window.BBZ_API || "").replace(/\/$/, "");
+// Ne jamais s'afficher encadrée dans une autre page (protection contre le détournement de clic).
+if (window.top !== window.self) { document.documentElement.style.display = "none"; try { window.top.location = window.location.href; } catch (e) {} }
+const API_RAW = String(window.BBZ_API || "").replace(/\/$/, "");
+// Seulement une adresse https (ou le serveur local de test) : jamais d'autre protocole.
+const API = /^https:\/\/[a-z0-9.-]+(:\d+)?$/i.test(API_RAW) || /^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(API_RAW) ? API_RAW : "";
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const store = {
@@ -182,8 +186,8 @@ async function landing() {
     if (!galleries.length) return;
     const list = $("#evList"); list.textContent = "";
     for (const g of galleries) {
-      const a = document.createElement("a"); a.className = "ev"; a.href = `?g=${g.slug}`;
-      a.innerHTML = `<figure>${g.cover ? `<img loading="lazy" alt="" src="${g.cover.url}">` : ""}</figure><div><b></b><small></small>${g.faceSearch ? `<span class="face">${t("ev.face")}</span>` : ""}</div>`;
+      const a = document.createElement("a"); a.className = "ev"; a.href = `?g=${encodeURIComponent(g.slug)}`;
+      a.innerHTML = `<figure>${g.cover ? `<img loading="lazy" alt="" src="${String(g.cover.url).replace(/[&<>"']/g, ch => "&#" + ch.charCodeAt(0) + ";")}">` : ""}</figure><div><b></b><small></small>${g.faceSearch ? `<span class="face">${t("ev.face")}</span>` : ""}</div>`;
       a.querySelector("b").textContent = g.title;
       a.querySelector("small").textContent = [g.date && fmtDate(g.date, true), t("count", g.count)].filter(Boolean).join(" · ");
       list.appendChild(a);

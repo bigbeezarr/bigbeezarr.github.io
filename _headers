@@ -1,0 +1,14 @@
+/*
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Cross-Origin-Opener-Policy: same-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=(), usb=(), accelerometer=(self), gyroscope=(self), magnetometer=()
+/admin/*
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow
+/galerie/*
+  X-Robots-Tag: noindex
+/img/*
+  Cache-Control: public, max-age=2592000

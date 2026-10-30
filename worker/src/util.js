@@ -107,6 +107,10 @@ export async function checkPassword(env, stored, password) {
   if (v !== "h1" || !salt || !h || typeof password !== "string") return false;
   return safeEqual(h, hex(await hmac(signingKey(env), `pw.${salt}:${password}`)));
 }
+// Empreinte du mot de passe administrateur, portée par le jeton : changer le mot de passe déconnecte les sessions ouvertes.
+export async function adminKey(env) {
+  return b64url((await hmac(signingKey(env), "admk." + (env.ADMIN_PASSWORD || ""))).subarray(0, 9));
+}
 export async function checkAdminPassword(env, password) {
   if (!env.ADMIN_PASSWORD || env.ADMIN_PASSWORD.length < 10) fail(500, "admin_not_configured");
   if (typeof password !== "string") return false;
@@ -116,7 +120,8 @@ export async function checkAdminPassword(env, password) {
 
 // Adresse IP pseudonymisée (jamais stockée en clair).
 export async function clientKey(env, req) {
-  const ip = req.headers.get("CF-Connecting-IP") || req.headers.get("X-Forwarded-For") || "local";
+  // Seul CF-Connecting-IP fait foi (posé par Cloudflare) ; X-Forwarded-For peut être forgé par le client.
+  const ip = req.headers.get("CF-Connecting-IP") || "local";
   return b64url((await hmac(signingKey(env), "ip." + ip)).subarray(0, 12));
 }
 
@@ -133,10 +138,21 @@ export async function rateLimit(env, key, max, windowSec) {
   return true;
 }
 
+// Lecture bornée du corps JSON, même sans Content-Length (transfert en morceaux).
 export async function readJson(req, maxBytes = 256 * 1024) {
   const len = +req.headers.get("Content-Length") || 0;
   if (len > maxBytes) fail(413, "too_large");
-  try { return await req.json(); } catch { fail(400, "bad_json"); }
+  if (!req.body) fail(400, "bad_json");
+  const reader = req.body.getReader(); const parts = []; let n = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    n += value.byteLength;
+    if (n > maxBytes) { try { await reader.cancel(); } catch {} fail(413, "too_large"); }
+    parts.push(value);
+  }
+  const buf = new Uint8Array(n); let o = 0; for (const x of parts) { buf.set(x, o); o += x.byteLength; }
+  try { return JSON.parse(new TextDecoder().decode(buf)); } catch { fail(400, "bad_json"); }
 }
 
 export function contentDisposition(name) {

@@ -1,7 +1,7 @@
 // API « Récupérer mes photos » · BIGBEEZARR
 // Cloudflare Worker + R2 (fichiers) + D1 (base) + Amazon Rekognition (visages, optionnel).
 import {
-  HttpError, fail, json, corsHeaders, randomId, now, makeToken, readToken, bearer, signPath, checkPath,
+  HttpError, fail, json, corsHeaders, randomId, now, makeToken, readToken, bearer, signPath, checkPath, adminKey,
   hashPassword, checkPassword, checkAdminPassword, clientKey, rateLimit, readJson, contentDisposition, cleanName,
 } from "./util.js";
 import { planZip, streamZip, uniqueNames } from "./zip.js";
@@ -40,6 +40,12 @@ export default {
     for (const [k, v] of Object.entries(cors)) h.set(k, v);
     h.set("X-Content-Type-Options", "nosniff");
     h.set("Referrer-Policy", "no-referrer");
+    h.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+    // Rien de ce que sert ce domaine ne doit pouvoir s'exécuter ni être encadré : fichiers et JSON sont mis en bac à sable.
+    h.set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'; sandbox");
+    h.set("X-Frame-Options", "DENY");
+    // Les photos sont affichées par les pages du site (autre origine) : autorisé, mais rien d'autre.
+    h.set("Cross-Origin-Resource-Policy", "cross-origin");
     return new Response(res.body, { status: res.status, headers: h });
   },
   async scheduled(_event, env, ctx) { ctx.waitUntil(cleanup(env)); },
@@ -127,7 +133,7 @@ async function gallery(env, by, value) {
 }
 async function admin(req, env) {
   const t = await readToken(env, bearer(req));
-  if (!t || t.r !== "a") fail(401, "admin_required");
+  if (!t || t.r !== "a" || t.k !== await adminKey(env)) fail(401, "admin_required");
 }
 async function visitor(req, env, g) {
   const t = await readToken(env, bearer(req));
@@ -149,9 +155,10 @@ const mediaUrl = (origin, g, ph, size, sig) => `${origin}/m/${g.id}/${ph.id}/${p
 
 async function adminLogin(req, env) {
   await rateLimit(env, "login:" + await clientKey(env, req), 6, 900);
-  const { password } = await readJson(req);
+  await rateLimit(env, "login:all", 40, 3600); // frein global contre les essais venus de nombreuses adresses
+  const { password } = await readJson(req, 4096);
   if (!(await checkAdminPassword(env, password))) fail(401, "bad_password");
-  return json({ token: await makeToken(env, { r: "a", e: now() + 12 * 3600 }), expiresIn: 12 * 3600 });
+  return json({ token: await makeToken(env, { r: "a", k: await adminKey(env), e: now() + 12 * 3600 }), expiresIn: 12 * 3600 });
 }
 
 async function unlock(req, env, g) {

@@ -18,18 +18,18 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Les secrets ne sont donnés qu'aux étapes qui en ont besoin (jamais à l'installation des paquets).
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      BBZ_ADMIN_PASSWORD: ${{ secrets.BBZ_ADMIN_PASSWORD }}
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       WRANGLER_SEND_METRICS: "false"
     steps:
       - uses: actions/checkout@v4
 
       - name: Vérifier les secrets
         id: check
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BBZ_ADMIN_PASSWORD: ${{ secrets.BBZ_ADMIN_PASSWORD }}
         run: |
           missing=""
           [ -z "$CLOUDFLARE_API_TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
@@ -55,6 +55,9 @@ jobs:
       - name: Stockage R2 et base D1
         if: steps.check.outputs.ready == 'true'
         working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           npx wrangler r2 bucket create bbz-galerie > r2.log 2>&1 || grep -qiE "already exists|already own|10004" r2.log || { cat r2.log; exit 1; }
           d1id() { npx wrangler d1 list --json 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const a=JSON.parse(s.slice(s.indexOf("["),s.lastIndexOf("]")+1));const d=a.find(x=>x.name==="bbz-galerie");process.stdout.write(d?(d.uuid||d.id||""):"")}catch{}})'; }
@@ -67,6 +70,9 @@ jobs:
       - name: Déployer le Worker
         if: steps.check.outputs.ready == 'true'
         working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           npx wrangler deploy 2>&1 | tee deploy.log
           URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
@@ -76,6 +82,12 @@ jobs:
       - name: Secrets du Worker
         if: steps.check.outputs.ready == 'true'
         working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          BBZ_ADMIN_PASSWORD: ${{ secrets.BBZ_ADMIN_PASSWORD }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           printf '%s' "$BBZ_ADMIN_PASSWORD" | npx wrangler secret put ADMIN_PASSWORD
           if ! npx wrangler secret list 2>/dev/null | grep -q SIGNING_KEY; then
