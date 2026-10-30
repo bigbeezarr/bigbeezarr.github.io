@@ -205,7 +205,7 @@ img{max-width:100%}
 .contact{background:var(--field);border-top:1px solid var(--line);padding-block:clamp(80px,10vw,160px) 28px;scroll-margin-top:60px}
 .contact-title{margin:0;font-family:var(--font-d);font-weight:850;font-stretch:108%;font-size:clamp(2.5rem,7vw,6.6rem);line-height:.92;letter-spacing:-.024em;max-width:13ch;text-wrap:balance}
 .contact-p{margin:.9em 0 0;font-size:clamp(1.05rem,1.4vw,1.25rem);color:var(--ink-2)}
-.c-list{margin:clamp(36px,5vw,64px) 0 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;border-top:1px solid var(--line);padding-top:24px}
+.c-list{margin:clamp(36px,5vw,64px) 0 0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:24px;border-top:1px solid var(--line);padding-top:24px}
 .c-list dt{font-family:var(--font-d);font-size:.76rem;font-weight:650;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:8px}
 .c-list dd{margin:0;display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px}
 .c-list dd.ig{flex-direction:column;align-items:flex-start;gap:4px}
@@ -540,7 +540,7 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
 .ct-me .ph::after{content:"";position:absolute;inset:0;z-index:4;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),inset 0 0 0 6px rgba(10,10,10,.28)}
 .ct-me .ph-open::after{opacity:1;transform:none}
 .ct-me .pi::after{opacity:.75}
-@media (max-width:760px){.ct-grid{grid-template-columns:1fr}.ct-me{justify-self:start;width:min(72%,300px)}}
+@media (max-width:760px){.ct-grid{grid-template-columns:1fr}.ct-me{justify-self:start;width:min(72%,300px);margin-top:12px}}
 
 /* ================= holo cards: the selection as collectible foil cards, gallery photos with a soft glare ================= */
 .rail{padding-block:16px;margin-block:-16px}
@@ -682,14 +682,16 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
   <section class="contact" id="contact" data-city="mix">
     <div class="wrap">
       <div class="ct-grid">
+        <div class="ct-main">
         <div class="ct-text"><h2 class="contact-title h-rise" id="contactH"></h2><p class="contact-p" data-t="contact.p"></p></div>
-        <div class="ct-me" id="ctMe"></div>
-      </div>
       <dl class="c-list">
         <div><dt data-t="contact.email"></dt><dd><span class="c-val plain">baeypro@gmail.com</span><button class="copy" type="button" data-copy="baeypro@gmail.com"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-t="copy"></span></button></dd></div>
         <div><dt data-t="contact.phone"></dt><dd><span class="c-val plain">(438) 304-7844</span><button class="copy" type="button" data-copy="+1 438 304 7844"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-t="copy"></span></button></dd></div>
         <div><dt>Instagram</dt><dd class="ig"><a class="c-val" href="https://www.instagram.com/bigbeezarr/" target="_blank" rel="noopener">@bigbeezarr</a><a class="c-val" href="https://www.instagram.com/beyethekage/" target="_blank" rel="noopener">@beyethekage</a></dd></div>
       </dl>
+        </div>
+        <div class="ct-me" id="ctMe"></div>
+      </div>
       <p class="end-wm" id="endWm" aria-hidden="true">BIGBEEZARR</p>
       <footer class="foot"><span>© 2026 BIGBEEZARR · Mamadou Beye</span><span>Dakar 14°43′N · Montréal 45°30′N</span></footer>
     </div>

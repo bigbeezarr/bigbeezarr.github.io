@@ -222,7 +222,7 @@ HERO_LAB = {
   Q["Massamba Amadeus"]: {"name": "Massamba Amadeus", "meta": T("Festival DLB, Dakar 2025", "DLB festival, Dakar 2025")},
   K["Astar"]: {"name": "Astar", "meta": T("Concert Canabasse & Astar, Montréal 2026")},
   H[2]: {"name": "Youssef Swatts", "meta": T("Concert à Montréal, 2025", "Concert in Montréal, 2025")},
-  K["Dudu"]: {"name": "Dudu fait des vidéos", "meta": T("Jelani · New Africa Fashion, Dakar 2026")},
+  K["Dudu"]: {"name": "Dudu fait des vidéos", "meta": T("Soirée Jelani, Dakar 2025", "Jelani party, Dakar 2025")},
   Q["Zepeck"]: {"name": "Zepeck", "meta": T("MAD Festival, Montréal 2025")},
   465: {"name": "Diariatou Sow", "meta": T("Shooting Cenabou, Dakar 2025", "Cenabou shoot, Dakar 2025")},
   Q["Bass Thioung"]: {"name": "Bass Thioung", "meta": T("Concert de Maggu VJ, Dakar 2026", "Maggu VJ concert, Dakar 2026")},
