@@ -36,6 +36,8 @@ NAF_CREDITS = [
 
 # city keys: sn = Dakar & Saly (Sénégal), mtl = Montréal, mix = both, none = not specified
 # A project either has "imgs" (one shoot) or "eds" (one rubric per year, newest first).
+V10 = ids['v10']; V11 = ids['v11']; C5 = ids['cards5']
+GONE = set(ids.get('retired_1030b', []))
 CHAPTERS = [
   {
     "id": "soirees", "city": "sn", "name": T("La nuit", "Nightlife"),
@@ -49,51 +51,70 @@ CHAPTERS = [
        "eds": [
          {"year": "2026", "place": "Saly", "sub": T("Coachella Edition, au Mövenpick Resort Lamantin", "Coachella Edition, at the Mövenpick Resort Lamantin"), "imgs": r(29, 41)},
          {"year": "2025", "label": "All White Party", "place": "Saly",
-          "sub": T("Le 18 août, tout en blanc au Mövenpick Resort Lamantin", "August 18, all in white at the Mövenpick Resort Lamantin"),
-          "imgs": [i for i in ids["jelani25"] if i in (166, 167, 168, 169)]},
+          "sub": T("Le 16 août, tout en blanc au Mövenpick Resort Lamantin", "August 16, all in white at the Mövenpick Resort Lamantin"),
+          "imgs": [i for i in ids["jelani25"] if i in (166, 167, 168, 169)] + V10["jel25aw"]},
          {"year": "2025", "label": "La Croisette",
           "sub": T("Le 26 juillet, avec Jeeba, Bass Thioung et Dip Doundou Guiss en live", "July 26, with Jeeba, Bass Thioung and Dip Doundou Guiss live"),
-          "imgs": [i for i in ids["jelani25"] if 160 <= i <= 165] + ids["croisette_add"]},
+          "imgs": [i for i in ids["jelani25"] if 160 <= i <= 165] + [i for i in ids["croisette_add"] if i != C5["Bass Thioung"]]},
          {"year": "2024", "label": "All White Party", "place": "Dakar",
           "sub": T("Avec Massamba Amadeus en invité", "With Massamba Amadeus as guest"), "imgs": ids["aw24"]},
          {"year": "2024", "label": "Caribbean Edition", "place": "Dakar",
-          "sub": T("Summer Vibes, avec ISS 814 en live", "Summer Vibes, with ISS 814 live"), "imgs": r(16, 28) + ids["carib_add"]},
+          "sub": T("Summer Vibes, avec ISS 814 en live", "Summer Vibes, with ISS 814 live"), "imgs": r(16, 28) + ids["carib_add"] + V11["carib"]},
        ]},
       {"id": "bashment", "title": "The Bashment", "city": "sn", "place": "Dakar",
        "sub": T("Les soirées de DJ King Mouss : dancehall, afrobeats et sons caribéens jusqu'au petit matin. Un rendez-vous incontournable de la nuit dakaroise, qui a fêté sa 100e édition en octobre 2025 à Monaco Plage.",
                 "DJ King Mouss's nights: dancehall, afrobeats and Caribbean sounds until dawn. A fixture of Dakar nightlife, which celebrated its 100th edition in October 2025 at Monaco Plage."),
        "eds": [
-         {"year": "2025", "sub": T("Mes soirées de 2025, dont celles du 27 juin et du 4 juillet", "My 2025 nights, including June 27 and July 4"), "imgs": ids["bash25"] + [142] + ids["labase25"]},
-         {"year": "2024", "sub": T("Le rendez-vous de chaque semaine", "The weekly gathering"), "imgs": r(66, 73)},
+         {"year": "2025", "label": T("11 juillet", "July 11"), "imgs": ids["labase25"] + V10["bash25c"]},
+         {"year": "2025", "label": T("4 juillet", "July 4"), "imgs": r(193, 199) + V10["bash25b"]},
+         {"year": "2025", "label": T("27 juin", "June 27"), "imgs": [192] + V10["bash25a"]},
+         {"year": "2024", "label": T("9 août", "August 9"), "imgs": V10["bash24-08-09"]},
+         {"year": "2024", "label": T("2 août", "August 2"), "imgs": V10["bash24-08-02"]},
+         {"year": "2024", "label": T("26 juillet", "July 26"), "imgs": V10["bash24-07-26"]},
+         {"year": "2024", "label": T("12 juillet", "July 12"), "imgs": [72] + V10["bash24-07-12"]},
+         {"year": "2024", "label": T("5 juillet", "July 5"), "imgs": [67] + V10["bash24-07-05"]},
+         {"year": "2024", "label": T("21 juin", "June 21"), "imgs": [70, 71, 73] + V10["bash24-06-21"]},
+         {"year": "2024", "label": T("14 juin", "June 14"), "imgs": [66, 68, 69] + V10["bash24-06-14"]},
        ]},
       {"id": "whippin", "title": "Tout Whippin", "city": "sn", "place": "Dakar",
        "sub": T("Les soirées signées BDR et Ndeuss.", "The parties signed BDR and Ndeuss."),
        "eds": [
-         {"year": "2026", "sub": T("Vol. 1"), "imgs": ids["tw26"]},
-         {"year": "2025", "sub": T("Vol. 2, 3 et 4", "Vol. 2, 3 and 4"), "imgs": ids["tw25"]},
-         {"year": "2024", "imgs": r(74, 81)},
+         {"year": "2026", "label": "Vol. 1", "sub": T("Le 18 juillet", "July 18"), "imgs": ids["tw26"] + V10["tw26"]},
+         {"year": "2025", "label": "Vol. 4", "sub": T("Le 9 août", "August 9"), "imgs": [170] + V10["tw25d"]},
+         {"year": "2025", "label": "Vol. 3", "sub": T("Le 26 juillet", "July 26"), "imgs": [175, 176, 177] + V10["tw25c"]},
+         {"year": "2025", "label": "Vol. 2", "sub": T("Le 19 juillet", "July 19"), "imgs": [171, 172, 173, 174] + V10["tw25b"]},
+         {"year": "2025", "label": "Vol. 1", "sub": T("Le 28 juin", "June 28"), "imgs": V10["tw25a"]},
+         {"year": "2024", "label": T("16 août", "August 16"), "imgs": V10["tw24-08-16"]},
+         {"year": "2024", "label": T("10 août", "August 10"), "imgs": V10["tw24-08-10"]},
+         {"year": "2024", "label": T("27 juillet", "July 27"), "imgs": r(74, 81) + V10["tw24-07-27"]},
        ]},
       {"id": "litty", "title": "Litty", "city": "sn", "place": "Dakar",
        "sub": T("Les soirées Litty et leurs éditions Beats N Baddies.", "The Litty nights and their Beats N Baddies editions."),
        "eds": [
-         {"year": "2025", "sub": T("Beats N Baddies : Vol. 2 et Pink Party", "Beats N Baddies: Vol. 2 and Pink Party"), "imgs": ids["litty25"]},
-         {"year": "2024", "imgs": r(82, 86)},
+         {"year": "2025", "label": "Pink Party", "sub": T("Beats N Baddies, le 10 août", "Beats N Baddies, August 10"), "imgs": [184, 185] + V10["lit25c"]},
+         {"year": "2025", "label": "Vol. 2", "sub": T("Beats N Baddies, le 27 juillet", "Beats N Baddies, July 27"), "imgs": r(186, 191) + V10["lit25b"]},
+         {"year": "2025", "label": "Bahia", "sub": T("Beats N Baddies, le 6 juillet", "Beats N Baddies, July 6"), "imgs": [142] + V10["lit25a"]},
+         {"year": "2024", "sub": T("Le 12 juillet", "July 12"), "imgs": r(82, 86) + V10["lit24"]},
        ]},
-      {"id": "ghetto", "title": "Ghetto Bash", "city": "sn", "place": "Dakar", "year": "2025",
+      {"id": "ghetto", "title": "Ghetto Bash", "city": "sn", "place": "Dakar",
        "sub": T("Trois soirées en 2025 : le Vol. 1, la rencontre Ghetto Bash × The Bashment, puis le Vol. 3.",
                 "Three nights in 2025: Vol. 1, the Ghetto Bash × The Bashment night, then Vol. 3."),
-       "imgs": ids["ghetto"]},
-      {"id": "afrob", "title": "Afro B", "city": "sn", "place": "Dakar", "year": "2026",
-       "sub": T("La soirée de DJ Bringuy, pour son tout premier volume.", "DJ Bringuy's party, for its very first volume."), "imgs": ids["afrob"]},
-      {"id": "afroteo", "title": "Afroteo", "city": "mtl", "place": "Montréal",
-       "sub": T("Les soirées d'Alexis, DJ Xoco et Lucky Summers : afrobeats, reggaeton, dancehall, kompa et amapiano, toute la chaleur des sons africains, latins et caribéens à Montréal. Leur mot d'ordre : United Through Rhythm.",
-                "The nights of Alexis, DJ Xoco and Lucky Summers: afrobeats, reggaeton, dancehall, kompa and amapiano, all the warmth of African, Latin and Caribbean sounds in Montréal. Their motto: United Through Rhythm."),
        "eds": [
-         {"year": "2026", "sub": T("Édition du 10 avril", "April 10th edition"), "imgs": ids["afro26"]},
-         {"year": "2025", "imgs": ids["afro25"]},
+         {"year": "2025", "label": "Vol. 3", "sub": T("Le 9 août", "August 9"), "imgs": [206] + V10["gb25c"]},
+         {"year": "2025", "label": "× The Bashment", "sub": T("La rencontre des deux soirées, le 25 juillet", "The two parties together, July 25"), "imgs": r(207, 210) + V10["gb25b"]},
+         {"year": "2025", "label": "Vol. 1", "sub": T("Le 18 juillet", "July 18"), "imgs": r(211, 215) + V10["gb25a"]},
+       ]},
+      {"id": "afrob", "title": "Afro B", "city": "sn", "place": "Dakar", "year": "2026",
+       "sub": T("La soirée de DJ Bringuy, pour son tout premier volume.", "DJ Bringuy's party, for its very first volume."), "imgs": ids["afrob"] + V11["afrob"]},
+      {"id": "afroteo", "title": "Afroteo", "city": "mtl", "place": "Montréal",
+       "sub": T("Les soirées d'Alexis, DJ Xocco et Lucky Summers : afrobeats, reggaeton, dancehall, kompa et amapiano, toute la chaleur des sons africains, latins et caribéens à Montréal. Leur mot d'ordre : United Through Rhythm.",
+                "The nights of Alexis, DJ Xocco and Lucky Summers: afrobeats, reggaeton, dancehall, kompa and amapiano, all the warmth of African, Latin and Caribbean sounds in Montréal. Their motto: United Through Rhythm."),
+       "eds": [
+         {"year": "2026", "sub": T("La Noche Dulce, le 18 avril", "La Noche Dulce, April 18"), "imgs": ids["afro26"]},
+         {"year": "2025", "sub": T("Le 16 mai", "May 16"), "imgs": ids["afro25"] + V11["afro25"]},
        ]},
       {"id": "mabina", "title": "Mabina Nights", "city": "mtl", "place": "Montréal", "year": "2024",
-       "sub": T("Des battles de danse qui se terminent en fête, organisés par Yorick.", "Dance battles that turn into a party, hosted by Yorick."), "imgs": r(62, 65)},
+       "sub": T("Des battles de danse qui se terminent en fête, organisés par Yorick.", "Dance battles that turn into a party, hosted by Yorick."), "imgs": r(62, 65) + ids["v12"]["mabina"]},
     ]
   },
   {
@@ -129,7 +150,7 @@ CHAPTERS = [
        ]},
       {"id": "jeux", "title": "Jeux Urbains", "city": "mtl", "place": "Montréal", "year": "2026",
        "sub": T("Le festival gratuit des sports et de la culture urbaine, du 17 au 22 mars au Centre Eaton : BMX flatland, battles de danse, escrime, taekwondo et DJ sets.", "The free festival of urban sports and culture, March 17 to 22 at the Eaton Centre: BMX flatland, dance battles, fencing, taekwondo and DJ sets."),
-       "imgs": ids["jeux"]},
+       "imgs": ids["jeux"] + V11["jeux"]},
     ]
   },
   {
@@ -138,7 +159,7 @@ CHAPTERS = [
                "Concerts and festivals, in Montréal and in Dakar. I get as close as I can to the artists to catch the full intensity of a live show."),
     "projects": [
       {"id": "vj", "title": "VJ", "city": "mix", "place": "Dakar · Montréal",
-       "sub": T("VJ, la jeune voix de la musique sénégalaise révélée par « Dans tes bras ». Un artiste, deux scènes : je l'ai suivi à Montréal en 2025, puis à Dakar pour son concert Maggu VJ en 2026.", "VJ, the young voice of Senegalese music who broke through with “Dans tes bras”. One artist, two stages: I followed him in Montréal in 2025, then in Dakar for his Maggu VJ concert in 2026."),
+       "sub": T("Chanteur, VJ s'est révélé avec « Dans tes bras », puis a sorti son premier EP, « En Vrai », en 2022. Un artiste, deux scènes : je l'ai suivi à Montréal en janvier 2025, puis à Dakar pour son concert Maggu VJ en 2026.", "A singer, VJ broke through with “Dans tes bras”, then released his first EP, “En Vrai”, in 2022. One artist, two stages: I followed him in Montréal in January 2025, then in Dakar for his Maggu VJ concert in 2026."),
        "eds": [
          {"year": "2026", "label": "Maggu VJ", "city": "sn", "place": "Dakar", "sub": T("Son concert à Dakar, avec la première partie et les artistes invités", "His concert in Dakar, with the opening act and guest artists"), "imgs": r(118, 133) + [441]},
          {"year": "2025", "city": "mtl", "place": "Montréal", "sub": T("Son concert à Montréal", "His concert in Montréal"), "imgs": [ids["vj262"] if i == 104 else i for i in r(94, 105)]},
@@ -147,18 +168,24 @@ CHAPTERS = [
        "sub": T("Le festival de musique DLB, le 26 juillet 2025 à Dakar : les artistes sur scène et l'énergie du public.",
                 "The DLB music festival, July 26, 2025, in Dakar: the artists on stage and the energy of the crowd."),
        "imgs": ids["dlb"]},
+      {"id": "bal", "title": "BAL × Wave", "city": "sn", "place": "Dakar", "year": "2026",
+       "sub": T("La Basketball Africa League et Wave Sénégal ont fait le tour du pays avec le Tournoi des Quartiers, de Ziguinchor à Saint-Louis, Thiès et Dakar. J'étais à la grande finale, au stade Marius Ndiaye : le concert et le public.",
+                "The Basketball Africa League and Wave Senegal toured the country with the Tournoi des Quartiers, from Ziguinchor to Saint-Louis, Thiès and Dakar. I was at the grand final, at the Marius Ndiaye stadium: the concert and the crowd."),
+       "credits": [{"k": T("Sur scène", "On stage"), "names": ["Abba No Stress", "Ada Boy", "Ndakhte", "Wally Seck"]}],
+       "imgs": V11["bal"]},
       {"id": "canabasse", "title": "Canabasse & Astar", "city": "mtl", "place": "Montréal", "year": "2026",
-       "sub": T("Canabasse, l'une des grandes voix du rap sénégalais depuis le milieu des années 2000, partageait la scène avec Astar pour un concert à Montréal en janvier 2026.", "Canabasse, one of the leading voices of Senegalese rap since the mid-2000s, shared the stage with Astar for a concert in Montréal in January 2026."), "imgs": [4] + r(106, 117)},
-      {"id": "ngoundieu", "title": "Ngoundieu & Friends", "city": "mtl", "place": "Montréal",
-       "sub": T("Ngoundieu sur scène à Montréal : son concert avec ses invités, puis son passage au concert de Canabasse & Astar.",
-                "Ngoundieu on stage in Montréal: his own concert with guests, then his set at the Canabasse & Astar concert."),
+       "sub": T("Canabasse rappe entre wolof, français et anglais, et son titre « Pop a Shit » est devenu un hymne pour toute une génération. Astar, chanteuse, s'est fait connaître avec « Mytho ». Ensemble sur scène à Montréal, en janvier 2026.", "Canabasse raps across Wolof, French and English, and his track “Pop a Shit” became an anthem for a whole generation. Astar, a singer, made her name with “Mytho”. Together on stage in Montréal, in January 2026."), "imgs": [4] + r(106, 117)},
+      {"id": "appart", "title": "Appart", "city": "mtl", "place": "Montréal",
+       "sub": T("Le collectif Appart sur les scènes de Montréal : son propre concert en 2024, la release party de Ngoundieu en 2025, puis son passage au concert de Canabasse en 2026.",
+                "The Appart collective on Montréal stages: its own concert in 2024, Ngoundieu's release party in 2025, then its set at the Canabasse concert in 2026."),
        "eds": [
-         {"year": "2026", "sub": T("Sur scène au concert de Canabasse & Astar", "On stage at the Canabasse & Astar concert"), "imgs": ids["app26"]},
-         {"year": "2025", "sub": T("Ngoundieu & Friends, son concert", "Ngoundieu & Friends, his concert"), "imgs": ids["ngo25"]},
+         {"year": "2026", "sub": T("Sur scène au concert de Canabasse & Astar, en janvier", "On stage at the Canabasse & Astar concert, in January"), "imgs": ids["app26"]},
+         {"year": "2025", "label": "Release party", "sub": T("La release party de Ngoundieu, le 5 septembre", "Ngoundieu's release party, September 5"), "imgs": ids["ngo25"]},
+         {"year": "2024", "sub": T("Le concert du collectif, le 6 septembre", "The collective's own concert, September 6"), "imgs": V11["after0906"]},
        ]},
       {"id": "ashs", "title": "Ashs the Best", "city": "mtl", "place": "Montréal", "year": "2024",
-       "sub": T("Rappeur de Guédiawaye, fils d'un ancien membre du groupe reggae Niominka Bi, Ashs the Best porte cet héritage dans son hip-hop. Je l'ai photographié en concert à Montréal, et on le retrouve sur scène aux soirées Jelani de 2025 et 2026.",
-                "A rapper from Guédiawaye and the son of a former member of the reggae group Niominka Bi, Ashs the Best carries that heritage into his hip-hop. I photographed him in concert in Montréal, and he also took the stage at the Jelani parties in 2025 and 2026."), "imgs": r(87, 93) + [ids["ashs199"]]},
+       "sub": T("Rappeur de Guédiawaye, Ashs the Best a été sacré meilleur artiste et révélation de l'année aux Galsen Hip Hop Awards 2020, avec son EP « Million Flow Delux ». On lui doit aussi « Gadaay », avec Obree Daman. Je l'ai photographié en concert à Montréal, et on le retrouve sur scène aux soirées Jelani de 2025 et 2026.",
+                "A rapper from Guédiawaye, Ashs the Best was named best artist and revelation of the year at the 2020 Galsen Hip Hop Awards, with his EP “Million Flow Delux”. He also made “Gadaay” with Obree Daman. I photographed him in concert in Montréal, and he also took the stage at the Jelani parties in 2025 and 2026."), "imgs": r(87, 93) + [ids["ashs199"]] + ids["v12"]["ashs"]},
     ]
   },
   {
@@ -181,16 +208,19 @@ CHAPTERS = [
        "sub": T("Les marques qui m'ont confié leur image, de Dakar à Montréal, en shooting comme en événement.",
                 "The brands that trusted me with their image, from Dakar to Montréal, on shoots and at events."),
        "eds": [
-         {"brand": "Afitone", "year": "2026", "city": "sn", "place": "Dakar", "sub": T("Le tout premier shooting de la marque", "The brand's very first shoot"), "imgs": ids["brands"]["Afitone"]},
-         {"brand": "Noblesse", "year": "2026", "label": "World Cup Edition", "city": "sn", "place": "Dakar", "imgs": ids["brands"]["Noblesse 2026"]},
-         {"brand": "Breadwinner", "year": "2025", "city": "sn", "place": "Dakar", "sub": T("Shooting du 20 juillet", "July 20 shoot"), "imgs": ids["brands"]["Breadwinner"]},
-         {"brand": "Cenabou", "year": "2025", "city": "sn", "place": "Dakar", "sub": T("Shooting du 4 juillet, avec ses coulisses", "July 4 shoot, behind the scenes included"), "imgs": ids["brands"]["Cenabou"]},
-         {"brand": "Goût d'Afrique", "year": "2025", "city": "mtl", "place": "Montréal", "sub": T("Le restaurant de Côte-des-Neiges et ses saveurs venues de tout le continent", "The Côte-des-Neiges restaurant and its flavours from across the continent"), "imgs": ids["brands"]["Goût d'Afrique"]},
-         {"brand": "Noblesse", "year": "2025", "city": "mtl", "place": "Montréal", "imgs": ids["brands"]["Noblesse 2025"]},
-         {"brand": "Abyma", "year": "2024", "city": "none", "imgs": ids["brands"]["Abyma"]},
-         {"brand": "Creativ Yutes", "year": "2024", "city": "none", "imgs": ids["brands"]["Creativ Yutes"]},
-         {"brand": "Wanda", "year": "2024", "city": "none", "imgs": ids["brands"]["Wanda"]},
-         {"brand": "RL", "year": "2024", "city": "none", "imgs": ids["brands"]["RL"]},
+         {"brand": "Afitone", "year": "2026", "city": "sn", "place": "Dakar", "sub": T("Shooting du 1er juin", "June 1 shoot"), "imgs": ids["brands"]["Afitone"] + V10["br-afitone"]},
+         {"brand": "Breadwinner", "year": "2025", "city": "sn", "place": "Dakar", "sub": T("Shooting du 20 juillet", "July 20 shoot"), "imgs": ids["brands"]["Breadwinner"] + V10["br-bread"]},
+         {"brand": "Cenabou", "year": "2025", "city": "sn", "place": "Dakar", "sub": T("Les coulisses du shooting du 4 juillet", "Behind the scenes of the July 4 shoot"), "imgs": ids["brands"]["Cenabou"] + V10["br-cena"] + V11["cenabts"]},
+         {"brand": "Creativ Yutes", "year": "2024", "city": "none", "imgs": ids["brands"]["Creativ Yutes"] + V10["br-cy"]},
+         {"brand": "Wanda", "year": "2024", "city": "none", "imgs": ids["brands"]["Wanda"] + V10["br-wanda"]},
+         {"brand": "RL", "year": "2024", "city": "none", "imgs": ids["brands"]["RL"] + V10["br-rl"]},
+       ]},
+      {"id": "noblesse", "title": "Noblesse", "city": "mix", "place": "Dakar · Montréal",
+       "sub": T("Deux rendez-vous avec la marque Noblesse : sa collection World Cup Edition, shootée à Dakar, et son pop-up store à Montréal.",
+                "Two moments with the Noblesse brand: its World Cup Edition collection, shot in Dakar, and its pop-up store in Montréal."),
+       "eds": [
+         {"year": "2026", "label": "World Cup Edition", "city": "sn", "place": "Dakar", "sub": T("Le shooting de la collection", "The collection shoot"), "imgs": ids["brands"]["Noblesse 2026"] + V10["br-nob26"]},
+         {"year": "2025", "label": "Pop-up Store", "city": "mtl", "place": "Montréal", "sub": T("Le pop-up store de la marque", "The brand's pop-up store"), "imgs": ids["brands"]["Noblesse 2025"] + V10["br-nob25"] + V11["nob25"]},
        ]},
     ]
   },
@@ -226,12 +256,12 @@ CHAPTERS = [
 H = ids["heroNew"]
 C = ids["celebs"]; K = ids["cards2"]; Q = ids["cards3"]
 S4 = ids["cards4"]
-HERO = [H[0], C[1], Q["Tiakola"], S4["ISS 814"], Q["Mia Guissé"], ids["alphizi"], 3, Q["Massamba Amadeus"], S4["Jeeba"], K["Astar"], H[2], S4["Ashs the Best"], K["Dudu"], Q["Zepeck"], 465,
-        Q["Bass Thioung"], S4["Dip Doundou Guiss"], H[3], Q["Ada Boy"], Q["Babacar Ossoko"], K["VJ"], Q["Ndakhte"], Q["Pape Djibril Ndiaye"], Q["Abba No Stress"], Q["Jean Jacques Boissy"]]
+HERO = [H[0], C[1], Q["Tiakola"], C5["ISS 814"], Q["Mia Guissé"], ids["alphizi"], 3, Q["Massamba Amadeus"], S4["Jeeba"], C5["Astar"], H[2], C5["Ashs the Best"], K["Dudu"], Q["Zepeck"], C5["Ibro Nadio"], 465,
+        C5["Bass Thioung"], S4["Dip Doundou Guiss"], C5["Canabasse"], Q["Ada Boy"], C5["El Hadj Diallo"], Q["Babacar Ossoko"], K["VJ"], Q["Ndakhte"], Q["Pape Djibril Ndiaye"], Q["Abba No Stress"], Q["Jean Jacques Boissy"]]
 ME = 159
 WALL = [2, 6, 7, 145, 146, 147, 148, 149, 151] + ids["wall"]
 CAP = {228: "Collège LaSalle", 229: "Bleu Ciel", 230: "Bleu Ciel", 231: "1er Mai", 232: "Frikiton", 234: "Amesika", 235: "Nkundi", 236: "Né à Montréal"}
-DK26 = T("Dakar 2026")
+DK26 = T("BAL × Wave, Dakar 2026")
 HERO_LAB = {
   H[0]: {"name": "SDM", "meta": T("Concert à Montréal, 2025", "Concert in Montréal, 2025")},
   C[1]: {"name": "Wally Seck", "meta": DK26},
@@ -240,23 +270,25 @@ HERO_LAB = {
   ids["alphizi"]: {"name": "Alphizi", "meta": T("Créateur des soirées Jelani, Dakar 2026", "Creator of the Jelani parties, Dakar 2026")},
   3: {"name": "Uncle Waffles", "meta": T("")},
   Q["Massamba Amadeus"]: {"name": "Massamba Amadeus", "meta": T("Festival DLB, Dakar 2025", "DLB festival, Dakar 2025")},
-  K["Astar"]: {"name": "Astar", "meta": T("Concert Canabasse & Astar, Montréal 2026")},
+  C5["Astar"]: {"name": "Astar", "meta": T("Concert Canabasse & Astar, Montréal 2026")},
   H[2]: {"name": "Youssef Swatts", "meta": T("Concert à Montréal, 2025", "Concert in Montréal, 2025")},
   K["Dudu"]: {"name": "Dudu fait des vidéos", "meta": T("Soirée Jelani, Dakar 2025", "Jelani party, Dakar 2025")},
   Q["Zepeck"]: {"name": "Zepeck", "meta": T("MAD Festival, Montréal 2025")},
-  465: {"name": "Diariatou Sow", "meta": T("Shooting Cenabou, Dakar 2025", "Cenabou shoot, Dakar 2025")},
-  Q["Bass Thioung"]: {"name": "Bass Thioung", "meta": T("Concert de Maggu VJ, Dakar 2026", "Maggu VJ concert, Dakar 2026")},
-  H[3]: {"name": "Canabasse", "meta": T("5AM in MTL, Montréal 2026")},
+  465: {"name": "Diariatou Sow", "meta": T("Coulisses du shooting Cenabou, Dakar 2025", "Behind the scenes, Cenabou shoot, Dakar 2025")},
+  C5["Bass Thioung"]: {"name": "Bass Thioung", "meta": T("Jelani La Croisette, Dakar 2025")},
+  C5["Canabasse"]: {"name": "Canabasse", "meta": T("Concert Canabasse & Astar, Montréal 2026")},
+  C5["Ibro Nadio"]: {"name": "Ibro Nadio", "meta": T("Concert de Maggu VJ, Dakar 2026", "Maggu VJ concert, Dakar 2026")},
+  C5["El Hadj Diallo"]: {"name": "El Hadj Diallo", "meta": T("OC Runs, Dakar 2025")},
   Q["Ada Boy"]: {"name": "Ada Boy", "meta": DK26},
   Q["Babacar Ossoko"]: {"name": "Babacar Ossoko", "meta": T("OC Runs, Dakar 2026")},
   K["VJ"]: {"name": "VJ", "meta": T("Concert de Maggu VJ, Dakar 2026", "Maggu VJ concert, Dakar 2026")},
   Q["Ndakhte"]: {"name": "Ndakhte", "meta": DK26},
-  Q["Pape Djibril Ndiaye"]: {"name": "Pape Djibril Ndiaye", "meta": T("Shooting Cenabou, Dakar 2025", "Cenabou shoot, Dakar 2025")},
+  Q["Pape Djibril Ndiaye"]: {"name": "Pape Djibril Ndiaye", "meta": T("Coulisses du shooting Cenabou, Dakar 2025", "Behind the scenes, Cenabou shoot, Dakar 2025")},
   Q["Abba No Stress"]: {"name": "Abba No Stress", "meta": DK26},
   Q["Jean Jacques Boissy"]: {"name": "Jean Jacques Boissy", "meta": T("OC Runs, Dakar 2025")},
-  S4["ISS 814"]: {"name": "ISS 814", "meta": T("Jelani Caribbean Edition, Dakar 2024")},
+  C5["ISS 814"]: {"name": "ISS 814", "meta": T("Jelani Caribbean Edition, Dakar 2024")},
   S4["Jeeba"]: {"name": "Jeeba", "meta": T("Jelani La Croisette, Dakar 2025")},
-  S4["Ashs the Best"]: {"name": "Ashs the Best", "meta": T("Concert à Montréal, 2024", "Concert in Montréal, 2024")},
+  C5["Ashs the Best"]: {"name": "Ashs the Best", "meta": T("Jelani Coachella Edition, Saly 2026")},
   S4["Dip Doundou Guiss"]: {"name": "Dip Doundou Guiss", "meta": T("Jelani La Croisette, Dakar 2025")},
 }
 ABOUT = [11, 12, 13, 14, 15]
@@ -286,6 +318,9 @@ for ad in AUTO.get("editions", []):
         ed["imgs"] = list(ad["imgs"]); p["eds"].append(ed)
         p["eds"].sort(key=lambda e: str(e.get("year", "")), reverse=True)
 
+for c in CHAPTERS:
+    for p in c["projects"]:
+        for e in p.get("eds", [p]): e["imgs"] = [i for i in e["imgs"] if i not in GONE]
 used = []
 used += HERO + ABOUT + WALL + [ME]
 for c in CHAPTERS:

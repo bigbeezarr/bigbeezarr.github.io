@@ -258,6 +258,14 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
 .lb-img::after{content:"";position:absolute;inset:12px;pointer-events:none;opacity:.8;--vc:#fff;--vl:16px;--vt:2px;background:linear-gradient(var(--vc),var(--vc)) 0 0/var(--vl) var(--vt),linear-gradient(var(--vc),var(--vc)) 0 0/var(--vt) var(--vl),linear-gradient(var(--vc),var(--vc)) 100% 0/var(--vl) var(--vt),linear-gradient(var(--vc),var(--vc)) 100% 0/var(--vt) var(--vl),linear-gradient(var(--vc),var(--vc)) 0 100%/var(--vl) var(--vt),linear-gradient(var(--vc),var(--vc)) 0 100%/var(--vt) var(--vl),linear-gradient(var(--vc),var(--vc)) 100% 100%/var(--vl) var(--vt),linear-gradient(var(--vc),var(--vc)) 100% 100%/var(--vt) var(--vl);background-repeat:no-repeat}
 .lb.vf .lb-img::after{animation:vfIn .5s var(--ease-out) .12s both}
 @keyframes vfIn{from{opacity:0;transform:scale(1.06)}}
+.lb.vf .lb-img{animation:lbDev .8s var(--ease-out) both}
+.lb.vf .lb-bar{animation:lbBar .5s var(--ease-out) .18s both}
+.lb.vf .lb-btn{animation:lbBtn .4s var(--ease-out) .22s both}
+@keyframes lbDev{from{filter:brightness(1.85) saturate(.15) contrast(.8)}to{filter:none}}
+@keyframes lbBar{from{opacity:0;transform:translateY(16px)}}
+@keyframes lbBtn{from{opacity:0;transform:scale(.8)}}
+@keyframes vfFade{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.lb.vf .lb-img::after,.lb.vf .lb-bar,.lb.vf .lb-btn{animation-name:vfFade}}
 
 /* ---------- intro: one authored moment ---------- */
 .flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:90}
@@ -347,20 +355,37 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
 @keyframes grain{0%{transform:translate(0,0)}17%{transform:translate(-3%,2%)}33%{transform:translate(2%,-4%)}50%{transform:translate(-1%,5%)}67%{transform:translate(4%,1%)}83%{transform:translate(-4%,-2%)}100%{transform:translate(0,0)}}
 @media (prefers-reduced-transparency:reduce),(prefers-contrast:more),print{.grain{display:none}}
 
-/* curtain: one authored intro, once per visit */
-.curtain{position:fixed;inset:0;z-index:200;background:var(--accent);color:#0A0A0A;display:grid;place-items:center;clip-path:inset(0 0 0 0);cursor:pointer;animation:cuSafe 0s linear 6s forwards}
+/* loading screen, video-game style: level card, spinning globe, segmented bar, percentage, tip; every page load */
+.curtain{position:fixed;inset:0;z-index:200;background:var(--ground);color:var(--ink);display:grid;place-items:center;clip-path:inset(0 0 0 0);cursor:pointer;animation:cuSafe 0s linear 7s forwards;overflow:hidden}
 .curtain[hidden]{display:none}
 @keyframes cuSafe{to{visibility:hidden;pointer-events:none}}
-.curtain.up{clip-path:inset(0 0 100% 0);transition:clip-path .8s cubic-bezier(0.77,0,0.175,1)}
-.curtain.up .cu-in{translate:0 -12vh;opacity:0;transition:translate .8s cubic-bezier(0.77,0,0.175,1),opacity .5s ease}
-.cu-in{display:grid;justify-items:center;gap:14px;padding:24px;text-align:center}
-.cu-logo{width:min(32vw,150px);height:auto;overflow:visible}
-.cu-logo .ring{transform-box:fill-box;transform-origin:center;animation:cuRing 1.1s var(--ease-out) both}
-.cu-logo .globe{transform-box:fill-box;transform-origin:center;animation:cuGlobe .7s var(--ease-out) both}
-.cu-num{font-family:var(--font-d);font-weight:850;font-stretch:125%;font-size:clamp(3rem,11vw,7.5rem);line-height:.85;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.cu-cap{font-family:var(--font-d);font-weight:700;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase}
-@keyframes cuRing{from{rotate:-220deg;scale:.4;opacity:0}to{rotate:0deg;scale:1;opacity:1}}
-@keyframes cuGlobe{from{scale:.6;opacity:0}}
+.curtain::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 3px);pointer-events:none}
+.curtain.up{clip-path:inset(0 0 100% 0);transition:clip-path .7s cubic-bezier(0.77,0,0.175,1)}
+.curtain.up .lo-in{translate:0 -10vh;opacity:0;transition:translate .7s cubic-bezier(0.77,0,0.175,1),opacity .45s ease}
+.curtain.fade{opacity:0;transition:opacity .35s ease}
+.lo-in{position:relative;width:min(88vw,520px);display:grid;justify-items:center;gap:16px;text-align:center}
+.lo-top{width:100%;display:flex;justify-content:space-between;align-items:baseline;font-family:var(--font-d);font-weight:800;letter-spacing:.14em;font-size:.72rem;text-transform:uppercase;color:var(--ink-2)}
+.lo-top b{color:#fff;background:var(--accent);padding:3px 8px;border-radius:3px;letter-spacing:.12em}
+.lo-logo{width:min(34vw,132px);height:auto;overflow:visible;margin-block:6px 2px}
+.lo-logo .mer{transform-box:fill-box;transform-origin:center;animation:loMer 1.6s linear infinite}
+.lo-logo .mer.m2{animation-delay:-.53s}.lo-logo .mer.m3{animation-delay:-1.07s}
+.lo-logo .ring{transform-box:view-box;transform-origin:50% 50%;animation:loRing 2.4s linear infinite}
+@keyframes loMer{0%{transform:scaleX(1)}50%{transform:scaleX(.04)}100%{transform:scaleX(1)}}
+@keyframes loRing{to{rotate:360deg}}
+.lo-word{margin:0;font-family:var(--font-d);font-weight:850;font-stretch:125%;font-size:clamp(1.9rem,8vw,3.1rem);line-height:.9;letter-spacing:-.02em;color:var(--accent)}
+.lo-label{font-family:var(--font-d);font-weight:800;letter-spacing:.22em;font-size:.8rem;text-transform:uppercase}
+.lo-label i{font-style:normal;display:inline-block;width:2.2em;text-align:left}
+.lo-bar{width:100%;height:20px;padding:3px;display:grid;grid-template-columns:repeat(20,1fr);gap:3px;border:2px solid var(--ink-2);border-radius:4px}
+.lo-bar span{background:var(--accent);border-radius:1px;transform:scaleY(.35);opacity:.14;transition:opacity .12s linear,transform .18s var(--ease-out)}
+.lo-bar span.on{opacity:1;transform:none}
+.lo-row{width:100%;display:flex;justify-content:space-between;font-family:var(--font-d);font-weight:800;font-variant-numeric:tabular-nums;font-size:.9rem;letter-spacing:.08em}
+.lo-pct{color:#fff}.lo-n{color:var(--ink-2)}
+.lo-tip{margin:4px 0 0;min-height:2.6em;color:var(--ink-2);font-size:.92rem;max-width:42ch}
+.lo-tip b{color:var(--ink);font-family:var(--font-d);font-weight:800;letter-spacing:.08em;text-transform:uppercase;font-size:.78rem;margin-right:.5em}
+.lo-go{font-family:var(--font-d);font-weight:800;letter-spacing:.2em;font-size:.78rem;text-transform:uppercase;color:#fff;opacity:0}
+.curtain.done .lo-go{animation:loBlink .8s steps(2,jump-none) infinite}
+@keyframes loBlink{0%{opacity:1}100%{opacity:.15}}
+@media (prefers-reduced-motion:reduce){.lo-logo .mer{animation-duration:4.8s}.lo-logo .ring{animation-duration:8s}.curtain.done .lo-go{animation:none;opacity:1}}
 
 /* scroll-driven brand motion (complete and static when unsupported or reduced) */
 @supports (animation-timeline:view()){
@@ -580,8 +605,17 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
 </style>
 
 <div class="flash" aria-hidden="true"></div>
-<div class="curtain" id="curtain" aria-hidden="true" hidden><div class="cu-in"><svg class="cu-logo" viewBox="0 0 32 32"><g class="globe"><circle cx="16" cy="16" r="10" fill="none" stroke="#0A0A0A" stroke-width="1.4"/><ellipse cx="16" cy="16" rx="4.6" ry="10" fill="none" stroke="#0A0A0A" stroke-width="1" opacity=".6"/><path d="M6 16h20" stroke="#0A0A0A" stroke-width="1" opacity=".6"/></g><g class="ring"><ellipse cx="16" cy="16" rx="15" ry="5" fill="none" stroke="#fff" stroke-width="1.6" transform="rotate(-18 16 16)"/></g></svg><span class="cu-num">000</span><span class="cu-cap">BIGBEEZARR · Dakar — Montréal</span></div></div>
-<script>(function(){var c=document.getElementById("curtain"),r=matchMedia("(prefers-reduced-motion: reduce)").matches,s=false;try{s=sessionStorage.getItem("bbz-seen")==="1"}catch(e){}if(!r&&!s)c.hidden=false;})();</script>
+<div class="curtain" id="curtain" aria-hidden="true" hidden><div class="lo-in">
+  <div class="lo-top"><b id="loLv">NIVEAU 01</b><span id="loRoute">DAKAR → MONTRÉAL</span></div>
+  <svg class="lo-logo" viewBox="0 0 32 32"><circle cx="16" cy="16" r="10" fill="none" stroke="#F3F1EC" stroke-width="1.3"/><ellipse class="mer" cx="16" cy="16" rx="10" ry="10" fill="none" stroke="#F3F1EC" stroke-width=".9" opacity=".7"/><ellipse class="mer m2" cx="16" cy="16" rx="10" ry="10" fill="none" stroke="#F3F1EC" stroke-width=".9" opacity=".5"/><ellipse class="mer m3" cx="16" cy="16" rx="10" ry="10" fill="none" stroke="#F3F1EC" stroke-width=".9" opacity=".35"/><path d="M6 16h20" stroke="#F3F1EC" stroke-width=".9" opacity=".6"/><g class="ring"><ellipse cx="16" cy="16" rx="15" ry="5" fill="none" stroke="var(--accent)" stroke-width="1.6" transform="rotate(-18 16 16)"/><circle cx="31" cy="16" r="1.6" fill="var(--accent)" transform="rotate(-18 16 16)"/></g></svg>
+  <p class="lo-word">BIGBEEZARR</p>
+  <div class="lo-label"><span id="loLabel">CHARGEMENT</span><i id="loDots">...</i></div>
+  <div class="lo-bar" id="loBar"></div>
+  <div class="lo-row"><span class="lo-pct" id="loPct">000 %</span><span class="lo-n" id="loN"></span></div>
+  <p class="lo-tip" id="loTip"></p>
+  <div class="lo-go" id="loGo"></div>
+</div></div>
+<script>(function(){var c=document.getElementById("curtain");if(!c)return;c.hidden=false;var l="fr";try{var v=localStorage.getItem("bbz-lang");l=v?v:((navigator.language||"fr").toLowerCase().indexOf("fr")===0?"fr":"en")}catch(e){}if(l!=="en")l="fr";var T={fr:["NIVEAU 01","CHARGEMENT","APPUYEZ POUR ENTRER"],en:["LEVEL 01","LOADING","PRESS TO ENTER"]}[l];document.getElementById("loLv").textContent=T[0];document.getElementById("loLabel").textContent=T[1];document.getElementById("loGo").textContent=T[2];c.dataset.lang=l;var b=document.getElementById("loBar");for(var i=0;i<20;i++)b.appendChild(document.createElement("span"));})();</script>
 
 <header class="bar">
   <div class="wrap bar-in">
@@ -849,7 +883,9 @@ function yearSpan(p) {
   return a === b ? String(a) : `${a}–${b}`;
 }
 const edName = e => e.look ? "Look " + e.look : e.brand || e.year;
-const edTitle = (p, e) => !e ? L(p.title) : e.look ? `${L(p.title)} · Look ${e.look}` : e.brand ? `${L(p.title)} · ${e.brand}${e.label ? " " + e.label : ""} ${e.year}` : e.single ? L(p.title) : `${L(p.title)} · ${e.label && !L(p.title).includes(e.label) ? e.label + " " : ""}${e.year}`;
+const lab = e => e && e.label ? L(e.label) : "";
+const labFr = e => e && e.label ? (typeof e.label === "string" ? e.label : e.label.fr) : "";
+const edTitle = (p, e) => !e ? L(p.title) : e.look ? `${L(p.title)} · Look ${e.look}` : e.brand ? `${L(p.title)} · ${e.brand}${e.label ? " " + lab(e) : ""} ${e.year}` : e.single ? L(p.title) : `${L(p.title)} · ${e.label && !L(p.title).includes(lab(e)) ? lab(e) + " " : ""}${e.year}`;
 const whereOf = p => p.place || (p.city === "none" ? t("where.none") : "");
 
 /* ---------- sequence (every photo in page order) ---------- */
@@ -879,7 +915,7 @@ function ctxMeta(c) {
   if (c.kind !== "p") return "";
   const p = DATA.chapters[c.ci].projects[c.pi], e = edsOf(p)[c.ei];
   if (!e) return [p.place, p.year].filter(Boolean).join(" · ");
-  if (e.look) return [e.label, L(e.sub), p.place].filter(Boolean).join(" · ");
+  if (e.look) return [lab(e), L(e.sub), p.place].filter(Boolean).join(" · ");
   const cap = (DATA.cap || {})[c.i];
   return [cap ? L(cap) : "", e.place || p.place, e.single ? p.year : ""].filter(Boolean).join(" · ");
 }
@@ -1071,20 +1107,20 @@ DATA.chapters.forEach((c, ci) => {
       const host = p.eds ? mk("section", "ed", w) : w;
       let edId = "";
       if (p.eds) {
-        edId = e.look ? `p-${p.id}-look-${e.look}` : e.brand ? `p-${p.id}-${slug(e.brand)}-${slug(e.year)}` : `p-${p.id}-${slug(e.year)}${e.label ? "-" + slug(e.label) : ""}`;
+        edId = e.look ? `p-${p.id}-look-${e.look}` : e.brand ? `p-${p.id}-${slug(e.brand)}-${slug(e.year)}` : `p-${p.id}-${slug(e.year)}${e.label ? "-" + slug(labFr(e)) : ""}`;
         host.id = edId;
         host.dataset.city = e.city || p.city;
         const eh = mk("header", "ed-head", host);
         letters(mk("h4", e.brand ? "ed-year ed-brand" : "ed-year", eh), edName(e));
         const tx = mk("div", "ed-txt", eh);
-        if (e.label) mk("span", "ed-label", tx).textContent = e.label;
+        if (e.label) bindText(mk("span", "ed-label", tx), () => lab(e));
         if (e.sub) bindText(mk("p", "ed-sub", tx), () => L(e.sub));
         const n = mk("span", "ed-n", eh);
         if (e.city && e.city !== p.city) mk("span", "dot", n).dataset.c = e.city;
         bindText(mk("span", "", n), () => [e.brand ? e.year : "", e.place && e.place !== p.place ? e.place : "", t("photos")(edCount(e))].filter(Boolean).join(" · "));
         if (yrs) {
           const chip = mk("a", "", yrs); chip.href = "#" + edId; chip.dataset.ed = edId;
-          chip.textContent = e.brand ? (dupB.has(e.brand) ? `${e.brand} ${e.year}` : e.brand) : dupY.has(e.year) && e.label ? `${e.year} · ${e.label}` : e.year;
+          bindText(chip, () => e.brand ? (dupB.has(e.brand) ? `${e.brand} ${e.year}` : e.brand) : dupY.has(e.year) && e.label ? `${e.year} · ${lab(e)}` : e.year);
         }
       }
       if (e.feature) {
@@ -1124,7 +1160,7 @@ allProjects.forEach(({ p, c }) => {
   const bar = mk("span", "idx-bar", tr); bar.dataset.c = p.city; bar.style.setProperty("--w", (n / maxN * 100).toFixed(1) + "%");
   const nn = mk("span", "idx-n", a); nn.setAttribute("role", "cell"); nn.textContent = n;
   a._tip = () => {
-    const rows = p.eds ? edsOf(p).map(e => `${edName(e)}${e.brand ? " " + e.year : e.label ? " · " + e.label : ""} : ${edCount(e)}`).join("<br>") : `${p.year ? p.year + " · " : ""}${t("photos")(n)}`;
+    const rows = p.eds ? edsOf(p).map(e => `${edName(e)}${e.brand ? " " + e.year : e.label ? " · " + lab(e) : ""} : ${edCount(e)}`).join("<br>") : `${p.year ? p.year + " · " : ""}${t("photos")(n)}`;
     return `<b>${L(p.title)}</b> · ${whereOf(p) || "—"}<br>${p.eds ? t("photos")(n) + "<br>" : ""}${rows}`;
   };
 });
@@ -1206,11 +1242,11 @@ function drawOrbit(svg) {
   $(".o-back", svg).setAttribute("d", `M${lx} ${ly}A${RX} ${RY} 0 0 1 ${rx} ${ry}`);
   $(".o-front", svg).setAttribute("d", `M${lx} ${ly}A${RX} ${RY} 0 0 0 ${rx} ${ry}`);
 }
-function placeDot(svg, th) {
+function placeDot(svg, th, from = Math.PI) {
   const [x, y] = pt(th), d = $(".o-dot", svg);
   d.setAttribute("cx", x.toFixed(2)); d.setAttribute("cy", y.toFixed(2));
   const tr = $(".o-trail", svg);
-  if (tr) { const [lx, ly] = pt(Math.PI); tr.setAttribute("d", th < Math.PI - 1e-3 ? `M${lx} ${ly}A${RX} ${RY} 0 0 0 ${x} ${y}` : ""); }
+  if (tr) { const [lx, ly] = pt(from); tr.setAttribute("d", Math.abs(th - from) > 1e-3 ? `M${lx} ${ly}A${RX} ${RY} 0 0 ${th > from ? 1 : 0} ${x} ${y}` : ""); }
 }
 const orbit = $("#orbit"), hudSvg = $("#hud svg");
 drawOrbit(orbit); drawOrbit(hudSvg);
@@ -1236,13 +1272,22 @@ placeDot(orbit, 0); placeDot(hudSvg, Math.PI / 2);
   const tick = now => {
     raf = 0; if (!vis) return;
     const dt = last ? Math.min(.05, (now - last) / 1000) : 0; last = now;
-    th = (th + dt * .55) % (Math.PI * 2); draw();
+    th = (th + dt * (calm() ? .22 : .6)) % (Math.PI * 2); draw();
     raf = requestAnimationFrame(tick);
   };
   draw();
-  if (calm()) return;
   if ("IntersectionObserver" in window) new IntersectionObserver(es => { vis = es[0].isIntersecting; if (vis && !raf) { last = 0; raf = requestAnimationFrame(tick); } }).observe(orbit);
   else raf = requestAnimationFrame(tick);
+  /* after the intro, the red dot keeps flying between the two cities */
+  const ease = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+  let at = 0;
+  const fly = () => {
+    if (calm() || document.hidden || !vis || (typeof LB !== "undefined" && LB.open)) { setTimeout(fly, 1500); return; }
+    const from = at, to = at === 0 ? Math.PI : 0, t0 = performance.now(), dur = 2600;
+    const step = now => { const p = Math.min(1, (now - t0) / dur); placeDot(orbit, from + (to - from) * ease(p), from); if (p < 1) requestAnimationFrame(step); else { at = to; setTimeout(() => { placeDot(orbit, at, at); fly(); }, 2200); } };
+    requestAnimationFrame(step);
+  };
+  setTimeout(fly, 5200);
 })();
 const CITY_TH = { sn: Math.PI, mtl: 0, mix: Math.PI / 2, none: Math.PI / 2 };
 
@@ -1259,18 +1304,43 @@ function startIntro() {
   setTimeout(() => root.classList.remove("intro"), 2600);
 }
 function curtain(el) {
-  const num = $(".cu-num", el), N = DATA.total, t0 = performance.now();
-  let done = false;
-  const count = now => { if (done) return; const p = Math.min(1, (now - t0) / 900); num.textContent = pad(Math.round(N * (1 - Math.pow(1 - p, 3)))); if (p < 1) requestAnimationFrame(count); };
-  requestAnimationFrame(count);
-  const lift = () => { if (done) return; done = true; num.textContent = pad(N); el.classList.add("up"); startIntro(); setTimeout(() => el.remove(), 950); };
+  const fr = (el.dataset.lang || lang) !== "en";
+  const TIPS = fr ? [["Astuce", "Touchez une photo pour l'ouvrir en plein écran."], ["Astuce", "Les flèches ← → passent d'une photo à l'autre."], ["Astuce", "Chaque rubrique se découpe par année, par volume ou par édition."], ["Quête", "Dakar et Montréal, deux villes, une même énergie."], ["Astuce", "Glissez la photo vers le bas pour la refermer."]]
+                   : [["Tip", "Tap a photo to open it full screen."], ["Tip", "The ← → keys move from one photo to the next."], ["Tip", "Every rubric is split by year, volume or edition."], ["Quest", "Dakar and Montréal, two cities, one energy."], ["Tip", "Swipe a photo down to close it."]];
+  const tip = TIPS[Math.floor(Math.random() * TIPS.length)];
+  { const tp = $("#loTip"); tp.textContent = ""; mk("b", "", tp).textContent = tip[0]; tp.appendChild(document.createTextNode(tip[1])); }
+  $("#loN").textContent = `${DATA.total} photos`;
+  const segs = $$("#loBar span"), pct = $("#loPct"), dots = $("#loDots");
+  const imgs = $$(".rail .ph img").slice(0, 8);
+  const loaded = () => imgs.filter(i => i.complete && i.naturalWidth).length / Math.max(1, imgs.length);
+  let fontsOk = false; (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => fontsOk = true);
+  const t0 = performance.now(), MIN = 1300, MAX = 3600;
+  let shown = 0, done = false, ready = false;
+  const frame = now => {
+    if (done) return;
+    const el2 = now - t0;
+    const real = .2 + .6 * loaded() + (fontsOk ? .2 : 0);
+    const cap = Math.min(1, el2 / MIN);
+    const target = el2 > MAX ? 1 : Math.min(real, cap);
+    shown += (target - shown) * .14; if (target - shown < .004) shown = target;
+    const v = Math.round(shown * 100);
+    pct.textContent = `${String(v).padStart(3, "0")} %`;
+    segs.forEach((sg, k) => sg.classList.toggle("on", k < Math.round(shown * 20)));
+    dots.textContent = ".".repeat(1 + Math.floor(el2 / 300) % 3);
+    if (shown >= 1 && !ready) { ready = true; el.classList.add("done"); setTimeout(lift, 420); }
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+  const lift = () => {
+    if (done) return; done = true;
+    pct.textContent = "100 %"; segs.forEach(sg => sg.classList.add("on"));
+    el.classList.add(calm() ? "fade" : "up"); startIntro(); setTimeout(() => el.remove(), 800);
+  };
   el.addEventListener("pointerdown", lift);
   addEventListener("keydown", lift, { once: true });
-  setTimeout(lift, 1150);
 }
 {
   const cu = $("#curtain");
-  try { sessionStorage.setItem("bbz-seen", "1"); } catch (e) {}
   if (cu && !cu.hidden) curtain(cu);
   else { if (cu) cu.remove(); if (!calm()) startIntro(); }
 }
@@ -1370,7 +1440,7 @@ const LB = {
   show(i) {
     this.pos = SEQ.indexOf(i); this.i = i; this.open = true; this.lastFocus = document.activeElement;
     lb.hidden = false; root.style.overflow = "hidden";
-    lb.classList.remove("vf"); if (!calm()) { void lb.offsetWidth; lb.classList.add("vf"); }
+    lb.classList.remove("vf"); void lb.offsetWidth; lb.classList.add("vf");
     this.layout(); this.setImage(i);
     const from = this.thumbState(i);
     this.ghost(from && from.el);

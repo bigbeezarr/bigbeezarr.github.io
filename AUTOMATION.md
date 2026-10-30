@@ -56,7 +56,11 @@ Existing projects (match the folder name, case-insensitive):
 | OC RUN, RUN NUMBA | `ocruns` (sport) |
 | JEUX URBAINS | `jeux` (sport) |
 | VJ, MAGGU | `vj` (scene) |
-| CANABASSE | `canabasse` (scene) |
+| CANABASSE (not NGOUNDIEU APPART) | `canabasse` (scene) |
+| NGOUNDIEU, APPART | `appart` (scene): the Appart collective; 2025 = Ngoundieu's release party |
+| BAL (Basketball Africa League) | `bal` (scene) |
+| NOBLESSE | `noblesse` (editorial): 2026 `World Cup Edition` (Dakar), 2025 `Pop-up Store` (Montréal) |
+| other brands (BRANDS/…) | `marques` (editorial), one rubric per brand and shoot (`"brand"` key) |
 | ASHS | `ashs` (scene) |
 | MAD FESTIVAL | `mad` (editorial) |
 | Projets d'exposition/as salam… | `salam` (projets) |
@@ -64,6 +68,10 @@ Existing projects (match the folder name, case-insensitive):
 | Projets d'exposition/mécanique… | `meca` (projets) |
 
 Never add to `naf` (the Jelani New Africa Fashion lookbook is curated look by look).
+Never add Goût d'Afrique or Abyma (removed at Mamadou's request). For Cenabou, only the `Behind The Scenes`
+photos are his: never add its DETAILS or REEL photos.
+Parties with several volumes get one rubric per volume or night (`"label"`: « Vol. N » as in the folder, or the
+night's date), each with at least 10 photos; brand shoots too.
 
 No match → a new project in the chapter given by the folder category:
 PARTYS / EVENTS → `soirees`; CONCERTS → `scene`; SPORT / SPORTS → `sport`;
