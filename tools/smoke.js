@@ -9,7 +9,7 @@ const { chromium } = require('playwright');
   await p.goto('file://' + dir + '/index.html', { waitUntil: 'load' }); await p.waitForTimeout(800);
   await p.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 900) { scrollTo(0, y); await new Promise(r => setTimeout(r, 25)); } });
   await p.waitForTimeout(2500);
-  const r = await p.evaluate(() => ({ tiles: document.querySelectorAll('.ph-open').length, broken: [...document.querySelectorAll('.ph img')].filter(i => i.complete && i.naturalWidth === 0).map(i => i.getAttribute('src')) }));
+  const r = await p.evaluate(() => ({ tiles: document.querySelectorAll('.ph-open').length, broken: [...document.querySelectorAll('.ph img')].filter(i => (i.getAttribute('src') || i.srcset) && i.complete && i.naturalWidth === 0).map(i => i.currentSrc || i.getAttribute('src') || i.srcset.slice(0, 40)), unloaded: [...document.querySelectorAll('.gallery .ph img')].filter(i => !i.srcset && !i.getAttribute('src')).length }));
   console.log(JSON.stringify({ ...r, errors: errs }));
   await b.close();
   process.exit(errs.length || r.broken.length ? 1 : 0);

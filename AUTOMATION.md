@@ -6,9 +6,9 @@ as the rest of the site, then publish. Write the final report **in French**.
 
 Branches of `bigbeezarr/bigbeezarr.github.io`:
 - `main`: the published site (`index.html`, `img/f/NNN.webp`, `og.jpg`, `.nojekyll`). GitHub Pages serves it.
-  `main` also holds the client gallery (`galerie/`, `admin/`, `worker/`, `.github/workflows/galerie.yml`). Never delete or overwrite those folders: `gh_build.py` only writes `index.html`, `og.jpg` and `img/`. `galerie/config.js` is written by the gallery deploy workflow; leave it as is.
+  `main` also holds the client gallery (`galerie/`, `admin/`, `worker/`, `.github/workflows/galerie.yml`). Never delete or overwrite those folders: `gh_build.py` only writes `index.html`, `og.jpg`, `img/` (with the phone and tablet copies `img/m` and `img/s`, made by `variants.py`), `robots.txt`, `sitemap.xml`, `_headers` and `.well-known/security.txt`. `galerie/config.js` is written by the gallery deploy workflow; leave it as is.
 - `source` (this branch): the pipeline (`build.py`, `src.html`, `meta.json`, `colors.json`,
-  `hashes.json`, `auto.json`, `new/ids.json`, `gh_build.py`, `tools/`).
+  `hashes.json`, `auto.json`, `new/ids.json`, `gh_build.py`, `variants.py`, `tools/`).
 
 ## 0. Preconditions
 
