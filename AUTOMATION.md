@@ -155,5 +155,7 @@ Claude-Session: <this run's session link>
 - If the Artifact tool is available, also update the preview at https://claude.ai/artifact/1Eq3Sp3U7wPv2TvSn9ZG1z:
   copy the new `../site/img/f/NNN.webp` files into `src/img/f/`, then publish `src/index.html` with that `url`,
   `root` = the `src` folder and `files` mapping each `img/f/NNN.webp` to itself. Skip this step if the tool is missing.
+  The preview holds at most 511 files: if the publish is refused for size or file count, skip it and say so in the report
+  (GitHub Pages is the real site).
 - Report in French, short: projects and years updated with the number of photos, new projects,
   folders skipped and why, and the link https://bigbeezarr.github.io. GitHub Pages takes about a minute.

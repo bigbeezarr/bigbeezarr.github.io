@@ -59,7 +59,7 @@ CHAPTERS = [
          {"year": "2025", "sub": T("Vol. 1, 2 et 3", "Vol. 1, 2 and 3"), "imgs": ids["bash25"] + [142] + ids["labase25"]},
          {"year": "2024", "sub": T("Chaque semaine", "Every week"), "imgs": r(66, 73)},
        ]},
-      {"id": "whippin", "title": "Tout WhippiN", "city": "sn", "place": "Dakar",
+      {"id": "whippin", "title": "Tout Whippin", "city": "sn", "place": "Dakar",
        "sub": T("Les soirées de BDR et Ndeuss.", "BDR and Ndeuss's parties."),
        "eds": [
          {"year": "2026", "sub": T("Vol. 1"), "imgs": ids["tw26"]},
@@ -166,10 +166,8 @@ CHAPTERS = [
        "order": "fixed", "imgs": ids["salamX"]},
       {"id": "bourrasque", "title": "La bourrasque de la presqu'île du Cap-Vert", "city": "sn", "place": "Dakar",
        "sub": T("", ""), "order": "fixed", "imgs": ids["bourrasque"]},
-      {"id": "meca", "title": "Mécanique passionnelle", "city": "none", "place": "",
-       "sub": T("", ""), "order": "fixed",
-       "feature": {"img": ids["meca"][0], "fr": "Le plan d'accrochage de la série.", "en": "The hanging plan for the series."},
-       "imgs": ids["meca"][1:]},
+      {"id": "meca", "title": "Mécanique passionnelle", "city": "sn", "place": "Dakar · Olympique Club",
+       "sub": T("", ""), "order": "fixed", "imgs": ids["meca"][1:]},
     ]
   },
   {
@@ -177,18 +175,25 @@ CHAPTERS = [
     "intro": T("La rue, les paysages et les portraits, à Dakar comme à Montréal.", "Street, landscapes and portraits, in Dakar and in Montréal."),
     "projects": [
       {"id": "rue", "title": T("Rue, paysages, portraits", "Street, landscapes, portraits"), "city": "mix", "place": "Dakar · Montréal", "year": "",
-       "sub": T("", ""), "imgs": [145, 146, 147, 148, 149, 151, 159, 153, 154, 155, 156, 157, 158]},
+       "sub": T("", ""), "imgs": [145, 146, 147, 148, 149, 151, 153, 154, 155, 156, 157, 158]},
     ]
   },
 ]
 
 H = ids["heroNew"]
-HERO = [H[0], H[1], 2, 3, 7, H[2], 6, H[3]]
+C = ids["celebs"]
+HERO = [H[0], H[1], C[0], 3, C[1], H[2], C[2], H[3]]
+ME = 159
+WALL = [2, 6, 7] + ids["wall"]
 HERO_LAB = {
   H[0]: {"name": "SDM", "meta": T("Concert à Montréal, 2025", "Concert in Montréal, 2025")},
   H[1]: {"name": "Adja", "meta": T("Photos de presse, Montréal 2025", "Press shots, Montréal 2025")},
   H[2]: {"name": "Youssef Swatts", "meta": T("Concert à Montréal, 2025", "Concert in Montréal, 2025")},
   H[3]: {"name": "Canabasse", "meta": T("5AM in MTL, Montréal 2026")},
+  C[0]: {"name": "Dudu fait des vidéos", "meta": T("Jelani · New Africa Fashion, Dakar 2026")},
+  3: {"name": "Uncle Waffles", "meta": T("")},
+  C[1]: {"name": "Wally Seck", "meta": T("Dakar 2026")},
+  C[2]: {"name": "Mia Guissé", "meta": T("Concert de Maggu VJ, Dakar 2026", "Maggu VJ concert, Dakar 2026")},
 }
 ABOUT = [11, 12, 13, 14, 15]
 
@@ -218,7 +223,7 @@ for ad in AUTO.get("editions", []):
         p["eds"].sort(key=lambda e: str(e.get("year", "")), reverse=True)
 
 used = []
-used += HERO + ABOUT
+used += HERO + ABOUT + WALL + [ME]
 for c in CHAPTERS:
     for p in c["projects"]:
         for e in p.get("eds", [p]):
@@ -272,9 +277,10 @@ for c in CHAPTERS:
         for e in p.get("eds", [p]):
             if e.get("order") != "fixed": e["imgs"] = gradient(e["imgs"])
 ABOUT = gradient(ABOUT)
+WALL = gradient(WALL)
 
 DATA = {
-  "hero": HERO, "heroLab": {str(k): v for k, v in HERO_LAB.items()}, "about": ABOUT, "chapters": CHAPTERS,
+  "hero": HERO, "heroLab": {str(k): v for k, v in HERO_LAB.items()}, "about": ABOUT, "wall": WALL, "me": ME, "chapters": CHAPTERS,
   "img": {str(i): [meta[i]["w"], meta[i]["h"], meta[i]["q"], colors[str(i)][3]] for i in meta},
   "total": len(meta),
 }

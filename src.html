@@ -482,28 +482,60 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
 .ach-tx span{font-weight:700;font-size:.92rem;line-height:1.25}
 @media (prefers-reduced-motion:reduce){.ach{transform:none}.ach.on .ach-ico{animation:none}}
 
-/* ================= ladder: a rung per chapter and project on the right edge, opens on hover ================= */
-.ladder{position:fixed;z-index:45;right:0;top:50%;transform:translateY(-50%);padding:14px max(10px,env(safe-area-inset-right,0px)) 14px 22px;--ld-h:18px;--ld-w:250px}
-.ld-panel{position:absolute;top:0;bottom:0;right:0;width:calc(var(--ld-w) + 40px);border-radius:16px 0 0 16px;background:rgba(10,10,10,.82);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid var(--line);border-right:0;transform-origin:100% 50%;transform:scaleX(.12);opacity:0;transition:transform .32s var(--ease-out),opacity .2s ease;pointer-events:none}
-.ld-list{position:relative;list-style:none;margin:0;padding:0}
+/* ================= ladder: the big sections on the right edge; a section's projects unfold under the pointer ================= */
+.ladder{position:fixed;z-index:45;right:0;top:var(--ld-top,30vh);padding:14px max(10px,env(safe-area-inset-right,0px)) 14px 22px;--ld-h:22px;--ld-s:18px;--ld-w:250px}
+.ld-panel{position:absolute;top:0;bottom:0;right:0;width:calc(var(--ld-w) + 40px);border-radius:16px 0 0 16px;background:rgba(10,10,10,.84);-webkit-backdrop-filter:blur(18px) saturate(150%);backdrop-filter:blur(18px) saturate(150%);border:1px solid var(--line);border-right:0;transform-origin:100% 50%;transform:scaleX(.12);opacity:0;transition:transform .32s var(--ease-out),opacity .2s ease;pointer-events:none}
+.ld-list,.ld-sub{position:relative;list-style:none;margin:0;padding:0}
 .ld-list li{display:block}
 .ld-a{display:flex;align-items:center;justify-content:flex-end;gap:12px;height:var(--ld-h);text-decoration:none;color:var(--ink-2);outline:none}
+.ld-sub .ld-a{height:var(--ld-s)}
 .ld-t{max-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;opacity:0;transform:translateX(10px);transition:opacity .16s ease,transform .26s var(--ease-out),max-width 0s linear .26s;font-size:.74rem;line-height:1.1}
-.ld-ch .ld-t{font-family:var(--font-d);font-weight:800;font-stretch:115%;letter-spacing:.1em;text-transform:uppercase;font-size:.72rem;color:var(--ink)}
-.ld-ch .ld-t b{color:var(--accent-text);font-weight:800;margin-right:.5em}
-.ld-r{flex:none;display:block;height:2px;width:8px;border-radius:1px;background:var(--ink-3);opacity:.7;transition:width .25s var(--ease-out),background-color .2s ease,opacity .2s ease}
-.ld-ch .ld-r{width:16px;opacity:1;background:var(--ink-2)}
-.ld-a[aria-current="true"] .ld-r{background:var(--accent);width:22px;opacity:1}
+.ld-ch>.ld-a .ld-t{font-family:var(--font-d);font-weight:800;font-stretch:115%;letter-spacing:.1em;text-transform:uppercase;font-size:.72rem;color:var(--ink)}
+.ld-ch>.ld-a .ld-t b{color:var(--accent-text);font-weight:800;margin-right:.5em}
+.ld-r{flex:none;display:block;height:2px;width:16px;border-radius:1px;background:var(--ink-2);transition:width .25s var(--ease-out),background-color .2s ease}
+.ld-sub .ld-r{width:8px;background:var(--ink-3)}
+.ld-a[aria-current="true"] .ld-r{background:var(--accent);width:24px}
 .ld-a[aria-current="true"] .ld-t{color:var(--accent-text)}
-.ld-mark{position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:0;width:6px;height:6px;margin:-3px -10px 0 0;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(232,20,28,.25);pointer-events:none;will-change:transform}
+.ld-subw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .3s var(--ease-out) .2s}
+.ld-subw>.ld-sub{min-height:0;overflow:hidden}
+.ld-sub .ld-t{transition-delay:0s}
 .ladder:is(:hover,:focus-within,.open) .ld-panel{transform:none;opacity:1}
-.ladder:is(:hover,:focus-within,.open) .ld-t{max-width:var(--ld-w);opacity:1;transform:none;transition:opacity .2s ease calc(var(--k) * 14ms + 60ms),transform .34s var(--ease-out) calc(var(--k) * 14ms + 40ms),max-width 0s}
-.ladder:is(:hover,:focus-within,.open) .ld-r{opacity:1}
-.ld-a:is(:hover,:focus-visible) .ld-t{color:var(--accent-text)}
-.ld-a:is(:hover,:focus-visible) .ld-r{background:var(--accent);width:26px}
+.ladder:is(:hover,:focus-within,.open) .ld-ch>.ld-a .ld-t{max-width:var(--ld-w);opacity:1;transform:none;transition:opacity .2s ease calc(var(--k) * 22ms + 60ms),transform .34s var(--ease-out) calc(var(--k) * 22ms + 40ms),max-width 0s}
+.ladder:is(:hover,:focus-within,.open) .ld-ch:is(:hover,:focus-within,.exp) .ld-subw{grid-template-rows:1fr;transition-delay:0s}
+.ladder:is(:hover,:focus-within,.open) .ld-ch:is(:hover,:focus-within,.exp) .ld-sub .ld-t{max-width:var(--ld-w);opacity:1;transform:none;transition:opacity .18s ease calc(var(--j) * 18ms + 80ms),transform .3s var(--ease-out) calc(var(--j) * 18ms + 60ms),max-width 0s}
+.ld-a:is(:hover,:focus-visible) .ld-t{color:var(--accent-text)!important}
+.ld-a:is(:hover,:focus-visible) .ld-r{background:var(--accent);width:28px}
+.ld-sub .ld-a:is(:hover,:focus-visible) .ld-r{width:16px}
 .ld-a:focus-visible{box-shadow:inset 0 0 0 2px var(--accent-text);border-radius:4px}
+.ld-mark{position:absolute;right:max(10px,env(safe-area-inset-right,0px));top:0;width:6px;height:6px;margin:-3px -10px 0 0;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(232,20,28,.25);pointer-events:none;will-change:transform}
 @media (max-width:640px){.ladder{display:none}}
-@media (prefers-reduced-motion:reduce){.ld-panel,.ld-t,.ld-r{transition:none!important}}
+@media (prefers-reduced-motion:reduce){.ld-panel,.ld-t,.ld-r,.ld-subw{transition:none!important}}
+
+/* ================= favourites wall: a full-bleed rectangle of small crops, some split in four ================= */
+.favs{position:relative;scroll-margin-top:58px;border-top:1px solid var(--line)}
+.wall-wrap{position:relative}
+.wall{position:relative;width:100%;background:#050505;overflow:hidden;overflow:clip}
+.wall .ph{position:absolute;left:0;top:0;aspect-ratio:auto;max-width:none;border-radius:0}
+.wall .ph-open::after{left:6px;top:6px;font-size:.62rem;padding:1px 5px}
+.wall .ph-open::before{inset:6px;--vl:12px}
+.wall-tag{position:absolute;left:0;right:0;top:0;margin:0;display:flex;justify-content:space-between;align-items:flex-start;padding:clamp(14px,2.4vw,30px) clamp(16px,3vw,40px);pointer-events:none;z-index:3;font-family:var(--font-d);font-weight:850;font-stretch:125%;font-size:clamp(1.5rem,4.2vw,3.6rem);line-height:.9;letter-spacing:-.01em;color:var(--accent);text-shadow:0 2px 18px rgba(0,0,0,.45)}
+.wall-n{font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:no-preference){
+  .wall.pre .ph{opacity:0;transform:perspective(700px) rotateY(-88deg) scale(.9)}
+  .wall.go .ph{transition:opacity .35s ease,transform .7s cubic-bezier(0.23,1,0.32,1);transition-delay:calc(var(--d) * 1ms)}
+  .wall-tag span{display:inline-block}
+  .wall.pre~.wall-tag span{opacity:0;transform:translateY(-30%)}
+  .wall.go~.wall-tag span{transition:opacity .4s ease .5s,transform .7s cubic-bezier(0.23,1,0.32,1) .5s}
+}
+
+/* ================= contact portrait ================= */
+.ct-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,4fr);gap:clamp(24px,4vw,64px);align-items:end}
+.ct-me{justify-self:end;width:min(100%,380px)}
+.ct-me .ph{border-radius:14px;box-shadow:0 26px 54px -26px rgba(0,0,0,.9)}
+.ct-me .ph::after{content:"";position:absolute;inset:0;z-index:4;border-radius:inherit;pointer-events:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2),inset 0 0 0 6px rgba(10,10,10,.28)}
+.ct-me .ph-open::after{opacity:1;transform:none}
+.ct-me .pi::after{opacity:.75}
+@media (max-width:760px){.ct-grid{grid-template-columns:1fr}.ct-me{justify-self:start;width:min(72%,300px)}}
 
 /* ================= holo cards: the selection as collectible foil cards, gallery photos with a soft glare ================= */
 .rail{padding-block:16px;margin-block:-16px}
@@ -512,7 +544,7 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
 .rail .ph-open::after{opacity:1;transform:none}
 .card-tag{position:absolute;left:12px;bottom:12px;z-index:5;max-width:calc(100% - 24px);padding:5px 10px 5px 9px;border-left:3px solid var(--accent);background:rgba(10,10,10,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:#fff;font-family:var(--font-d);font-weight:800;font-stretch:118%;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none}
 .pi::before,.pi::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:0;transition:opacity .35s ease}
-.rail .pi::before{opacity:var(--ho,.16);mix-blend-mode:color-dodge;background:repeating-linear-gradient(118deg,rgba(255,0,96,0) 0%,rgba(255,0,96,.55) 6%,rgba(255,196,0,.5) 12%,rgba(0,255,170,.5) 18%,rgba(0,156,255,.55) 24%,rgba(168,0,255,.5) 30%,rgba(255,0,96,0) 36%) 0 0/260% 260%;background-position:calc(var(--mx,50%) + var(--gxp,0%)) var(--my,50%)}
+.rail .pi::before,.ct-me .pi::before{opacity:var(--ho,.16);mix-blend-mode:color-dodge;background:repeating-linear-gradient(118deg,rgba(255,0,96,0) 0%,rgba(255,0,96,.55) 6%,rgba(255,196,0,.5) 12%,rgba(0,255,170,.5) 18%,rgba(0,156,255,.55) 24%,rgba(168,0,255,.5) 30%,rgba(255,0,96,0) 36%) 0 0/260% 260%;background-position:calc(var(--mx,50%) + var(--gxp,0%)) var(--my,50%)}
 .pi::after{background:radial-gradient(circle at var(--mx,50%) var(--my,28%),rgba(255,255,255,.34),rgba(255,255,255,0) 48%);mix-blend-mode:soft-light}
 .rail .pi::after{opacity:.75}
 @media (hover:hover) and (pointer:fine){.rail .ph-open:hover .pi{--ho:.46}.ph-open:hover .pi::after{opacity:.9}}
@@ -626,6 +658,11 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
     </div>
   </section>
 
+  <section class="favs" id="favs" data-city="mix">
+    <h2 class="vh" data-t="favs"></h2>
+    <div class="wall-wrap"><div class="wall" id="wall"></div><p class="wall-tag" aria-hidden="true"><span>BIGBEEZARR</span><span class="wall-n" id="wallN"></span></p></div>
+  </section>
+
   <div class="xband" aria-hidden="true">
     <div class="marquee mq-b mq-x1" id="mq3" data-dir="1"><div class="mq-track"></div></div>
     <div class="marquee mq-x2" id="mq4" data-dir="-1"><div class="mq-track"></div></div>
@@ -633,8 +670,10 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
 
   <section class="contact" id="contact" data-city="mix">
     <div class="wrap">
-      <h2 class="contact-title h-rise" id="contactH"></h2>
-      <p class="contact-p" data-t="contact.p"></p>
+      <div class="ct-grid">
+        <div class="ct-text"><h2 class="contact-title h-rise" id="contactH"></h2><p class="contact-p" data-t="contact.p"></p></div>
+        <div class="ct-me" id="ctMe"></div>
+      </div>
       <dl class="c-list">
         <div><dt data-t="contact.email"></dt><dd><span class="c-val plain">baeypro@gmail.com</span><button class="copy" type="button" data-copy="baeypro@gmail.com"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-t="copy"></span></button></dd></div>
         <div><dt data-t="contact.phone"></dt><dd><span class="c-val plain">(438) 304-7844</span><button class="copy" type="button" data-copy="+1 438 304 7844"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-t="copy"></span></button></dd></div>
@@ -722,7 +761,7 @@ const T = {
     "lb.label": "Visionneuse", "lb.close": "Fermer", "lb.prev": "Photo précédente", "lb.next": "Photo suivante",
     "nav.index": "Index", "nav.contact": "Contact", "nav.aria": "Chapitres", "yrs.aria": "Années",
     "lang.btn": "EN", "lang.aria": "Switch to English", "cur.view": "Voir",
-    "ld.aria": "Plan du site", "menu.btn": "Menu", "menu.title": "Sélection du chapitre", "menu.hint": "↑ ↓ pour choisir · Entrée pour y aller · Échap pour fermer",
+    "favs": "Favoris", "favs.n": n => `${n} favoris`, "me": "Mamadou Beye", "m.favs": n => `${n} photos`, "ld.aria": "Plan du site", "menu.btn": "Menu", "menu.title": "Sélection du chapitre", "menu.hint": "↑ ↓ pour choisir · Entrée pour y aller · Échap pour fermer",
     "menu.save": (n, k) => `Collection ${n} / ${k}`, "m.meta": (p, n) => `${p} ${p > 1 ? "projets" : "projet"} · ${n} photos`, "m.idx": "Tous les projets", "m.ct": "Écrire",
     "lv.k": "Niveau", "lv.intro": "Intro", "ach.k": "Succès débloqué", "ach.ch": n => `Chapitre terminé : ${n}`, "ach.all": k => `Collection complète, les ${k} photos vues`,
     "gyro.btn": "Activer la 3D", "gyro.on": "Inclinez le téléphone", "rail.hint.touch": "Balayez pour parcourir la sélection",
@@ -756,7 +795,7 @@ const T = {
     "lb.label": "Photo viewer", "lb.close": "Close", "lb.prev": "Previous photo", "lb.next": "Next photo",
     "nav.index": "Index", "nav.contact": "Contact", "nav.aria": "Chapters", "yrs.aria": "Years",
     "lang.btn": "FR", "lang.aria": "Passer en français", "cur.view": "View",
-    "ld.aria": "Site map", "menu.btn": "Menu", "menu.title": "Chapter select", "menu.hint": "↑ ↓ to choose · Enter to go · Esc to close",
+    "favs": "Favourites", "favs.n": n => `${n} favourites`, "me": "Mamadou Beye", "m.favs": n => `${n} photos`, "ld.aria": "Site map", "menu.btn": "Menu", "menu.title": "Chapter select", "menu.hint": "↑ ↓ to choose · Enter to go · Esc to close",
     "menu.save": (n, k) => `Collection ${n} / ${k}`, "m.meta": (p, n) => `${p} ${p > 1 ? "projects" : "project"} · ${n} photos`, "m.idx": "Every project", "m.ct": "Write to me",
     "lv.k": "Level", "lv.intro": "Intro", "ach.k": "Achievement unlocked", "ach.ch": n => `Chapter complete: ${n}`, "ach.all": k => `Full collection, all ${k} photos seen`,
     "gyro.btn": "Enable 3D", "gyro.on": "Tilt your phone", "rail.hint.touch": "Swipe to browse the selection",
@@ -804,9 +843,13 @@ DATA.chapters.forEach((c, ci) => c.projects.forEach((p, pi) => (p.lead ? [{ lead
   const list = (e.feature ? [e.feature.img] : []).concat(e.imgs);
   list.forEach((i, n) => addSeq(i, { kind: "p", ci, pi, ei, n: n + 1, k: list.length }));
 })));
+DATA.wall.forEach((i, n) => addSeq(i, { kind: "wall", n: n + 1, k: DATA.wall.length }));
+addSeq(DATA.me, { kind: "me", n: 1, k: 1 });
 function ctxTitle(c) {
   if (c.kind === "sel") return t("sel") + (heroLab(c.i) ? " · " + heroLab(c.i).name : "");
   if (c.kind === "about") return t("about");
+  if (c.kind === "wall") return t("favs");
+  if (c.kind === "me") return t("me");
   const p = DATA.chapters[c.ci].projects[c.pi];
   return edTitle(p, edsOf(p)[c.ei]);
 }
@@ -1411,7 +1454,7 @@ function updateHud(force) {
     const r = el.getBoundingClientRect();
     if (r.top <= probe && r.bottom > probe) {
       city = el.dataset.city;
-      if (el.classList.contains("chapter") || el.id === "index" || el.id === "contact") sec = el.id;
+      if (el.classList.contains("chapter") || el.id === "index" || el.id === "favs" || el.id === "contact") sec = el.id;
       if (el.classList.contains("ed")) ed = el.id;
     }
   }
@@ -1572,7 +1615,7 @@ if (fine && !calm()) {
     if (b) {
       const r = b.getBoundingClientRect();
       const px = (e.clientX - r.left) / r.width - .5, py = (e.clientY - r.top) / r.height - .5;
-      const pi = b.firstChild, k = b.closest(".rail") ? 15 : 4.5;
+      const pi = b.firstChild, k = b.closest(".rail, .ct-me") ? 15 : 4.5;
       pi.style.setProperty("--ry", (px * k).toFixed(2) + "deg");
       pi.style.setProperty("--rx", (-py * k).toFixed(2) + "deg");
       pi.style.setProperty("--mx", ((px + .5) * 100).toFixed(1) + "%");
@@ -1581,6 +1624,17 @@ if (fine && !calm()) {
     }
   }, { passive: true });
   document.addEventListener("pointerleave", () => { cur.classList.remove("on"); untilt(tiltEl); tiltEl = null; });
+  /* the page can scroll under a still pointer: re-check what is under it */
+  let lensRaf = 0;
+  addEventListener("scroll", () => {
+    if (first || lensRaf) return;
+    lensRaf = requestAnimationFrame(() => {
+      lensRaf = 0;
+      const el = document.elementFromPoint(tx, ty), b = !LB.open && el && el.closest ? el.closest(".ph-open") : null;
+      cur.classList.toggle("on", !!b);
+      if (b !== tiltEl) { untilt(tiltEl); tiltEl = b; if (b) curN.textContent = "N° " + b.dataset.n; }
+    });
+  }, { passive: true });
 }
 
 /* ================= game layer ================= */
@@ -1624,6 +1678,7 @@ function xpOf(sec) {
   const ci = DATA.chapters.findIndex(c => c.id === sec);
   if (ci >= 0) return chSeen[ci] / chTot[ci];
   if (!sec) return introIds.filter(i => seen.has(i)).length / introIds.length;
+  if (sec === "favs") return DATA.wall.filter(i => seen.has(i)).length / DATA.wall.length;
   return seen.size / DATA.total;
 }
 function paintCol() { colRaf = 0; hudCol.textContent = pad(seen.size); hudXp.style.setProperty("--p", xpOf(curSec).toFixed(3)); }
@@ -1663,11 +1718,11 @@ function levelUp(ci) {
 }
 function levelNo(sec) {
   const ci = DATA.chapters.findIndex(c => c.id === sec), N = DATA.chapters.length;
-  return ci >= 0 ? ci + 1 : sec === "index" ? N + 1 : sec === "contact" ? N + 2 : 0;
+  return ci >= 0 ? ci + 1 : sec === "index" ? N + 1 : sec === "favs" ? N + 2 : sec === "contact" ? N + 3 : 0;
 }
 function levelName(sec) {
   const c = DATA.chapters.find(c => c.id === sec);
-  return c ? L(c.name) : sec === "index" ? "Index" : sec === "contact" ? "Contact" : t("lv.intro");
+  return c ? L(c.name) : sec === "index" ? "Index" : sec === "favs" ? t("favs") : sec === "contact" ? "Contact" : t("lv.intro");
 }
 function gameHud(sec, force) {
   if (sec !== lvSec || force) {
@@ -1692,7 +1747,7 @@ addEventListener("scroll", () => {
 const menu = $("#menu"), menuList = $("#menuList"), menuBg = $("#menuBg"), menuBtn = $("#menuBtn");
 const firstImgOf = c => { const p = c.projects[0]; return p.lead ? p.lead.img : edsOf(p)[0].imgs[0]; };
 const MENU = DATA.chapters.map((c, ci) => ({ id: c.id, ci, img: firstImgOf(c), name: () => L(c.name), meta: () => t("m.meta")(c.projects.length, chTot[ci]) }))
-  .concat([{ id: "index", ci: -1, img: null, name: () => "Index", meta: () => t("m.idx") }, { id: "contact", ci: -2, img: DATA.hero[0], name: () => "Contact", meta: () => t("m.ct") }]);
+  .concat([{ id: "index", ci: -1, img: null, name: () => "Index", meta: () => t("m.idx") }, { id: "favs", ci: -3, img: DATA.wall[0], name: () => t("favs"), meta: () => t("m.favs")(DATA.wall.length) }, { id: "contact", ci: -2, img: DATA.me, name: () => "Contact", meta: () => t("m.ct") }]);
 const mRows = MENU.map((m, k) => {
   const a = mk("a", "mrow", mk("li", "", menuList));
   a.href = "#" + m.id; a.style.setProperty("--k", k);
@@ -1711,7 +1766,7 @@ const mRows = MENU.map((m, k) => {
 function menuFill() {
   MENU.forEach(m => {
     m.nameEl.textContent = m.name(); m.metaEl.textContent = m.meta();
-    const p = m.ci >= 0 ? chSeen[m.ci] / chTot[m.ci] : seen.size / DATA.total;
+    const p = m.ci >= 0 ? chSeen[m.ci] / chTot[m.ci] : m.ci === -3 ? DATA.wall.filter(i => seen.has(i)).length / DATA.wall.length : seen.size / DATA.total;
     m.xpEl.style.setProperty("--p", p.toFixed(3)); m.pctEl.textContent = Math.round(p * 100) + " %";
     m.a.classList.toggle("now", m.id === curSec);
     if (m.id === curSec) m.a.setAttribute("aria-current", "true"); else m.a.removeAttribute("aria-current");
@@ -1818,57 +1873,135 @@ if (coarse && !calm() && "DeviceOrientationEvent" in window) {
   } else start();
 }
 
-/* ladder: chapters and projects as rungs; a red dot follows the reading position */
+/* ladder: the big sections as rungs; hovering one unfolds its projects; a red dot follows the reading position */
 const ladder = $("#ladder"), ldList = $("#ldList"), ldMark = $("#ldMark");
-const LD = [];
+const LDC = [];
 let ldOpenedAt = 0;
-DATA.chapters.forEach((c, ci) => {
-  LD.push({ id: c.id, ch: true, label: () => `<b>${pad2(ci + 1)}</b>${L(c.name)}` });
-  c.projects.forEach(p => LD.push({ id: "p-" + p.id, ch: false, label: () => L(p.title) }));
-});
-LD.push({ id: "index", ch: true, label: () => `<b>${pad2(DATA.chapters.length + 1)}</b>Index` }, { id: "contact", ch: true, label: () => `<b>${pad2(DATA.chapters.length + 2)}</b>Contact` });
-LD.forEach((it, k) => {
-  const li = mk("li", it.ch ? "ld-ch" : "ld-p", ldList), a = mk("a", "ld-a", li);
-  a.href = "#" + it.id; a.style.setProperty("--k", k);
-  it.t = mk("span", "ld-t", a); mk("span", "ld-r", a); it.a = a; it.el = document.getElementById(it.id);
+DATA.chapters.forEach((c, ci) => LDC.push({ id: c.id, label: () => `<b>${pad2(ci + 1)}</b>${L(c.name)}`, subs: c.projects.map(p => ({ id: "p-" + p.id, label: () => L(p.title) })) }));
+const N0 = DATA.chapters.length;
+LDC.push({ id: "index", label: () => `<b>${pad2(N0 + 1)}</b>Index`, subs: [] },
+         { id: "favs", label: () => `<b>${pad2(N0 + 2)}</b>${t("favs")}`, subs: [] },
+         { id: "contact", label: () => `<b>${pad2(N0 + 3)}</b>Contact`, subs: [] });
+const ldAll = [];
+LDC.forEach((c, k) => {
+  const li = mk("li", "ld-ch", ldList), a = mk("a", "ld-a", li);
+  a.href = "#" + c.id; a.style.setProperty("--k", k);
+  c.t = mk("span", "ld-t", a); mk("span", "ld-r", a); c.a = a; c.li = li; c.el = document.getElementById(c.id); ldAll.push(c);
+  if (c.subs.length) {
+    const ol = mk("ol", "ld-sub", mk("div", "ld-subw", li));
+    c.subs.forEach((p, j) => {
+      const b = mk("a", "ld-a", mk("li", "", ol)); b.href = "#" + p.id; b.style.setProperty("--j", j);
+      p.t = mk("span", "ld-t", b); mk("span", "ld-r", b); p.a = b; p.el = document.getElementById(p.id); p.parent = c; ldAll.push(p);
+      b.addEventListener("click", () => { ladder.classList.remove("open"); li.classList.remove("exp"); b.blur(); });
+    });
+  }
   a.addEventListener("click", e => {
     if (performance.now() - ldOpenedAt < 700) { e.preventDefault(); return; }
-    ladder.classList.remove("open"); a.blur();
+    if (coarse && c.subs.length && !li.classList.contains("exp")) { e.preventDefault(); LDC.forEach(o => o.li.classList.toggle("exp", o === c)); return; }
+    ladder.classList.remove("open"); LDC.forEach(o => o.li.classList.remove("exp")); a.blur();
   });
 });
-const ldFill = () => { LD.forEach(it => it.t.innerHTML = it.label()); ladder.setAttribute("aria-label", t("ld.aria")); };
+const ldFill = () => { ldAll.forEach(it => it.t.innerHTML = it.label()); ladder.setAttribute("aria-label", t("ld.aria")); };
 ldFill();
 $("#lang").addEventListener("click", ldFill);
 ladder.addEventListener("pointerdown", e => { if (e.pointerType !== "mouse" && !ladder.classList.contains("open")) { ladder.classList.add("open"); ldOpenedAt = performance.now(); } });
-document.addEventListener("pointerdown", e => { if (!ladder.contains(e.target)) ladder.classList.remove("open"); });
-let ldTops = [], ldCur = -1;
+document.addEventListener("pointerdown", e => { if (!ladder.contains(e.target)) { ladder.classList.remove("open"); LDC.forEach(o => o.li.classList.remove("exp")); } });
+let ldTops = [], ldCur = null;
 function ldMeasure() {
-  const h = Math.max(11, Math.min(20, Math.floor((innerHeight - 170) / LD.length)));
-  ladder.style.setProperty("--ld-h", h + "px");
-  ldTops = LD.map(it => it.el ? it.el.getBoundingClientRect().top + scrollY : 0);
+  ladder.style.setProperty("--ld-top", Math.max(76, Math.round(innerHeight / 2 - (LDC.length * 22 + 28) / 2)) + "px");
+  ldTops = LDC.map(c => c.el ? c.el.getBoundingClientRect().top + scrollY : 0);
+  LDC.forEach(c => c.subs.forEach(p => p.top = p.el ? p.el.getBoundingClientRect().top + scrollY : 0));
   ldPlace();
 }
 function ldPlace() {
   if (!ldTops.length) return;
-  const y = scrollY + innerHeight * .4, h = parseFloat(ladder.style.getPropertyValue("--ld-h")) || 18;
+  const y = scrollY + innerHeight * .4;
   let i = 0;
   while (i < ldTops.length - 1 && ldTops[i + 1] <= y) i++;
-  const top = ldTops[i], next = i < ldTops.length - 1 ? ldTops[i + 1] : root.scrollHeight;
-  const f = y < ldTops[0] ? 0 : Math.max(0, Math.min(1, (y - top) / Math.max(1, next - top)));
-  const pos = y < ldTops[0] ? 0 : (i + f) * h + h / 2;
-  ldMark.style.transform = `translateY(${(14 + pos).toFixed(1)}px)`;
-  const cur = y < ldTops[0] ? -1 : i;
+  const before = y < ldTops[0], top = ldTops[i], next = i < ldTops.length - 1 ? ldTops[i + 1] : root.scrollHeight;
+  const f = before ? 0 : Math.max(0, Math.min(1, (y - top) / Math.max(1, next - top)));
+  const a = LDC[i].a, a2 = i < LDC.length - 1 ? LDC[i + 1].a : null;
+  const y0 = a.offsetTop + a.offsetHeight / 2, y1 = a2 ? a2.offsetTop + a2.offsetHeight / 2 : y0 + a.offsetHeight;
+  ldMark.style.transform = `translateY(${(14 + (before ? LDC[0].a.offsetTop + 11 : y0 + f * (y1 - y0))).toFixed(1)}px)`;
+  let cur = before ? null : LDC[i];
+  if (cur) { const sub = cur.subs.filter(p => p.top <= y).pop(); if (sub) cur = sub; }
   if (cur !== ldCur) {
-    if (ldCur >= 0) LD[ldCur].a.removeAttribute("aria-current");
-    if (cur >= 0) LD[cur].a.setAttribute("aria-current", "true");
+    if (ldCur) { ldCur.a.removeAttribute("aria-current"); if (ldCur.parent) ldCur.parent.a.removeAttribute("aria-current"); }
+    if (cur) { cur.a.setAttribute("aria-current", "true"); if (cur.parent) cur.parent.a.setAttribute("aria-current", "true"); }
     ldCur = cur;
   }
 }
 let ldRaf = 0;
-addEventListener("scroll", () => { if (!ldRaf) ldRaf = requestAnimationFrame(() => { ldRaf = 0; ldPlace(); }); }, { passive: true });
+const ldTick = () => { if (!ldRaf) ldRaf = requestAnimationFrame(() => { ldRaf = 0; ldPlace(); }); };
+addEventListener("scroll", ldTick, { passive: true });
+ladder.addEventListener("transitionend", ldTick);
 addEventListener("resize", () => requestAnimationFrame(ldMeasure));
 if ("ResizeObserver" in window) new ResizeObserver(() => requestAnimationFrame(ldMeasure)).observe(document.body);
 requestAnimationFrame(ldMeasure);
+
+/* favourites wall: rows of small crops justified to the full width, every few cells split in four; the rows are
+   then scaled so the wall fills a rectangle about one screen tall; tiles flip in as a wave the first time it shows */
+const wallEl = $("#wall");
+const wallTiles = DATA.wall.map(i => { const f = tile(i); wallEl.appendChild(f); return { f, a: DATA.img[i][0] / DATA.img[i][1] }; });
+let wallW = 0;
+function wallLayout() {
+  const W = wallEl.clientWidth; if (!W || Math.abs(W - wallW) < 1) return; wallW = W;
+  const g = W < 640 ? 2 : 3, n = wallTiles.length;
+  const H = Math.round(W < 640 ? Math.min(innerHeight * 2.3, Math.max(innerHeight * 1.2, n * 6200 / W)) : Math.max(560, Math.min(innerHeight, 1100)));
+  const plan = T => {
+    const rows = []; let row = [], x = 0, k = 0, c = 0;
+    while (k < n) {
+      const quad = c % 7 === 4 && n - k >= 4;
+      const cell = quad ? { q: [k, k + 1, k + 2, k + 3], w: T } : { q: [k], w: T * Math.max(.62, Math.min(1.7, wallTiles[k].a)) };
+      k += cell.q.length; c++;
+      row.push(cell); x += cell.w + g;
+      if (x - g >= W) { rows.push(row); row = []; x = 0; }
+    }
+    if (row.length) { if (rows.length && x - g < W * .55) rows[rows.length - 1].push(...row); else rows.push(row); }
+    return rows;
+  };
+  let best = null;
+  for (let T = 60; T <= 320; T += 2) {
+    const rows = plan(T), err = Math.abs(rows.length * T - H) / H + Math.abs(rows.length * (T + g) - g - H) / H * .2;
+    if (!best || err < best.err) best = { rows, err, T };
+  }
+  const rows = best.rows, mult = rows.map((r, i) => [1.18, .86, 1.04, .8, 1.12, .92, 1][i % 7]);
+  const sumM = mult.reduce((a, b) => a + b, 0), avail = H - g * (rows.length - 1);
+  let y = 0;
+  rows.forEach((row, ri) => {
+    const rh = avail * mult[ri] / sumM, tot = row.reduce((a, c) => a + c.w, 0), sc = (W - g * (row.length - 1)) / tot;
+    let x = 0;
+    row.forEach(cell => {
+      const w = cell.w * sc;
+      if (cell.q.length === 1) place(wallTiles[cell.q[0]].f, x, y, w, rh);
+      else {
+        const hw = (w - g) / 2, hh = (rh - g) / 2;
+        cell.q.forEach((ti, j) => place(wallTiles[ti].f, x + (j % 2) * (hw + g), y + (j >> 1) * (hh + g), hw, hh));
+      }
+      x += w + g;
+    });
+    y += rh + g;
+  });
+  wallEl.style.height = H + "px";
+  function place(f, px, py, w, h) {
+    Object.assign(f.style, { left: px.toFixed(1) + "px", top: py.toFixed(1) + "px", width: w.toFixed(1) + "px", height: h.toFixed(1) + "px" });
+    f.style.setProperty("--d", Math.round((px / W) * 520 + (py / H) * 380));
+  }
+}
+wallLayout();
+if ("ResizeObserver" in window) new ResizeObserver(() => wallLayout()).observe(wallEl); else addEventListener("resize", wallLayout);
+$("#wallN").textContent = pad(DATA.wall.length);
+if (!calm() && "IntersectionObserver" in window) {
+  wallEl.classList.add("pre");
+  const wio = new IntersectionObserver(es => { if (!es[0].isIntersecting) return; wio.disconnect(); wallEl.classList.add("go"); requestAnimationFrame(() => wallEl.classList.remove("pre")); setTimeout(() => wallEl.classList.remove("go"), 1800); }, { threshold: .18 });
+  wio.observe(wallEl);
+}
+
+/* contact: Mamadou's portrait as a holo card */
+{
+  const f = tile(DATA.me); $("#ctMe").appendChild(f);
+  const tg = mk("span", "card-tag", f); tg.setAttribute("aria-hidden", "true"); tg.textContent = "Mamadou Beye";
+}
 
 /* magnetic buttons: they lean toward the pointer, then settle back */
 if (fine && !calm()) {
