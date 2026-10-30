@@ -50,7 +50,7 @@ CHAPTERS = [
          {"year": "2026", "place": "Saly", "sub": T("Coachella Edition, au Mövenpick Resort Lamantin", "Coachella Edition, at the Mövenpick Resort Lamantin"), "imgs": r(29, 41)},
          {"year": "2025", "label": "All White Party", "place": "Saly",
           "sub": T("Le 18 août, au Mövenpick Resort Lamantin", "August 18, at the Mövenpick Resort Lamantin"),
-          "imgs": [i for i in ids["jelani25"] if i in (166, 168, 169)]},
+          "imgs": [i for i in ids["jelani25"] if i in (166, 167, 168, 169)]},
          {"year": "2025", "label": "La Croisette",
           "sub": T("Le 26 juillet, avec Jeeba, Bass Thioung et Dip Doundou Guiss en live", "July 26, with Jeeba, Bass Thioung and Dip Doundou Guiss live"),
           "imgs": [i for i in ids["jelani25"] if 160 <= i <= 165] + ids["croisette_add"]},
@@ -222,7 +222,7 @@ CHAPTERS = [
 H = ids["heroNew"]
 C = ids["celebs"]; K = ids["cards2"]; Q = ids["cards3"]
 S4 = ids["cards4"]
-HERO = [H[0], C[1], Q["Tiakola"], S4["ISS 814"], Q["Mia Guissé"], 167, 3, Q["Massamba Amadeus"], S4["Jeeba"], K["Astar"], H[2], S4["Ashs the Best"], K["Dudu"], Q["Zepeck"], 465,
+HERO = [H[0], C[1], Q["Tiakola"], S4["ISS 814"], Q["Mia Guissé"], ids["alphizi"], 3, Q["Massamba Amadeus"], S4["Jeeba"], K["Astar"], H[2], S4["Ashs the Best"], K["Dudu"], Q["Zepeck"], 465,
         Q["Bass Thioung"], S4["Dip Doundou Guiss"], H[3], Q["Ada Boy"], Q["Babacar Ossoko"], K["VJ"], Q["Ndakhte"], Q["Pape Djibril Ndiaye"], Q["Abba No Stress"], Q["Jean Jacques Boissy"]]
 ME = 159
 WALL = [2, 6, 7, 145, 146, 147, 148, 149, 151] + ids["wall"]
@@ -233,7 +233,7 @@ HERO_LAB = {
   C[1]: {"name": "Wally Seck", "meta": DK26},
   Q["Tiakola"]: {"name": "Tiakola", "meta": T("MAD Festival, Montréal 2025")},
   Q["Mia Guissé"]: {"name": "Mia Guissé", "meta": T("Concert de Maggu VJ, Dakar 2026", "Maggu VJ concert, Dakar 2026")},
-  167: {"name": "Alphizi", "meta": T("Créateur des soirées Jelani, Dakar 2025", "Creator of the Jelani parties, Dakar 2025")},
+  ids["alphizi"]: {"name": "Alphizi", "meta": T("Créateur des soirées Jelani, Dakar 2026", "Creator of the Jelani parties, Dakar 2026")},
   3: {"name": "Uncle Waffles", "meta": T("")},
   Q["Massamba Amadeus"]: {"name": "Massamba Amadeus", "meta": T("Festival DLB, Dakar 2025", "DLB festival, Dakar 2025")},
   K["Astar"]: {"name": "Astar", "meta": T("Concert Canabasse & Astar, Montréal 2026")},
