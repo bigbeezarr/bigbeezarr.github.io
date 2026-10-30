@@ -43,14 +43,21 @@ CHAPTERS = [
                "It all started with nights out with my friends. The night soon became my favourite ground: packed dance floors, smiles, the warmth of a crowd in motion."),
     "projects": [
       {"id": "jelani", "title": "Jelani", "city": "sn", "place": "Dakar · Saly",
-       "sub": T("Les soirées Jelani, imaginées par Alphizi, qui rythment chaque été au Sénégal.", "The Jelani parties, created by Alphizi, the beat of every summer in Senegal."),
+       "sub": T("Les soirées Jelani, imaginées par Alphizi, qui rythment chaque été au Sénégal, avec des artistes en live.",
+                "The Jelani parties, created by Alphizi, the beat of every summer in Senegal, with artists performing live."),
+       "credits": [{"k": T("Sur scène", "On stage"), "names": ["Ashs the Best", "Bass Thioung", "Dip Doundou Guiss", "ISS 814", "Jeeba", "Massamba Amadeus"]}],
        "eds": [
          {"year": "2026", "place": "Saly", "sub": T("Coachella Edition, au Mövenpick Resort Lamantin", "Coachella Edition, at the Mövenpick Resort Lamantin"), "imgs": r(29, 41)},
-         {"year": "2025", "place": "Dakar · Saly",
-          "sub": T("Summer Vibes, jusqu'à l'All White Party du Mövenpick Resort Lamantin, à Saly",
-                   "Summer Vibes, all the way to the All White Party at the Mövenpick Resort Lamantin in Saly"),
-          "imgs": [i for i in ids["jelani25"] if i != 167]},
-         {"year": "2024", "place": "Dakar", "sub": T("Summer Vibes, édition caribéenne", "Summer Vibes, Caribbean edition"), "imgs": r(16, 28)},
+         {"year": "2025", "label": "All White Party", "place": "Saly",
+          "sub": T("Le 18 août, au Mövenpick Resort Lamantin", "August 18, at the Mövenpick Resort Lamantin"),
+          "imgs": [i for i in ids["jelani25"] if i in (166, 168, 169)]},
+         {"year": "2025", "label": "La Croisette",
+          "sub": T("Le 26 juillet, avec Jeeba, Bass Thioung et Dip Doundou Guiss en live", "July 26, with Jeeba, Bass Thioung and Dip Doundou Guiss live"),
+          "imgs": [i for i in ids["jelani25"] if 160 <= i <= 165] + ids["croisette_add"]},
+         {"year": "2024", "label": "All White Party", "place": "Dakar",
+          "sub": T("Avec Massamba Amadeus en invité", "With Massamba Amadeus as guest"), "imgs": ids["aw24"]},
+         {"year": "2024", "label": "Caribbean Edition", "place": "Dakar",
+          "sub": T("Summer Vibes, avec ISS 814 en live", "Summer Vibes, with ISS 814 live"), "imgs": r(16, 28) + ids["carib_add"]},
        ]},
       {"id": "bashment", "title": "The Bashment", "city": "sn", "place": "Dakar",
        "sub": T("Les soirées de King Mouss, qui ont fait souffler un nouveau son et une nouvelle énergie sur la nuit dakaroise.",
@@ -142,8 +149,16 @@ CHAPTERS = [
        "imgs": ids["dlb"]},
       {"id": "canabasse", "title": "Canabasse & Astar", "city": "mtl", "place": "Montréal", "year": "2026",
        "sub": T("Canabasse et Astar en concert à Montréal.", "Canabasse and Astar in concert in Montréal."), "imgs": [4] + r(106, 117)},
+      {"id": "ngoundieu", "title": "Ngoundieu & Friends", "city": "mtl", "place": "Montréal",
+       "sub": T("Ngoundieu sur scène à Montréal : son concert avec ses invités, puis son passage au concert de Canabasse & Astar.",
+                "Ngoundieu on stage in Montréal: his own concert with guests, then his set at the Canabasse & Astar concert."),
+       "eds": [
+         {"year": "2026", "sub": T("Sur scène au concert de Canabasse & Astar", "On stage at the Canabasse & Astar concert"), "imgs": ids["app26"]},
+         {"year": "2025", "sub": T("Ngoundieu & Friends, son concert", "Ngoundieu & Friends, his concert"), "imgs": ids["ngo25"]},
+       ]},
       {"id": "ashs", "title": "Ashs the Best", "city": "mtl", "place": "Montréal", "year": "2024",
-       "sub": T("Ashs the Best en concert à Montréal.", "Ashs the Best in concert in Montréal."), "imgs": r(87, 93)},
+       "sub": T("Ashs the Best en concert à Montréal. On le retrouve aussi sur scène aux soirées Jelani de 2025 et 2026.",
+                "Ashs the Best in concert in Montréal. He also performed at the Jelani parties in 2025 and 2026."), "imgs": r(87, 93) + [ids["ashs199"]]},
     ]
   },
   {
@@ -206,8 +221,9 @@ CHAPTERS = [
 
 H = ids["heroNew"]
 C = ids["celebs"]; K = ids["cards2"]; Q = ids["cards3"]
-HERO = [H[0], C[1], Q["Tiakola"], Q["Mia Guissé"], 167, 3, Q["Massamba Amadeus"], K["Astar"], H[2], K["Dudu"], Q["Zepeck"], 465,
-        Q["Bass Thioung"], H[3], Q["Ada Boy"], Q["Babacar Ossoko"], K["VJ"], Q["Ndakhte"], Q["Pape Djibril Ndiaye"], Q["Abba No Stress"], Q["Jean Jacques Boissy"]]
+S4 = ids["cards4"]
+HERO = [H[0], C[1], Q["Tiakola"], S4["ISS 814"], Q["Mia Guissé"], 167, 3, Q["Massamba Amadeus"], S4["Jeeba"], K["Astar"], H[2], S4["Ashs the Best"], K["Dudu"], Q["Zepeck"], 465,
+        Q["Bass Thioung"], S4["Dip Doundou Guiss"], H[3], Q["Ada Boy"], Q["Babacar Ossoko"], K["VJ"], Q["Ndakhte"], Q["Pape Djibril Ndiaye"], Q["Abba No Stress"], Q["Jean Jacques Boissy"]]
 ME = 159
 WALL = [2, 6, 7, 145, 146, 147, 148, 149, 151] + ids["wall"]
 CAP = {228: "Collège LaSalle", 229: "Bleu Ciel", 230: "Bleu Ciel", 231: "1er Mai", 232: "Frikiton", 234: "Amesika", 235: "Nkundi", 236: "Né à Montréal"}
@@ -234,6 +250,10 @@ HERO_LAB = {
   Q["Pape Djibril Ndiaye"]: {"name": "Pape Djibril Ndiaye", "meta": T("Shooting Cenabou, Dakar 2025", "Cenabou shoot, Dakar 2025")},
   Q["Abba No Stress"]: {"name": "Abba No Stress", "meta": DK26},
   Q["Jean Jacques Boissy"]: {"name": "Jean Jacques Boissy", "meta": T("OC Runs, Dakar 2025")},
+  S4["ISS 814"]: {"name": "ISS 814", "meta": T("Jelani Caribbean Edition, Dakar 2024")},
+  S4["Jeeba"]: {"name": "Jeeba", "meta": T("Jelani La Croisette, Dakar 2025")},
+  S4["Ashs the Best"]: {"name": "Ashs the Best", "meta": T("Concert à Montréal, 2024", "Concert in Montréal, 2024")},
+  S4["Dip Doundou Guiss"]: {"name": "Dip Doundou Guiss", "meta": T("Jelani La Croisette, Dakar 2025")},
 }
 ABOUT = [11, 12, 13, 14, 15]
 
