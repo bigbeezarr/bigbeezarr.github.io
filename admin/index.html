@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https://*.workers.dev http://127.0.0.1:8787 http://localhost:8787; media-src blob:; connect-src 'self' https://*.workers.dev http://127.0.0.1:8787 http://localhost:8787; base-uri 'none'; form-action 'self'; object-src 'none'">
+<title>Tableau de bord · BIGBEEZARR</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0A0A0A">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A0A0A'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23F3F1EC' stroke-width='1.8'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='4.6' fill='none' stroke='%23E8141C' stroke-width='2' transform='rotate(-18 16 16)'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..800&display=swap">
+<link rel="stylesheet" href="../galerie/galerie.css">
+<style>
+body{font-size:.97rem}
+.page{padding-block:clamp(24px,4vw,44px) 80px}
+h1.t{margin:0;font-family:var(--font-d);font-weight:850;font-stretch:108%;font-size:clamp(2rem,4.6vw,3.4rem);line-height:.95;letter-spacing:-.02em}
+h2.s{margin:0 0 12px;font-family:var(--font-d);font-weight:800;font-size:1.2rem}
+.head{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 20px;margin-bottom:22px}
+.head .sp{flex:1}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:22px}
+.stat{padding:14px 16px;border-radius:var(--radius);background:var(--ground-2);border:1px solid var(--line)}
+.stat b{display:block;font-family:var(--font-d);font-weight:800;font-size:1.5rem;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat span{color:var(--ink-3);font-size:.82rem}
+.glist{display:grid;gap:8px}
+.grow{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:16px;align-items:center;padding:10px 14px 10px 10px;border-radius:var(--radius);background:var(--ground-2);border:1px solid var(--line);cursor:pointer;transition:border-color .15s ease}
+@media (hover:hover) and (pointer:fine){.grow:hover{border-color:var(--line-2)}}
+.grow .cv{width:72px;height:72px;border-radius:10px;background:var(--raise);overflow:hidden}
+.grow .cv img{width:100%;height:100%;object-fit:cover}
+.grow b{font-family:var(--font-d);font-weight:750;font-size:1.05rem}
+.grow .sub{color:var(--ink-3);font-size:.86rem;display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:2px}
+.pill{display:inline-flex;align-items:center;height:22px;padding:0 9px;border-radius:999px;font-family:var(--font-d);font-weight:700;font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line-2);color:var(--ink-2)}
+.pill.red{border-color:transparent;background:color-mix(in oklab,var(--accent) 24%,transparent);color:var(--accent-text)}
+.pill.ok{border-color:transparent;background:color-mix(in oklab,var(--ok) 22%,transparent);color:#7FE0B3}
+.pill.warn{border-color:transparent;background:color-mix(in oklab,var(--warn) 22%,transparent);color:#F5CF7A}
+@media (max-width:640px){.grow{grid-template-columns:56px minmax(0,1fr)}.grow .cv{width:56px;height:56px}.grow .acts{grid-column:1/-1}}
+.linkbox{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 10px 10px 14px;border-radius:var(--radius);background:var(--field);border:1px solid var(--line);margin:16px 0 18px}
+.linkbox code{flex:1;min-width:0;flex-basis:200px;font-size:.86rem;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.atabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;overflow-x:auto;scrollbar-width:none}
+.atabs button{height:44px;padding:0 14px;border:0;border-bottom:2px solid transparent;background:transparent;font-family:var(--font-d);font-weight:700;font-size:.9rem;color:var(--ink-3);cursor:pointer;white-space:nowrap}
+.atabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.drop{display:grid;place-items:center;text-align:center;gap:8px;padding:28px 16px;border:1.5px dashed var(--line-2);border-radius:var(--radius);background:var(--field);transition:border-color .15s ease,background-color .15s ease}
+.drop.over{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,var(--field))}
+.drop b{font-family:var(--font-d);font-weight:750;font-size:1.1rem}
+.queue{margin-top:14px;padding:14px 16px;border-radius:var(--radius);background:var(--ground-2);border:1px solid var(--line)}
+.queue .qhead{display:flex;gap:12px;align-items:center;margin-bottom:10px;font-family:var(--font-d);font-weight:700}
+.queue .qlist{display:grid;gap:4px;max-height:220px;overflow:auto;margin-top:10px;font-size:.86rem}
+.queue .qi{display:grid;grid-template-columns:minmax(0,1fr) 90px 64px;gap:10px;align-items:center;color:var(--ink-2)}
+.queue .qi span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.queue .qi .st{text-align:right;font-variant-numeric:tabular-nums}
+.queue .qi.err .st{color:var(--bad)}
+.queue .qi.ok .st{color:#7FE0B3}
+.ptools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:18px 0 12px}
+.ptools .sp{flex:1}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+@media (max-width:520px){.pgrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}}
+.pt{position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--raise);cursor:pointer}
+.pt img{width:100%;height:100%;object-fit:cover}
+.pt .raw{position:absolute;inset:0;display:grid;place-content:center;text-align:center;font-family:var(--font-d);font-weight:700;color:var(--ink-3);font-size:.75rem;padding:8px;word-break:break-all}
+.pt .raw b{font-size:1.05rem;color:var(--ink-2)}
+.pt .ck{position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.35);display:grid;place-items:center;opacity:0;transition:opacity .12s ease}
+.pt .ck svg{width:12px;height:12px;opacity:0}
+.pgrid.picking .pt .ck,.pt.on .ck{opacity:1}
+.pt.on .ck{background:var(--accent);border-color:var(--accent)}.pt.on .ck svg{opacity:1}
+.pt.on::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 0 3px var(--accent);border-radius:8px}
+@media (hover:hover) and (pointer:fine){.pt:hover .ck{opacity:1}}
+.pt .tags{position:absolute;left:6px;right:6px;bottom:6px;display:flex;flex-wrap:wrap;gap:4px}
+.pt .tags span{padding:2px 6px;border-radius:999px;background:rgba(10,10,10,.78);font-family:var(--font-d);font-weight:700;font-size:.64rem;letter-spacing:.04em}
+.pt .tags .cov{background:var(--accent)}
+.form{display:grid;gap:18px;max-width:720px}
+.form .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:640px){.form .two{grid-template-columns:1fr}}
+.kinds{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+@media (max-width:640px){.kinds{grid-template-columns:1fr}}
+.kind{position:relative;display:block;padding:14px;border-radius:12px;border:1px solid var(--line-2);background:var(--field);cursor:pointer}
+.kind input{position:absolute;opacity:0}
+.kind b{display:block;font-family:var(--font-d);font-weight:750;margin-bottom:3px}
+.kind span{color:var(--ink-3);font-size:.84rem;line-height:1.35;display:block}
+.kind:has(input:checked){border-color:var(--accent);background:color-mix(in oklab,var(--accent) 9%,var(--field))}
+.kind:has(input:focus-visible){outline:2px solid var(--accent-text);outline-offset:2px}
+.box{padding:16px 18px;border-radius:var(--radius);background:var(--ground-2);border:1px solid var(--line)}
+.box p{margin:0 0 10px;color:var(--ink-2)}
+.box.warnbox{border-color:color-mix(in oklab,var(--warn) 45%,transparent)}
+.guest{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px;border-radius:12px;background:var(--ground-2);border:1px solid var(--line)}
+.guest b{font-family:var(--font-d);font-weight:750}
+.guest code{display:block;font-size:.78rem;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ev-log{display:grid;gap:2px;font-size:.88rem;color:var(--ink-2)}
+.ev-log div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.login{min-height:calc(100dvh - 61px);display:grid;place-items:center;padding:24px}
+.login .card{width:min(420px,100%);padding:28px}
+input[type=range]{accent-color:var(--accent);width:100%}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap bar-in">
+    <a class="logo" href="../" aria-label="BIGBEEZARR">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" stroke-width="1.6"/><ellipse cx="16" cy="16" rx="4.6" ry="10" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55"/><path d="M6 16h20" stroke="currentColor" stroke-width="1.2" opacity=".55"/><ellipse cx="16" cy="16" rx="15" ry="5" fill="none" stroke="var(--accent)" stroke-width="1.8" transform="rotate(-18 16 16)"/></svg>
+      <span>BIGBEEZARR</span>
+    </a>
+    <span class="bar-sep" aria-hidden="true"></span>
+    <span class="bar-t hide-sm">Tableau de bord</span>
+    <span class="bar-sp"></span>
+    <a class="chip hide-sm" href="../galerie/" target="_blank" rel="noopener">Vue client</a>
+    <button class="chip" id="logout" type="button" hidden>Se déconnecter</button>
+  </div>
+</header>
+
+<main>
+  <section id="vLogin" class="login" hidden>
+    <form class="card stack" id="loginForm">
+      <h1 class="t" style="font-size:2rem">Connexion</h1>
+      <p class="hint" style="margin:0">Espace réservé au photographe.</p>
+      <label class="field"><span>Mot de passe</span><input class="input" type="password" id="loginPw" autocomplete="current-password" required></label>
+      <button class="btn primary" type="submit">Se connecter</button>
+      <p class="err" id="loginErr" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="vNone" class="wrap page" hidden>
+    <h1 class="t">Service pas encore relié</h1>
+    <p class="hint" style="max-width:60ch;margin-top:14px">Le serveur des galeries n'est pas encore déployé : son adresse sera ajoutée automatiquement dans <code>galerie/config.js</code> après le premier déploiement (voir <code>worker/README.md</code>).</p>
+  </section>
+
+  <section id="vList" class="wrap page" hidden>
+    <div class="head">
+      <div><p class="kicker" style="margin:0 0 8px;font-family:var(--font-d);font-weight:700;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text)">Livraison</p><h1 class="t">Galeries</h1></div>
+      <span class="sp"></span>
+      <button class="btn primary" id="newBtn" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Nouvelle galerie</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="glist" id="glist"></div>
+    <p class="empty hint" id="gEmpty" hidden>Aucune galerie pour l'instant. Créez la première, puis glissez vos photos dedans.</p>
+  </section>
+
+  <section id="vGal" class="wrap page" hidden>
+    <button class="btn small ghost" id="backBtn" type="button" style="padding-left:0"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12 4-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>Toutes les galeries</button>
+    <div class="head" style="margin:10px 0 0">
+      <div><div class="row" id="gPills" style="margin-bottom:10px"></div><h1 class="t" id="gTitle"></h1><p class="hint" id="gSub" style="margin:8px 0 0"></p></div>
+    </div>
+    <div class="linkbox">
+      <code id="gLink"></code>
+      <button class="btn small" id="copyLink" type="button">Copier le lien</button>
+      <a class="btn small" id="openLink" target="_blank" rel="noopener">Ouvrir</a>
+      <button class="btn small ghost" id="relink" type="button" title="L'ancien lien cessera de fonctionner">Nouveau lien</button>
+    </div>
+    <nav class="atabs" role="tablist" id="atabs">
+      <button role="tab" data-tab="photos" aria-selected="true">Photos</button>
+      <button role="tab" data-tab="settings">Réglages</button>
+      <button role="tab" data-tab="guests" id="tabGuests">Invités</button>
+      <button role="tab" data-tab="faces">Visages</button>
+      <button role="tab" data-tab="stats">Statistiques</button>
+    </nav>
+
+    <div data-pane="photos">
+      <div class="drop" id="drop">
+        <b>Glissez des photos ou des dossiers ici</b>
+        <span class="hint">JPEG, PNG, HEIC, TIFF et fichiers RAW. Les originaux sont conservés tels quels, sans recompression.</span>
+        <div class="row" style="justify-content:center;margin-top:6px">
+          <button class="btn small primary" type="button" id="pickFiles">Ajouter des fichiers</button>
+          <button class="btn small" type="button" id="pickDir">Ajouter un dossier</button>
+        </div>
+        <input type="file" id="inFiles" multiple hidden accept="image/*,.cr2,.cr3,.nef,.nrw,.arw,.srf,.sr2,.dng,.raf,.orf,.rw2,.pef,.srw,.3fr,.iiq,.rwl,.x3f,.tif,.tiff,.heic,.heif">
+        <input type="file" id="inDir" webkitdirectory multiple hidden>
+        <input type="file" id="inReplace" hidden accept="image/*,.cr2,.cr3,.nef,.nrw,.arw,.dng,.raf,.orf,.rw2,.pef,.srw,.tif,.tiff,.heic,.heif">
+      </div>
+      <div class="queue" id="queue" hidden>
+        <div class="qhead"><span class="spin" id="qSpin" aria-hidden="true"></span><span id="qTitle"></span><span class="sp" style="flex:1"></span><button class="btn small ghost" id="qToggle" type="button">Détails</button><button class="btn small" id="qRetry" type="button" hidden>Réessayer les échecs</button></div>
+        <div class="bar-prog"><i id="qBar"></i></div>
+        <div class="qlist" id="qList" hidden></div>
+      </div>
+      <div class="ptools">
+        <span class="hint" id="pCount"></span>
+        <span class="sp"></span>
+        <button class="btn small" id="pPick" type="button">Sélectionner</button>
+        <span id="pActs" class="row" hidden>
+          <span class="hint" id="pSelN"></span>
+          <button class="btn small" id="pAll" type="button">Tout</button>
+          <button class="btn small" id="pCover" type="button">Couverture</button>
+          <button class="btn small" id="pReplace" type="button">Remplacer</button>
+          <button class="btn small" id="pOpenAll" type="button" hidden>Téléchargeable par tous</button>
+          <button class="btn small" id="pAssign" type="button" hidden>Attribuer à…</button>
+          <button class="btn small danger" id="pDel" type="button">Supprimer</button>
+        </span>
+      </div>
+      <div class="pgrid" id="pgrid"></div>
+    </div>
+
+    <div data-pane="settings" hidden>
+      <form class="form" id="setForm">
+        <div class="two">
+          <label class="field"><span>Titre</span><input class="input" name="title" required maxlength="160"></label>
+          <label class="field"><span>Client ou événement</span><input class="input" name="client" maxlength="160"></label>
+        </div>
+        <div class="two">
+          <label class="field"><span>Date de la séance</span><input class="input" type="date" name="event_date"></label>
+          <label class="field"><span>Expire le</span><input class="input" type="date" name="expires"></label>
+        </div>
+        <div class="field"><span>Type de galerie</span>
+          <div class="kinds">
+            <label class="kind"><input type="radio" name="kind" value="private"><b>Privée</b><span>Un client. Lien secret, mot de passe possible.</span></label>
+            <label class="kind"><input type="radio" name="kind" value="event"><b>Événement</b><span>Plusieurs participants. Recherche par visage possible.</span></label>
+            <label class="kind"><input type="radio" name="kind" value="restricted"><b>Restreinte</b><span>Chaque invité télécharge seulement ses photos attribuées.</span></label>
+          </div>
+        </div>
+        <label class="field"><span>Mot de passe</span><input class="input" type="text" name="password" autocomplete="new-password" placeholder="Laisser vide pour ne rien changer"><small class="hint" id="pwState"></small></label>
+        <div class="stack">
+          <label class="check"><input type="checkbox" name="allow_download"><span>Autoriser le téléchargement des originaux</span></label>
+          <label class="check" id="rowListed"><input type="checkbox" name="listed"><span>Afficher dans la liste publique des événements (sans mot de passe uniquement)</span></label>
+          <label class="check" id="rowViewAll"><input type="checkbox" name="guest_view_all"><span>Les invités voient toute la galerie (sinon, seulement leurs photos)</span></label>
+          <label class="check"><input type="checkbox" name="delete_after_expiry"><span>Supprimer automatiquement les fichiers à l'expiration</span></label>
+        </div>
+        <div class="row"><button class="btn primary" type="submit">Enregistrer</button><button class="btn small ghost" type="button" id="clearPw">Retirer le mot de passe</button><span class="sp" style="flex:1"></span><button class="btn small danger" type="button" id="delGal">Supprimer la galerie</button></div>
+      </form>
+    </div>
+
+    <div data-pane="guests" hidden>
+      <div class="box" style="margin-bottom:14px"><p>Chaque invité reçoit son propre lien. Dans une galerie restreinte, il ne peut télécharger que les photos que vous lui attribuez (onglet Photos, « Attribuer à… »).</p>
+        <form class="row" id="guestForm"><input class="input" name="name" placeholder="Nom de l'invité" style="flex:1;min-width:200px" maxlength="120"><button class="btn primary" type="submit">Ajouter un invité</button></form></div>
+      <div class="stack" id="guestList"></div>
+    </div>
+
+    <div data-pane="faces" hidden>
+      <div id="faceOff" class="box warnbox" hidden><p><b>Recherche par visage non configurée.</b> Ajoutez les clés Amazon Rekognition (région Canada) au serveur : voir <code>worker/README.md</code>, section « Reconnaissance faciale ».</p></div>
+      <div id="faceOn" class="stack">
+        <div class="box">
+          <div class="row" style="justify-content:space-between"><div><b style="font-family:var(--font-d);font-size:1.1rem" id="fState"></b><p class="hint" id="fInfo" style="margin:4px 0 0"></p></div><button class="btn" id="fToggle" type="button"></button></div>
+        </div>
+        <div class="box" id="fCfg">
+          <div class="form" style="max-width:none">
+            <label class="field"><span>Seuil « probable » : <b id="thrV"></b> % de similarité</span><input type="range" min="80" max="99" step="1" id="thr"><small class="hint">Plus haut : moins d'erreurs, mais certaines photos de profil ou lointaines peuvent manquer. Les résultats sous ce seuil sont montrés « à vérifier ».</small></label>
+            <label class="field" style="max-width:260px"><span>Effacer l'index après (jours)</span><input class="input" type="number" min="1" max="365" id="ret"></label>
+            <div class="row"><button class="btn small" id="fSave" type="button">Enregistrer</button></div>
+          </div>
+        </div>
+        <div class="box" id="fIdx">
+          <h2 class="s">Index des visages</h2>
+          <p id="fIdxInfo"></p>
+          <div class="bar-prog" style="margin:10px 0 14px"><i id="fBar"></i></div>
+          <div class="row"><button class="btn primary" id="fRun" type="button">Indexer les visages</button><button class="btn small danger" id="fDrop" type="button">Effacer l'index</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div data-pane="stats" hidden>
+      <div class="stats" id="gStats"></div>
+      <div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">
+        <div><h2 class="s">Activité récente</h2><div class="ev-log" id="evLog"></div></div>
+        <div><h2 class="s">Les plus téléchargées</h2><div class="ev-log" id="topLog"></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<dialog id="newDlg" class="bottom">
+  <form class="sheet stack" id="newForm" style="position:relative" method="dialog">
+    <button class="x" type="button" data-close aria-label="Fermer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <h2>Nouvelle galerie</h2>
+    <label class="field"><span>Titre</span><input class="input" name="title" required maxlength="160" placeholder="Ex. La Forge · Media Day 2026"></label>
+    <label class="field"><span>Client ou événement</span><input class="input" name="client" maxlength="160"></label>
+    <label class="field"><span>Date de la séance</span><input class="input" type="date" name="event_date"></label>
+    <div class="field"><span>Type</span>
+      <div class="kinds">
+        <label class="kind"><input type="radio" name="kind" value="private" checked><b>Privée</b><span>Un client.</span></label>
+        <label class="kind"><input type="radio" name="kind" value="event"><b>Événement</b><span>Plusieurs participants.</span></label>
+        <label class="kind"><input type="radio" name="kind" value="restricted"><b>Restreinte</b><span>Photos attribuées.</span></label>
+      </div>
+    </div>
+    <label class="field"><span>Mot de passe (facultatif)</span><input class="input" name="password" autocomplete="new-password"></label>
+    <label class="field"><span>Expire le (facultatif)</span><input class="input" type="date" name="expires"></label>
+    <p class="err" id="newErr"></p>
+    <button class="btn primary" type="button" id="newGo">Créer la galerie</button>
+  </form>
+</dialog>
+
+<dialog id="faceDlg" class="bottom">
+  <div class="sheet stack" style="position:relative">
+    <button class="x" type="button" data-close aria-label="Fermer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <h2>Activer la recherche par visage</h2>
+    <p>Les visages de toutes les personnes photographiées dans cette galerie seront indexés. La loi exige leur consentement. Cochez seulement ce qui est vrai.</p>
+    <label class="check"><input type="checkbox" class="fa"><span>Les personnes photographiées ont été informées de la recherche par visage et y ont consenti de façon expresse (inscription, formulaire signé ou équivalent).</span></label>
+    <label class="check"><input type="checkbox" class="fa"><span>Pour une activité au Québec : la déclaration à la Commission d'accès à l'information a été transmise au moins 60 jours avant la mise en service. Pour le Sénégal : les formalités auprès de la CDP sont faites.</span></label>
+    <label class="check"><input type="checkbox" class="fa"><span>Je fixe une durée de conservation courte et j'effacerai l'index dès qu'il ne sert plus.</span></label>
+    <label class="field"><span>Base du consentement (gardée dans le dossier)</span><textarea class="input" id="faNote" maxlength="600" placeholder="Ex. Formulaire signé par les 14 joueurs le 3 octobre 2026 ; déclaration CAI envoyée le 1er août 2026."></textarea></label>
+    <p class="err" id="faErr"></p>
+    <button class="btn primary" type="button" id="faGo" disabled>Activer pour cette galerie</button>
+  </div>
+</dialog>
+
+<dialog id="assignDlg" class="bottom">
+  <div class="sheet stack" style="position:relative">
+    <button class="x" type="button" data-close aria-label="Fermer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <h2>Attribuer les photos</h2>
+    <p id="asP"></p>
+    <div class="stack" id="asList"></div>
+  </div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="../galerie/config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>

@@ -50,6 +50,13 @@ img{max-width:100%}
 @media (hover:hover) and (pointer:fine){.nav a:hover{color:var(--ink)}}
 .lang{font:inherit;font-family:var(--font-d);font-weight:700;font-size:.8rem;letter-spacing:.08em;height:34px;min-width:44px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--ink);cursor:pointer;transition:transform .12s var(--ease-out),translate .45s var(--ease-out)}
 .lang:active{transform:scale(.96)}
+.ph-link{display:inline-flex;align-items:center;gap:7px;text-decoration:none}.ph-link svg{width:14px;height:14px;flex:none}
+@media (max-width:560px){.ph-link{padding:0;width:34px;justify-content:center}.ph-link span{display:none}}
+.ph-link[hidden],.ct-photos[hidden]{display:none}
+.ct-photos{display:inline-flex;align-items:center;gap:14px;margin-top:22px;padding:12px 20px 12px 14px;border-radius:16px;border:1px solid var(--line);text-decoration:none;color:var(--ink);background:color-mix(in oklab,var(--ink) 4%,transparent);transition:border-color .2s ease,background-color .2s ease}
+.ct-photos svg{width:20px;height:20px;padding:9px;box-sizing:content-box;border-radius:50%;background:var(--accent);color:#fff;flex:none}
+.ct-photos b{display:block;font-family:var(--font-d);font-weight:750;font-size:1rem}.ct-photos small{display:block;color:var(--ink-3);font-size:.86rem}
+@media (hover:hover) and (pointer:fine){.ct-photos:hover{border-color:color-mix(in oklab,var(--ink) 35%,transparent)}}
 @media (max-width:820px){
   .bar-in{grid-template-columns:minmax(0,1fr) auto;row-gap:0}
   .lang{justify-self:end}
@@ -588,7 +595,7 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
       <span>BIGBEEZARR</span>
     </a>
     <nav class="nav" id="nav"></nav>
-    <div class="bar-act"><button class="menu-btn" id="menuBtn" type="button" aria-haspopup="dialog" aria-controls="menu"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.6v8.8L10.4 6z" fill="currentColor"/></svg><span data-t="menu.btn"></span></button><button class="lang" id="lang" type="button"></button></div>
+    <div class="bar-act"><a class="lang ph-link" href="galerie/" data-ta="nav.photos" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v7.2m-3-3 3 3 3-3M3 12.8h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-t="nav.photos"></span></a><button class="menu-btn" id="menuBtn" type="button" aria-haspopup="dialog" aria-controls="menu"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.6v8.8L10.4 6z" fill="currentColor"/></svg><span data-t="menu.btn"></span></button><button class="lang" id="lang" type="button"></button></div>
   </div>
   <span class="prog" id="prog" aria-hidden="true"></span>
 </header>
@@ -688,7 +695,7 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
     <div class="wrap">
       <div class="ct-grid">
         <div class="ct-main">
-        <div class="ct-text"><h2 class="contact-title h-rise" id="contactH"></h2><p class="contact-p" data-t="contact.p"></p></div>
+        <div class="ct-text"><h2 class="contact-title h-rise" id="contactH"></h2><p class="contact-p" data-t="contact.p"></p><a class="ct-photos" href="galerie/" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v7.2m-3-3 3 3 3-3M3 12.8h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span><b data-t="ct.photos"></b><small data-t="ct.photos.s"></small></span></a></div>
       <dl class="c-list">
         <div><dt data-t="contact.email"></dt><dd><span class="c-val plain">baeypro@gmail.com</span><button class="copy" type="button" data-copy="baeypro@gmail.com"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-t="copy"></span></button></dd></div>
         <div><dt data-t="contact.phone"></dt><dd><span class="c-val plain">(438) 304-7844</span><button class="copy" type="button" data-copy="+1 438 304 7844"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg><span data-t="copy"></span></button></dd></div>
@@ -777,7 +784,7 @@ const T = {
     "contact.email": "E-mail", "contact.phone": "Téléphone",
     "copy": "Copier", "copied": "Copié", "selected": "Texte sélectionné, copiez-le avec Cmd ou Ctrl + C",
     "lb.label": "Visionneuse", "lb.close": "Fermer", "lb.prev": "Photo précédente", "lb.next": "Photo suivante",
-    "nav.index": "Index", "nav.contact": "Contact", "nav.aria": "Chapitres", "yrs.aria": "Années",
+    "nav.index": "Index", "nav.contact": "Contact", "nav.photos": "Mes photos", "ct.photos": "Récupérer mes photos", "ct.photos.s": "Vos photos de séance ou d’événement, en qualité originale", "nav.aria": "Chapitres", "yrs.aria": "Années",
     "lang.btn": "EN", "lang.aria": "Switch to English", "cur.view": "Voir",
     "favs": "Coups de cœur", "favs.n": n => `${n} coups de cœur`, "me": "Mamadou Beye", "m.favs": n => `${n} photos`, "ld.aria": "Plan du site", "menu.btn": "Menu", "menu.title": "Sélection du chapitre", "menu.hint": "↑ ↓ pour choisir · Entrée pour y aller · Échap pour fermer",
     "menu.save": (n, k) => `Collection ${n} / ${k}`, "m.meta": (p, n) => `${p} ${p > 1 ? "projets" : "projet"} · ${n} photos`, "m.idx": "Tous les projets", "m.ct": "Écrivez-moi",
@@ -811,7 +818,7 @@ const T = {
     "contact.email": "Email", "contact.phone": "Phone",
     "copy": "Copy", "copied": "Copied", "selected": "Text selected, copy it with Cmd or Ctrl + C",
     "lb.label": "Photo viewer", "lb.close": "Close", "lb.prev": "Previous photo", "lb.next": "Next photo",
-    "nav.index": "Index", "nav.contact": "Contact", "nav.aria": "Chapters", "yrs.aria": "Years",
+    "nav.index": "Index", "nav.contact": "Contact", "nav.photos": "My photos", "ct.photos": "Get my photos", "ct.photos.s": "Your shoot or event photos, in original quality", "nav.aria": "Chapters", "yrs.aria": "Years",
     "lang.btn": "FR", "lang.aria": "Passer en français", "cur.view": "View",
     "favs": "Favourites", "favs.n": n => `${n} favourites`, "me": "Mamadou Beye", "m.favs": n => `${n} photos`, "ld.aria": "Site map", "menu.btn": "Menu", "menu.title": "Chapter select", "menu.hint": "↑ ↓ to choose · Enter to go · Esc to close",
     "menu.save": (n, k) => `Collection ${n} / ${k}`, "m.meta": (p, n) => `${p} ${p > 1 ? "projects" : "project"} · ${n} photos`, "m.idx": "Every project", "m.ct": "Write to me",
@@ -1137,6 +1144,7 @@ letters($("#idxH"), "Index");
 function applyLang() {
   root.lang = lang;
   $$("[data-t]").forEach(el => { const v = t(el.dataset.t); if (typeof v === "string") el.textContent = v; });
+  $$("[data-ta]").forEach(el => el.setAttribute("aria-label", t(el.dataset.ta)));
   $$("[data-t-aria]").forEach(el => el.setAttribute("aria-label", t(el.dataset.tAria)));
   textNodes.forEach(([el, fn]) => { const v = fn(); if (el) el.textContent = v; });
   const lb = $("#lang"); lb.textContent = t("lang.btn"); lb.setAttribute("aria-label", t("lang.aria"));
@@ -1152,6 +1160,8 @@ function applyLang() {
   if (typeof moveInd === "function" && navInd) requestAnimationFrame(() => moveInd(false));
 }
 $("#lang").addEventListener("click", () => { lang = lang === "fr" ? "en" : "fr"; store.set("bbz-lang", lang); applyLang(); });
+// La galerie client n'apparaît qu'une fois son serveur relié (galerie/config.js écrit par le déploiement).
+fetch("galerie/config.js", { cache: "no-store" }).then(r => r.ok ? r.text() : "").then(js => { if (/BBZ_API\s*=\s*"https?:\/\//.test(js)) $$(".ph-link, .ct-photos").forEach(a => a.hidden = false); }).catch(() => {});
 
 /* ---------- spring (critically damped by default) ---------- */
 function spring({ from, to, velocity = 0, response = 0.4, damping = 1, onUpdate, onDone }) {

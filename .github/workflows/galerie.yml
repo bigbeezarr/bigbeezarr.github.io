@@ -1,0 +1,107 @@
+# Déploie le serveur des galeries (Cloudflare Workers + R2 + D1) et relie les pages /galerie/ et /admin/.
+# Secrets à créer dans GitHub (Settings > Secrets and variables > Actions) : voir worker/README.md.
+name: Déployer la galerie client
+
+on:
+  push:
+    branches: [main]
+    paths: ["worker/**", ".github/workflows/galerie.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: galerie-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      BBZ_ADMIN_PASSWORD: ${{ secrets.BBZ_ADMIN_PASSWORD }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier les secrets
+        id: check
+        run: |
+          missing=""
+          [ -z "$CLOUDFLARE_API_TOKEN" ] && missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -z "$CLOUDFLARE_ACCOUNT_ID" ] && missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          [ ${#BBZ_ADMIN_PASSWORD} -lt 10 ] && missing="$missing BBZ_ADMIN_PASSWORD(10+ caractères)"
+          if [ -z "$missing" ]; then echo "ready=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then echo "::error::Secrets manquants :$missing. Voir worker/README.md."; exit 1; fi
+          echo "::notice::Galerie client pas encore configurée (secrets manquants :$missing). Déploiement ignoré."
+
+      - uses: actions/setup-node@v4
+        if: steps.check.outputs.ready == 'true'
+        with:
+          node-version: 22
+
+      - name: Installer et tester
+        if: steps.check.outputs.ready == 'true'
+        working-directory: worker
+        run: |
+          npm install --no-audit --no-fund
+          node test/sigv4.test.mjs
+
+      - name: Stockage R2 et base D1
+        if: steps.check.outputs.ready == 'true'
+        working-directory: worker
+        run: |
+          npx wrangler r2 bucket create bbz-galerie > r2.log 2>&1 || grep -qiE "already exists|already own|10004" r2.log || { cat r2.log; exit 1; }
+          d1id() { npx wrangler d1 list --json 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{const a=JSON.parse(s.slice(s.indexOf("["),s.lastIndexOf("]")+1));const d=a.find(x=>x.name==="bbz-galerie");process.stdout.write(d?(d.uuid||d.id||""):"")}catch{}})'; }
+          ID=$(d1id)
+          if [ -z "$ID" ]; then npx wrangler d1 create bbz-galerie; ID=$(d1id); fi
+          [ -n "$ID" ] || { echo "::error::Impossible de créer ou trouver la base D1 bbz-galerie"; exit 1; }
+          sed "s/__D1_ID__/$ID/" wrangler.template.toml > wrangler.toml
+          npx wrangler d1 execute bbz-galerie --remote --file=schema.sql
+
+      - name: Déployer le Worker
+        if: steps.check.outputs.ready == 'true'
+        working-directory: worker
+        run: |
+          npx wrangler deploy 2>&1 | tee deploy.log
+          URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          [ -n "$URL" ] || { echo "::error::Adresse workers.dev introuvable. Activez votre sous-domaine workers.dev dans le tableau de bord Cloudflare (Workers & Pages)."; exit 1; }
+          echo "API_URL=$URL" >> "$GITHUB_ENV"
+
+      - name: Secrets du Worker
+        if: steps.check.outputs.ready == 'true'
+        working-directory: worker
+        run: |
+          printf '%s' "$BBZ_ADMIN_PASSWORD" | npx wrangler secret put ADMIN_PASSWORD
+          if ! npx wrangler secret list 2>/dev/null | grep -q SIGNING_KEY; then
+            openssl rand -base64 48 | tr -d '\n' | npx wrangler secret put SIGNING_KEY
+          fi
+          if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
+            printf '%s' "$AWS_ACCESS_KEY_ID" | npx wrangler secret put AWS_ACCESS_KEY_ID
+            printf '%s' "$AWS_SECRET_ACCESS_KEY" | npx wrangler secret put AWS_SECRET_ACCESS_KEY
+          else
+            echo "Pas de clés AWS : la recherche par visage reste indisponible (livraison seule)."
+          fi
+
+      - name: Vérifier le serveur
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          for i in 1 2 3 4 5 6; do
+            if curl -fsS "$API_URL/api/health" | tee health.json; then echo; break; fi
+            sleep 5
+          done
+          grep -q '"ok":true' health.json
+
+      - name: Relier les pages au serveur
+        if: steps.check.outputs.ready == 'true'
+        run: |
+          printf '// Adresse du serveur des galeries. Écrite automatiquement par le déploiement (voir worker/README.md).\nwindow.BBZ_API = "%s";\n' "$API_URL" > galerie/config.js
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add galerie/config.js
+          if ! git diff --cached --quiet; then git commit -m "Relie la galerie client au serveur $API_URL" && git push; fi
