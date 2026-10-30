@@ -11,7 +11,7 @@ fav = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0
 meta = ('<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
         f'<link rel="icon" href="{fav}"><link rel="canonical" href="https://bigbeezarr.github.io/"><meta name="theme-color" content="#0A0A0A">'
         '<meta property="og:type" content="website"><meta property="og:url" content="https://bigbeezarr.github.io/">'
-        '<meta property="og:title" content="BIGBEEZARR · Mamadou Beye"><meta property="og:description" content="Soirées, sport, scène et mode, à Dakar et à Montréal.">'
+        '<meta property="og:title" content="BIGBEEZARR · Mamadou Beye"><meta property="og:description" content="Photographe entre Dakar et Montréal : la nuit, la scène, le sport, la mode et les marques.">'
         '<meta property="og:image" content="https://bigbeezarr.github.io/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">'
         '<meta name="twitter:card" content="summary_large_image">')
 open(os.path.join(a.site, 'index.html'), 'w').write(f'<!doctype html>\n<html lang="fr">\n<head>\n{meta}\n{head_part}</head>\n<body>\n{src[cut:]}\n</body>\n</html>\n')

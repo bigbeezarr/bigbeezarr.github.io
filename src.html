@@ -1,6 +1,6 @@
 <title>BIGBEEZARR</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Portfolio de BIGBEEZARR, Mamadou Beye : soirées, concerts, sport et éditorial, à Dakar et à Montréal.">
+<meta name="description" content="Portfolio de BIGBEEZARR, Mamadou Beye, photographe entre Dakar et Montréal : la nuit, la scène, le sport, la mode et les marques.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..800&display=swap">
@@ -78,7 +78,8 @@ img{max-width:100%}
 .rail.dragging{cursor:grabbing;scroll-snap-type:none}
 .rail .ph{flex:0 0 auto;height:clamp(250px,46vh,460px);width:auto;aspect-ratio:var(--ar);scroll-snap-align:start}
 .rail-foot{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:12px;font-size:.82rem;color:var(--ink-3)}
-.rail-foot .count{font-variant-numeric:tabular-nums}
+.rail-foot .count{font-variant-numeric:tabular-nums;margin-left:auto;white-space:nowrap}
+@media (max-width:620px){.rail-foot{flex-wrap:wrap;row-gap:10px}#railHint{flex:1 1 100%}}
 
 /* ---------- photo tiles: justified mosaic (rows and stacked pairs that fill the width exactly) ---------- */
 .ph{position:relative;margin:0;aspect-ratio:var(--ar);max-width:100%;background:var(--ground-2) center/cover no-repeat;overflow:hidden;overflow:clip;border-radius:2px}
@@ -153,6 +154,7 @@ img{max-width:100%}
 .ed-year{margin:0;overflow:hidden;overflow:clip;padding-bottom:.04em;font-family:var(--font-d);font-weight:800;font-stretch:110%;font-size:clamp(1.7rem,3.2vw,2.75rem);line-height:1;letter-spacing:-.01em;color:var(--accent-text);font-variant-numeric:tabular-nums;white-space:nowrap}
 .ed-txt{min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
 .ed-label{font-family:var(--font-d);font-weight:700;font-size:1.05rem}
+.ed-brand{white-space:normal;max-width:14ch}
 .ed-sub{margin:0;color:var(--ink-2);max-width:62ch}
 .ed-n{font-family:var(--font-d);font-weight:560;font-size:.9rem;color:var(--ink-3);font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;align-items:center;gap:.5em}
 @media (max-width:620px){.ed-head{grid-template-columns:auto minmax(0,1fr)}.ed-n{grid-column:1/-1}}
@@ -754,51 +756,51 @@ const nb = " ";
 const T = {
   fr: {
     "hero.by": "par Mamadou Beye",
-    "hero.tag": "Je photographie des soirées, des concerts, du sport et de la mode, à Dakar et à Montréal.",
-    "hero.cta1": "Voir le travail", "hero.cta2": "Me contacter",
-    "rail.hint": "Faites glisser pour parcourir la sélection", "rail.aria": "Sélection de photos",
+    "hero.tag": "Photographe entre Dakar et Montréal. Je suis là où ça vibre : la nuit, la scène, les terrains et les défilés.",
+    "hero.cta1": "Découvrir le travail", "hero.cta2": "Travailler ensemble",
+    "rail.hint": "Ils sont tous passés devant mon objectif. Faites glisser pour les découvrir.", "rail.aria": "Sélection de photos",
     "rail.count": (n, k) => `${n} photos sur ${k}`,
     "orbit.title": "Dakar et Montréal, à 6 230 km l'une de l'autre", "orbit.km": "6 230 km entre les deux villes",
     "orbit.dkc": "14°43′N · 17°28′O", "orbit.mtlc": "45°30′N · 73°34′O",
-    "about.h": "Figer l’instant",
-    "about.p1": "La photographie me permet de garder les moments, les émotions et les souvenirs d'un instant. C'est aussi ma façon de m'exprimer en tant qu'artiste et de montrer le monde à travers mes yeux.",
-    "about.p2": "Je travaille surtout en sport et en événementiel, avec des images prises sur le vif : les gens, les détails, l'énergie. Avec le temps, j'ai aussi abordé la photo corporate, la rue, le paysage, la mode et l'éditorial.",
-    "contact.h": "Un projet, un événement, une équipe" + nb + "?",
-    "contact.p": "Écrivez-moi ou passez par Instagram.",
+    "about.h": "Garder l’instant vivant",
+    "about.p1": "La photographie, c’est ma façon de garder ce qu’on a vécu : un regard, un geste, l’énergie d’une salle. C’est aussi ma voix d’artiste, celle qui montre le monde tel que je le vois.",
+    "about.p2": "Mon terrain de prédilection, c’est l’événementiel et le sport, en prise de vue sur le vif : les gens, les détails, l’énergie. Avec les années, mon regard s’est ouvert au corporate, à la mode, à l’éditorial, à la rue et au paysage.",
+    "contact.h": "Parlons de votre projet.",
+    "contact.p": "Soirée, concert, équipe, marque ou shooting : écrivez-moi ou retrouvez-moi sur Instagram. Je vous réponds avec plaisir.",
     "contact.email": "E-mail", "contact.phone": "Téléphone",
     "copy": "Copier", "copied": "Copié", "selected": "Texte sélectionné, copiez-le avec Cmd ou Ctrl + C",
     "lb.label": "Visionneuse", "lb.close": "Fermer", "lb.prev": "Photo précédente", "lb.next": "Photo suivante",
     "nav.index": "Index", "nav.contact": "Contact", "nav.aria": "Chapitres", "yrs.aria": "Années",
     "lang.btn": "EN", "lang.aria": "Switch to English", "cur.view": "Voir",
-    "favs": "Favoris", "favs.n": n => `${n} favoris`, "me": "Mamadou Beye", "m.favs": n => `${n} photos`, "ld.aria": "Plan du site", "menu.btn": "Menu", "menu.title": "Sélection du chapitre", "menu.hint": "↑ ↓ pour choisir · Entrée pour y aller · Échap pour fermer",
-    "menu.save": (n, k) => `Collection ${n} / ${k}`, "m.meta": (p, n) => `${p} ${p > 1 ? "projets" : "projet"} · ${n} photos`, "m.idx": "Tous les projets", "m.ct": "Écrire",
+    "favs": "Coups de cœur", "favs.n": n => `${n} coups de cœur`, "me": "Mamadou Beye", "m.favs": n => `${n} photos`, "ld.aria": "Plan du site", "menu.btn": "Menu", "menu.title": "Sélection du chapitre", "menu.hint": "↑ ↓ pour choisir · Entrée pour y aller · Échap pour fermer",
+    "menu.save": (n, k) => `Collection ${n} / ${k}`, "m.meta": (p, n) => `${p} ${p > 1 ? "projets" : "projet"} · ${n} photos`, "m.idx": "Tous les projets", "m.ct": "Écrivez-moi",
     "lv.k": "Niveau", "lv.intro": "Intro", "ach.k": "Succès débloqué", "ach.ch": n => `Chapitre terminé : ${n}`, "ach.all": k => `Collection complète, les ${k} photos vues`,
-    "gyro.btn": "Activer la 3D", "gyro.on": "Inclinez le téléphone", "rail.hint.touch": "Balayez pour parcourir la sélection",
-    "sel": "Sélection", "about": "À propos",
+    "gyro.btn": "Activer la 3D", "gyro.on": "Inclinez le téléphone", "rail.hint.touch": "Ils sont tous passés devant mon objectif. Balayez pour les découvrir.",
+    "sel": "Portraits", "about": "À propos",
     "photos": n => n + (n > 1 ? " photos" : " photo"),
     "alt": (t, n, k) => `${t}, photo ${n} sur ${k}`,
     "open": t => "Agrandir" + nb + ": " + t,
-    "idx.sum": (n, p) => `${n} photos, ${p} projets, deux villes.`,
+    "idx.sum": (n, p) => `${n} photos, ${p} projets, deux villes, une même passion.`,
     "th": ["Projet", "Chapitre", "Lieu", "Années", "Photos par projet", "Nb"],
     "legend": { sn: "Dakar et Saly", mtl: "Montréal", mix: "Les deux villes", none: "Lieu non précisé" },
     "where.none": "Lieu non précisé",
     "ch.kick": (n, k) => `Chapitre ${n} / ${k}`, "credits": "Crédits",
-    "mq3": ["Écrivez-moi", "@bigbeezarr", "Dakar", "Montréal"],
+    "mq3": ["Travaillons ensemble", "@bigbeezarr", "Dakar", "Montréal"],
     "mq4": ["BIGBEEZARR", "Mamadou Beye", "Photographe"]
   },
   en: {
     "hero.by": "by Mamadou Beye",
-    "hero.tag": "I photograph nights out, concerts, sport and fashion, in Dakar and Montréal.",
-    "hero.cta1": "See the work", "hero.cta2": "Get in touch",
-    "rail.hint": "Drag to browse the selection", "rail.aria": "Photo selection",
+    "hero.tag": "Photographer between Dakar and Montréal. I go where the energy is: the night, the stage, the court and the runway.",
+    "hero.cta1": "Explore the work", "hero.cta2": "Work with me",
+    "rail.hint": "They have all stepped in front of my lens. Drag to meet them.", "rail.aria": "Photo selection",
     "rail.count": (n, k) => `${n} of ${k} photos`,
     "orbit.title": "Dakar and Montréal, 6,230 km apart", "orbit.km": "6,230 km between the two cities",
     "orbit.dkc": "14°43′N · 17°28′W", "orbit.mtlc": "45°30′N · 73°34′W",
-    "about.h": "Freezing the moment",
-    "about.p1": "Photography lets me hold on to the moments, emotions and memories of an instant. It is also how I express myself as an artist and show the world through my eyes.",
-    "about.p2": "I work mainly in sports and events, shooting candid images of people, details and energy. Over time I have also worked in corporate, street, landscape, fashion and editorial photography.",
-    "contact.h": "A project, an event, a team?",
-    "contact.p": "Email me or reach out on Instagram.",
+    "about.h": "Keeping the moment alive",
+    "about.p1": "Photography is how I hold on to what we lived: a look, a gesture, the energy of a room. It is also my voice as an artist, the one that shows the world the way I see it.",
+    "about.p2": "My home ground is events and sport, shot candid and in the moment: people, details, energy. Over the years my eye has opened up to corporate work, fashion, editorial, the street and the landscape.",
+    "contact.h": "Let’s talk about your project.",
+    "contact.p": "A party, a concert, a team, a brand or a shoot: email me or find me on Instagram. I’d love to hear from you.",
     "contact.email": "Email", "contact.phone": "Phone",
     "copy": "Copy", "copied": "Copied", "selected": "Text selected, copy it with Cmd or Ctrl + C",
     "lb.label": "Photo viewer", "lb.close": "Close", "lb.prev": "Previous photo", "lb.next": "Next photo",
@@ -807,24 +809,25 @@ const T = {
     "favs": "Favourites", "favs.n": n => `${n} favourites`, "me": "Mamadou Beye", "m.favs": n => `${n} photos`, "ld.aria": "Site map", "menu.btn": "Menu", "menu.title": "Chapter select", "menu.hint": "↑ ↓ to choose · Enter to go · Esc to close",
     "menu.save": (n, k) => `Collection ${n} / ${k}`, "m.meta": (p, n) => `${p} ${p > 1 ? "projects" : "project"} · ${n} photos`, "m.idx": "Every project", "m.ct": "Write to me",
     "lv.k": "Level", "lv.intro": "Intro", "ach.k": "Achievement unlocked", "ach.ch": n => `Chapter complete: ${n}`, "ach.all": k => `Full collection, all ${k} photos seen`,
-    "gyro.btn": "Enable 3D", "gyro.on": "Tilt your phone", "rail.hint.touch": "Swipe to browse the selection",
-    "sel": "Selection", "about": "About",
+    "gyro.btn": "Enable 3D", "gyro.on": "Tilt your phone", "rail.hint.touch": "They have all stepped in front of my lens. Swipe to meet them.",
+    "sel": "Portraits", "about": "About",
     "photos": n => n + (n > 1 ? " photos" : " photo"),
     "alt": (t, n, k) => `${t}, photo ${n} of ${k}`,
     "open": t => "Enlarge: " + t,
-    "idx.sum": (n, p) => `${n} photos, ${p} projects, two cities.`,
+    "idx.sum": (n, p) => `${n} photos, ${p} projects, two cities, one passion.`,
     "th": ["Project", "Chapter", "Where", "Years", "Photos per project", "No."],
     "legend": { sn: "Dakar & Saly", mtl: "Montréal", mix: "Both cities", none: "Location not specified" },
     "where.none": "Location not specified",
     "ch.kick": (n, k) => `Chapter ${n} / ${k}`, "credits": "Credits",
-    "mq3": ["Get in touch", "@bigbeezarr", "Dakar", "Montréal"],
+    "mq3": ["Let’s work together", "@bigbeezarr", "Dakar", "Montréal"],
     "mq4": ["BIGBEEZARR", "Mamadou Beye", "Photographer"]
   }
 };
-const t = k => T[lang][k];
-const L = v => (v == null ? "" : typeof v === "string" ? v : (v[lang] ?? v.fr));
+const frTypo = s => typeof s === "string" && lang === "fr" ? s.replace(/ ([:;!?])/g, nb + "$1") : s;
+const t = k => { const v = T[lang][k]; return typeof v === "function" ? (...a) => frTypo(v(...a)) : frTypo(v); };
+const L = v => frTypo(v == null ? "" : typeof v === "string" ? v : (v[lang] ?? v.fr));
 const pad = n => String(n).padStart(3, "0");
-const slug = s => String(s).normalize("NFD").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
+const slug = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
 
 /* ---------- model helpers ---------- */
 const edsOf = p => p.eds || [{ year: p.year, imgs: p.imgs, feature: p.feature, single: true }];
@@ -836,8 +839,8 @@ function yearSpan(p) {
   const a = Math.min(...y), b = Math.max(...y);
   return a === b ? String(a) : `${a}–${b}`;
 }
-const edName = e => e.look ? "Look " + e.look : e.year;
-const edTitle = (p, e) => !e ? L(p.title) : e.look ? `${L(p.title)} · Look ${e.look}` : e.single ? L(p.title) : `${L(p.title)} · ${e.label && !L(p.title).includes(e.label) ? e.label + " " : ""}${e.year}`;
+const edName = e => e.look ? "Look " + e.look : e.brand || e.year;
+const edTitle = (p, e) => !e ? L(p.title) : e.look ? `${L(p.title)} · Look ${e.look}` : e.brand ? `${L(p.title)} · ${e.brand}${e.label ? " " + e.label : ""} ${e.year}` : e.single ? L(p.title) : `${L(p.title)} · ${e.label && !L(p.title).includes(e.label) ? e.label + " " : ""}${e.year}`;
 const whereOf = p => p.place || (p.city === "none" ? t("where.none") : "");
 
 /* ---------- sequence (every photo in page order) ---------- */
@@ -1054,24 +1057,25 @@ DATA.chapters.forEach((c, ci) => {
       onLang(() => yrs.setAttribute("aria-label", t("yrs.aria")));
     }
     const dupY = new Set(eds.map(e => e.year).filter((y, k, a) => a.indexOf(y) !== k));
+    const dupB = new Set(eds.map(e => e.brand).filter((y, k, a) => y && a.indexOf(y) !== k));
     eds.forEach((e, ei) => {
       const host = p.eds ? mk("section", "ed", w) : w;
       let edId = "";
       if (p.eds) {
-        edId = e.look ? `p-${p.id}-look-${e.look}` : `p-${p.id}-${slug(e.year)}${e.label ? "-" + slug(e.label) : ""}`;
+        edId = e.look ? `p-${p.id}-look-${e.look}` : e.brand ? `p-${p.id}-${slug(e.brand)}-${slug(e.year)}` : `p-${p.id}-${slug(e.year)}${e.label ? "-" + slug(e.label) : ""}`;
         host.id = edId;
         host.dataset.city = e.city || p.city;
         const eh = mk("header", "ed-head", host);
-        letters(mk("h4", "ed-year", eh), edName(e));
+        letters(mk("h4", e.brand ? "ed-year ed-brand" : "ed-year", eh), edName(e));
         const tx = mk("div", "ed-txt", eh);
         if (e.label) mk("span", "ed-label", tx).textContent = e.label;
         if (e.sub) bindText(mk("p", "ed-sub", tx), () => L(e.sub));
         const n = mk("span", "ed-n", eh);
         if (e.city && e.city !== p.city) mk("span", "dot", n).dataset.c = e.city;
-        bindText(mk("span", "", n), () => [e.place && e.place !== p.place ? e.place : "", t("photos")(edCount(e))].filter(Boolean).join(" · "));
+        bindText(mk("span", "", n), () => [e.brand ? e.year : "", e.place && e.place !== p.place ? e.place : "", t("photos")(edCount(e))].filter(Boolean).join(" · "));
         if (yrs) {
           const chip = mk("a", "", yrs); chip.href = "#" + edId; chip.dataset.ed = edId;
-          chip.textContent = dupY.has(e.year) && e.label ? `${e.year} · ${e.label}` : e.year;
+          chip.textContent = e.brand ? (dupB.has(e.brand) ? `${e.brand} ${e.year}` : e.brand) : dupY.has(e.year) && e.label ? `${e.year} · ${e.label}` : e.year;
         }
       }
       if (e.feature) {
@@ -1111,7 +1115,7 @@ allProjects.forEach(({ p, c }) => {
   const bar = mk("span", "idx-bar", tr); bar.dataset.c = p.city; bar.style.setProperty("--w", (n / maxN * 100).toFixed(1) + "%");
   const nn = mk("span", "idx-n", a); nn.setAttribute("role", "cell"); nn.textContent = n;
   a._tip = () => {
-    const rows = p.eds ? edsOf(p).map(e => `${edName(e)}${e.label ? " · " + e.label : ""} : ${edCount(e)}`).join("<br>") : `${p.year ? p.year + " · " : ""}${t("photos")(n)}`;
+    const rows = p.eds ? edsOf(p).map(e => `${edName(e)}${e.brand ? " " + e.year : e.label ? " · " + e.label : ""} : ${edCount(e)}`).join("<br>") : `${p.year ? p.year + " · " : ""}${t("photos")(n)}`;
     return `<b>${L(p.title)}</b> · ${whereOf(p) || "—"}<br>${p.eds ? t("photos")(n) + "<br>" : ""}${rows}`;
   };
 });
