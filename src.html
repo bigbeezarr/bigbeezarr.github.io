@@ -194,6 +194,7 @@ img{max-width:100%}
 .cr-v a{text-decoration:none;color:var(--ink);background:linear-gradient(var(--accent),var(--accent)) 0 100%/0 1.5px no-repeat;transition:background-size .3s var(--ease-out),color .2s ease}
 @media (hover:hover) and (pointer:fine){.cr-v a:hover{background-size:100% 1.5px;color:var(--accent-text)}}
 @media (max-width:760px){.feature{grid-template-columns:1fr}}
+.feature.solo{grid-template-columns:1fr}.feature.solo .ph{max-width:min(100%,calc(86vh * var(--ar)));margin-inline:auto}
 
 /* ---------- index ---------- */
 .index{padding-block:clamp(72px,9vw,140px);border-top:1px solid var(--line);scroll-margin-top:60px}
@@ -1440,9 +1441,11 @@ DATA.chapters.forEach((c, ci) => {
         }
       }
       if (e.feature) {
-        const f = mk("figure", "feature", host);
+        // Photo d'ouverture de l'édition, en grand ; sans légende fournie, elle prend toute la largeur (pas de texte inventé).
+        const capd = !!(e.feature.fr || e.feature.en);
+        const f = mk("figure", "feature" + (capd ? "" : " solo"), host);
         f.appendChild(tile(e.feature.img));
-        bindText(mk("figcaption", "", f), () => L(e.feature));
+        if (capd) bindText(mk("figcaption", "", f), () => L(e.feature));
       }
       mosaic(mk("div", "gallery", host), e.imgs);
     });

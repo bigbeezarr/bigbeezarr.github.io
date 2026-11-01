@@ -27,6 +27,14 @@ def vsrc(up, i, pref):
     return f"{up}img/f/{pad(i)}.webp"
 def eds_of(p): return p.get("eds") or [{"year": p.get("year", ""), "imgs": p.get("imgs", []), "feature": p.get("feature"), "single": True}]
 def ed_imgs(e): return ([e["feature"]["img"]] if e.get("feature") else []) + list(e["imgs"])
+def gallery_html(e, ids):
+    """Mosaïque d'une édition ; sa photo d'ouverture (feature) passe avant, seule et en grand, avec sa légende si elle en a une."""
+    f = e.get("feature")
+    if not f: return f'<div class="gallery" data-imgs="{",".join(map(str, ids))}"></div>'
+    rest = [i for i in ids if i != f["img"]]
+    cap = f'<p class="feat-cap">{both(f)}</p>' if (f.get("fr") or f.get("en")) else ""
+    return (f'<div class="gallery solo" data-imgs="{f["img"]}"></div>{cap}'
+            + (f'<div class="gallery" data-imgs="{",".join(map(str, rest))}"></div>' if rest else ""))
 def years(p):
     ys = sorted({str(e.get("year", "")) for e in eds_of(p) if e.get("year")})
     if not ys: return ""
@@ -131,7 +139,7 @@ def project_page(site, D, c, ci, p, NCH, all_projects, SITE):
         t = ed_title(p, e)
         pd_eds.append({"t": t, "imgs": ids})
         if e.get("single"):
-            sections.append(f'<div class="gallery" data-imgs="{",".join(map(str, ids))}"></div>')
+            sections.append(gallery_html(e, ids))
             continue
         name = e.get("brand") or (f"Look {e['look']}" if e.get("look") else str(e.get("year") or ""))
         lab = both(e.get("label")) if e.get("label") and not e.get("look") else (both(e.get("label")) if e.get("look") and e.get("label") else "")
@@ -140,7 +148,7 @@ def project_page(site, D, c, ci, p, NCH, all_projects, SITE):
         sub_e = f'<p class="ed-sub">{both(e.get("sub"))}</p>' if e.get("sub") else ""
         sections.append(f'<section class="ed" id="ed-{k + 1}" aria-label="{E(t["fr"])}"><header class="ed-head"><h3 class="ed-year">{E(name)}</h3>'
                         f'{f"<span class=ed-label>{lab}</span>" if lab else ""}<span class="ed-n">{E(extra + " · " if extra else "")}{bi(n_fr, n_en)}</span>{sub_e}</header>'
-                        f'<div class="gallery" data-imgs="{",".join(map(str, ids))}"></div></section>')
+                        f'{gallery_html(e, ids)}</section>')
     if p.get("lead"):
         use(p["lead"]["img"])
     # sélection : la première photo de chaque édition (ou les premières photos), 8 au plus

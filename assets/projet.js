@@ -47,6 +47,11 @@
   function rowHeight(bl, W, g) { let A = 0, Sg = 0; for (const b of bl) { if (b.t === "S") A += b.a; else { const st = 1 / (1 / b.a1 + 1 / b.a2); A += st; Sg += st; } } return (W - (bl.length - 1) * g + g * Sg) / A; }
   function layout(m) {
     const W = m.el.clientWidth; if (!W || Math.abs(W - m.w) < 1) return; m.w = W;
+    if (m.el.classList.contains("solo")) { // photo d'ouverture : seule, toute la largeur, sans dépasser la hauteur de l'écran
+      const t0 = m.t[0], H = Math.min(W / t0.a, innerHeight * .86), w = H * t0.a;
+      Object.assign(t0.f.style, { left: ((W - w) / 2).toFixed(1) + "px", top: "0px", width: w.toFixed(1) + "px", height: H.toFixed(1) + "px" });
+      m.el.style.height = H.toFixed(1) + "px"; return;
+    }
     const mob = W < 640, g = mob ? 6 : W < 1000 ? 8 : 10, T0 = mob ? 210 : W < 1000 ? 270 : 330, pats = mob ? PAT_M : PAT_D, t = m.t, n = t.length;
     const tgt = par => mob ? T0 : T0 * (par ? .82 : 1.22);
     const best = [[], []]; best[0][n] = best[1][n] = { c: 0 };

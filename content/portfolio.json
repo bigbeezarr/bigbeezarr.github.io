@@ -187,9 +187,11 @@
         205,
         725,
         726,
-        727,
-        728
-       ]
+        727
+       ],
+       "feature": {
+        "img": 728
+       }
       },
       {
        "year": "2025",
@@ -1193,8 +1195,8 @@
      "place": "Dakar",
      "year": "2026",
      "sub": {
-      "fr": "La Basketball Africa League et Wave Sénégal ont fait le tour du pays avec le Tournoi des Quartiers, de Ziguinchor à Saint-Louis, Thiès et Dakar. J'étais à la grande finale, au stade Marius Ndiaye : le concert et le public.",
-      "en": "The Basketball Africa League and Wave Senegal toured the country with the Tournoi des Quartiers, from Ziguinchor to Saint-Louis, Thiès and Dakar. I was at the grand final, at the Marius Ndiaye stadium: the concert and the crowd."
+      "fr": "La Basketball Africa League et Wave Sénégal ont fait le tour du pays avec le Tournoi des Quartiers, de Ziguinchor à Saint-Louis, Thiès et Dakar. J'étais à la grande finale, au Monument de la Renaissance africaine : le concert et le public.",
+      "en": "The Basketball Africa League and Wave Senegal toured the country with the Tournoi des Quartiers, from Ziguinchor to Saint-Louis, Thiès and Dakar. I was at the grand final, at the African Renaissance Monument: the concert and the crowd."
      },
      "credits": [
       {
@@ -1499,7 +1501,7 @@
          "en": "Jewellery"
         },
         "v": [
-         "lartisaneshop"
+         "lartisane.shop"
         ]
        }
       ]
