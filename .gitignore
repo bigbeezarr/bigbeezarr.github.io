@@ -2,3 +2,4 @@ index.html
 img/
 node_modules/
 __pycache__/
+build/

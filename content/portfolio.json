@@ -1,0 +1,2001 @@
+{
+ "chapters": [
+  {
+   "id": "soirees",
+   "city": "sn",
+   "name": {
+    "fr": "La nuit",
+    "en": "Nightlife"
+   },
+   "intro": {
+    "fr": "Tout a commencé avec nos sorties entre amis. Très vite, la nuit est devenue mon terrain de prédilection : les pistes pleines, les sourires, la chaleur d'une foule qui danse.",
+    "en": "It all started with nights out with my friends. The night soon became my favourite ground: packed dance floors, smiles, the warmth of a crowd in motion."
+   },
+   "projects": [
+    {
+     "id": "jelani",
+     "title": "Jelani",
+     "city": "sn",
+     "place": "Dakar · Saly",
+     "sub": {
+      "fr": "Imaginées par Alphizi, les soirées Jelani donnent le ton de l'été sénégalais, de Dakar à Saly. Chaque édition a son thème (All White Party, Caribbean Edition, La Croisette, Coachella) et sa scène, où les artistes se succèdent en live.",
+      "en": "Created by Alphizi, the Jelani parties set the tone of the Senegalese summer, from Dakar to Saly. Every edition has its own theme (All White Party, Caribbean Edition, La Croisette, Coachella) and its own stage, with artists performing live."
+     },
+     "credits": [
+      {
+       "k": {
+        "fr": "Sur scène",
+        "en": "On stage"
+       },
+       "names": [
+        "Ashs the Best",
+        "Bass Thioung",
+        "Dip Doundou Guiss",
+        "ISS 814",
+        "Jeeba",
+        "Massamba Amadeus"
+       ]
+      }
+     ],
+     "eds": [
+      {
+       "year": "2026",
+       "place": "Saly",
+       "sub": {
+        "fr": "Coachella Edition, au Mövenpick Resort Lamantin",
+        "en": "Coachella Edition, at the Mövenpick Resort Lamantin"
+       },
+       "imgs": [
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "All White Party",
+       "place": "Saly",
+       "sub": {
+        "fr": "Le 16 août, tout en blanc au Mövenpick Resort Lamantin",
+        "en": "August 16, all in white at the Mövenpick Resort Lamantin"
+       },
+       "imgs": [
+        166,
+        167,
+        168,
+        169,
+        707,
+        708,
+        709,
+        710,
+        711,
+        712
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "La Croisette",
+       "sub": {
+        "fr": "Le 26 juillet, avec Jeeba, Bass Thioung et Dip Doundou Guiss en live",
+        "en": "July 26, with Jeeba, Bass Thioung and Dip Doundou Guiss live"
+       },
+       "imgs": [
+        160,
+        161,
+        162,
+        163,
+        164,
+        165,
+        660,
+        661,
+        662,
+        664
+       ]
+      },
+      {
+       "year": "2024",
+       "label": "All White Party",
+       "place": "Dakar",
+       "sub": {
+        "fr": "Avec Massamba Amadeus en invité",
+        "en": "With Massamba Amadeus as guest"
+       },
+       "imgs": [
+        665,
+        666,
+        667,
+        668,
+        669,
+        670,
+        671,
+        672,
+        673,
+        674,
+        675,
+        676,
+        677,
+        678,
+        679,
+        680
+       ]
+      },
+      {
+       "year": "2024",
+       "label": "Caribbean Edition",
+       "place": "Dakar",
+       "sub": {
+        "fr": "Summer Vibes, avec ISS 814 en live",
+        "en": "Summer Vibes, with ISS 814 live"
+       },
+       "imgs": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        27,
+        28,
+        658,
+        934,
+        935
+       ]
+      }
+     ],
+     "series": {
+      "known": null,
+      "unit": "soiree",
+      "verify": true
+     }
+    },
+    {
+     "id": "bashment",
+     "title": "The Bashment",
+     "city": "sn",
+     "place": "Dakar",
+     "sub": {
+      "fr": "Les soirées de DJ King Mouss : dancehall, afrobeats et sons caribéens jusqu'au petit matin. Un rendez-vous incontournable de la nuit dakaroise, qui a fêté sa 100e édition en octobre 2025 à Monaco Plage.",
+      "en": "DJ King Mouss's nights: dancehall, afrobeats and Caribbean sounds until dawn. A fixture of Dakar nightlife, which celebrated its 100th edition in October 2025 at Monaco Plage."
+     },
+     "eds": [
+      {
+       "year": "2025",
+       "label": {
+        "fr": "11 juillet",
+        "en": "July 11"
+       },
+       "imgs": [
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        725,
+        726,
+        727,
+        728
+       ]
+      },
+      {
+       "year": "2025",
+       "label": {
+        "fr": "4 juillet",
+        "en": "July 4"
+       },
+       "imgs": [
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        722,
+        723,
+        724
+       ]
+      },
+      {
+       "year": "2025",
+       "label": {
+        "fr": "27 juin",
+        "en": "June 27"
+       },
+       "imgs": [
+        192,
+        713,
+        714,
+        715,
+        716,
+        717,
+        718,
+        719,
+        720,
+        721
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "9 août",
+        "en": "August 9"
+       },
+       "imgs": [
+        781,
+        782,
+        783,
+        784,
+        785,
+        786,
+        787,
+        788,
+        789,
+        790
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "2 août",
+        "en": "August 2"
+       },
+       "imgs": [
+        771,
+        772,
+        773,
+        774,
+        775,
+        776,
+        777,
+        778,
+        779,
+        780
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "26 juillet",
+        "en": "July 26"
+       },
+       "imgs": [
+        761,
+        762,
+        763,
+        764,
+        765,
+        766,
+        767,
+        768,
+        769,
+        770
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "12 juillet",
+        "en": "July 12"
+       },
+       "imgs": [
+        72,
+        752,
+        753,
+        754,
+        755,
+        756,
+        757,
+        758,
+        759,
+        760
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "5 juillet",
+        "en": "July 5"
+       },
+       "imgs": [
+        67,
+        743,
+        744,
+        745,
+        746,
+        747,
+        748,
+        749,
+        750,
+        751
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "21 juin",
+        "en": "June 21"
+       },
+       "imgs": [
+        70,
+        71,
+        73,
+        736,
+        737,
+        738,
+        739,
+        740,
+        741,
+        742
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "14 juin",
+        "en": "June 14"
+       },
+       "imgs": [
+        66,
+        68,
+        69,
+        729,
+        730,
+        731,
+        732,
+        733,
+        734,
+        735
+       ]
+      }
+     ],
+     "series": {
+      "known": 100,
+      "min": true,
+      "unit": "soiree",
+      "note": {
+       "fr": "100e édition fêtée en octobre 2025",
+       "en": "100th edition celebrated in October 2025"
+      }
+     },
+     "featured": 1
+    },
+    {
+     "id": "whippin",
+     "title": "Tout Whippin",
+     "city": "sn",
+     "place": "Dakar",
+     "sub": {
+      "fr": "Les soirées signées BDR et Ndeuss.",
+      "en": "The parties signed BDR and Ndeuss."
+     },
+     "eds": [
+      {
+       "year": "2026",
+       "label": "Vol. 1",
+       "sub": {
+        "fr": "Le 18 juillet",
+        "en": "July 18"
+       },
+       "imgs": [
+        178,
+        179,
+        180,
+        181,
+        182,
+        183,
+        791,
+        792,
+        793,
+        794
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "Vol. 4",
+       "sub": {
+        "fr": "Le 9 août",
+        "en": "August 9"
+       },
+       "imgs": [
+        170,
+        818,
+        819,
+        820,
+        821,
+        822,
+        823,
+        824,
+        825,
+        826
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "Vol. 3",
+       "sub": {
+        "fr": "Le 26 juillet",
+        "en": "July 26"
+       },
+       "imgs": [
+        175,
+        176,
+        177,
+        811,
+        812,
+        813,
+        814,
+        815,
+        816,
+        817
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "Vol. 2",
+       "sub": {
+        "fr": "Le 19 juillet",
+        "en": "July 19"
+       },
+       "imgs": [
+        171,
+        172,
+        173,
+        174,
+        805,
+        806,
+        807,
+        808,
+        809,
+        810
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "Vol. 1",
+       "sub": {
+        "fr": "Le 28 juin",
+        "en": "June 28"
+       },
+       "imgs": [
+        795,
+        796,
+        797,
+        798,
+        799,
+        800,
+        801,
+        802,
+        803,
+        804
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "16 août",
+        "en": "August 16"
+       },
+       "imgs": [
+        839,
+        840,
+        841,
+        842,
+        843,
+        844,
+        845,
+        846,
+        847,
+        848
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "10 août",
+        "en": "August 10"
+       },
+       "imgs": [
+        829,
+        830,
+        831,
+        832,
+        833,
+        834,
+        835,
+        836,
+        837,
+        838
+       ]
+      },
+      {
+       "year": "2024",
+       "label": {
+        "fr": "27 juillet",
+        "en": "July 27"
+       },
+       "imgs": [
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        827,
+        828
+       ]
+      }
+     ],
+     "series": {
+      "known": null,
+      "unit": "soiree",
+      "verify": true
+     }
+    },
+    {
+     "id": "litty",
+     "title": "Litty",
+     "city": "sn",
+     "place": "Dakar",
+     "sub": {
+      "fr": "Les soirées Litty et leurs éditions Beats N Baddies.",
+      "en": "The Litty nights and their Beats N Baddies editions."
+     },
+     "eds": [
+      {
+       "year": "2025",
+       "label": "Pink Party",
+       "sub": {
+        "fr": "Beats N Baddies, le 10 août",
+        "en": "Beats N Baddies, August 10"
+       },
+       "imgs": [
+        184,
+        185,
+        862,
+        863,
+        864,
+        865,
+        866,
+        867,
+        868,
+        869
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "Vol. 2",
+       "sub": {
+        "fr": "Beats N Baddies, le 27 juillet",
+        "en": "Beats N Baddies, July 27"
+       },
+       "imgs": [
+        186,
+        187,
+        188,
+        189,
+        190,
+        191,
+        858,
+        859,
+        860,
+        861
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "Bahia",
+       "sub": {
+        "fr": "Beats N Baddies, le 6 juillet",
+        "en": "Beats N Baddies, July 6"
+       },
+       "imgs": [
+        142,
+        849,
+        850,
+        851,
+        852,
+        853,
+        854,
+        855,
+        856,
+        857
+       ]
+      },
+      {
+       "year": "2024",
+       "sub": {
+        "fr": "Le 12 juillet",
+        "en": "July 12"
+       },
+       "imgs": [
+        82,
+        83,
+        84,
+        85,
+        86,
+        870,
+        871,
+        872,
+        873,
+        874
+       ]
+      }
+     ],
+     "series": {
+      "known": null,
+      "unit": "soiree",
+      "verify": true
+     }
+    },
+    {
+     "id": "ghetto",
+     "title": "Ghetto Bash",
+     "city": "sn",
+     "place": "Dakar",
+     "sub": {
+      "fr": "Trois soirées en 2025 : le Vol. 1, la rencontre Ghetto Bash × The Bashment, puis le Vol. 3.",
+      "en": "Three nights in 2025: Vol. 1, the Ghetto Bash × The Bashment night, then Vol. 3."
+     },
+     "eds": [
+      {
+       "year": "2025",
+       "label": "Vol. 3",
+       "sub": {
+        "fr": "Le 9 août",
+        "en": "August 9"
+       },
+       "imgs": [
+        206,
+        886,
+        887,
+        888,
+        889,
+        890,
+        891,
+        892,
+        893,
+        894
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "× The Bashment",
+       "sub": {
+        "fr": "La rencontre des deux soirées, le 25 juillet",
+        "en": "The two parties together, July 25"
+       },
+       "imgs": [
+        207,
+        208,
+        209,
+        210,
+        880,
+        881,
+        882,
+        883,
+        884,
+        885
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "Vol. 1",
+       "sub": {
+        "fr": "Le 18 juillet",
+        "en": "July 18"
+       },
+       "imgs": [
+        211,
+        212,
+        213,
+        214,
+        215,
+        875,
+        876,
+        877,
+        878,
+        879
+       ]
+      }
+     ],
+     "series": {
+      "known": null,
+      "unit": "soiree",
+      "verify": true
+     }
+    },
+    {
+     "id": "afrob",
+     "title": "Afro B",
+     "city": "sn",
+     "place": "Dakar",
+     "year": "2026",
+     "sub": {
+      "fr": "La soirée de DJ Bringuy, pour son tout premier volume.",
+      "en": "DJ Bringuy's party, for its very first volume."
+     },
+     "imgs": [
+      216,
+      217,
+      218,
+      219,
+      220,
+      221,
+      222,
+      223,
+      225,
+      932
+     ]
+    },
+    {
+     "id": "afroteo",
+     "title": "Afroteo",
+     "city": "mtl",
+     "place": "Montréal",
+     "sub": {
+      "fr": "Les soirées d'Alexis, DJ Xocco et Lucky Summers : afrobeats, reggaeton, dancehall, kompa et amapiano, toute la chaleur des sons africains, latins et caribéens à Montréal. Leur mot d'ordre : United Through Rhythm.",
+      "en": "The nights of Alexis, DJ Xocco and Lucky Summers: afrobeats, reggaeton, dancehall, kompa and amapiano, all the warmth of African, Latin and Caribbean sounds in Montréal. Their motto: United Through Rhythm."
+     },
+     "eds": [
+      {
+       "year": "2026",
+       "sub": {
+        "fr": "La Noche Dulce, le 18 avril",
+        "en": "La Noche Dulce, April 18"
+       },
+       "imgs": [
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431,
+        432,
+        433,
+        434,
+        435,
+        436,
+        437,
+        438
+       ]
+      },
+      {
+       "year": "2025",
+       "sub": {
+        "fr": "Le 16 mai",
+        "en": "May 16"
+       },
+       "imgs": [
+        409,
+        410,
+        411,
+        412,
+        413,
+        414,
+        415,
+        416,
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        424,
+        933
+       ]
+      }
+     ],
+     "series": {
+      "known": null,
+      "unit": "soiree",
+      "verify": true
+     }
+    },
+    {
+     "id": "mabina",
+     "title": "Mabina Nights",
+     "city": "mtl",
+     "place": "Montréal",
+     "year": "2023",
+     "sub": {
+      "fr": "Des battles de danse qui se terminent en fête, organisés par Yorick.",
+      "en": "Dance battles that turn into a party, hosted by Yorick."
+     },
+     "imgs": [
+      62,
+      63,
+      64,
+      65,
+      979,
+      980,
+      981,
+      982,
+      983,
+      984
+     ]
+    }
+   ]
+  },
+  {
+   "id": "sport",
+   "city": "mix",
+   "name": {
+    "fr": "Sport",
+    "en": "Sport"
+   },
+   "intro": {
+    "fr": "Le sport, je le vis autant que je le photographie. Je joue beaucoup avec mes amis et mon appareil ne me quitte jamais : c'est ainsi que je suis entré dans la photo sportive.",
+    "en": "I live sport as much as I photograph it. I play a lot with my friends and my camera never leaves my side: that is how I came to sports photography."
+   },
+   "intro2": {
+    "fr": "Photographe officiel de La Forge, équipe universitaire de basketball de division 2 à Montréal, depuis 2023. L'équipe a été sacrée deux fois championne de la ligue Prep U.",
+    "en": "Official photographer of La Forge, a Division 2 university basketball team in Montréal, since 2023. The team has won the Prep U league title twice."
+   },
+   "projects": [
+    {
+     "id": "laforge",
+     "title": "La Forge",
+     "city": "mtl",
+     "place": "Montréal",
+     "sub": {
+      "fr": "Photographe officiel de l'équipe depuis 2023 : les matchs, le banc, les célébrations.",
+      "en": "The team's official photographer since 2023: the games, the bench, the celebrations."
+     },
+     "eds": [
+      {
+       "year": "2025–2026",
+       "sub": {
+        "fr": "Matchs, banc et titre de champion Prep U",
+        "en": "Games, the bench and the Prep U title"
+       },
+       "feature": {
+        "img": 143,
+        "fr": "Ahmed Salia Touré, entraîneur principal de La Forge",
+        "en": "Ahmed Salia Touré, head coach of La Forge"
+       },
+       "imgs": [
+        42,
+        46,
+        49,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299
+       ]
+      },
+      {
+       "year": "2025–2026",
+       "label": "Media Day",
+       "sub": {
+        "fr": "Portraits des joueurs, de face et de trois quarts, pour le site de l'équipe",
+        "en": "Player portraits, front and three-quarter, for the team website"
+       },
+       "imgs": [
+        43,
+        44,
+        45,
+        47,
+        48
+       ]
+      },
+      {
+       "year": "2024–2025",
+       "sub": {
+        "fr": "Sous son ancien nom, CS Basketball",
+        "en": "Under its former name, CS Basketball"
+       },
+       "imgs": [
+        284,
+        285,
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        152
+       ]
+      },
+      {
+       "year": "2023–2024",
+       "sub": {
+        "fr": "Sous son ancien nom, CS Basketball",
+        "en": "Under its former name, CS Basketball"
+       },
+       "imgs": [
+        276,
+        277,
+        278,
+        279,
+        280,
+        281,
+        282,
+        283
+       ]
+      }
+     ],
+     "series": {
+      "known": null,
+      "unit": "saison",
+      "verify": true
+     },
+     "role": {
+      "fr": "Photographe officiel de l'équipe",
+      "en": "Official team photographer"
+     },
+     "featured": 2
+    },
+    {
+     "id": "riseball",
+     "title": "Riseball",
+     "city": "sn",
+     "place": "Dakar",
+     "sub": {
+      "fr": "Le tournoi de basketball en plein air d'Anna Maria, que j'ai couvert en 2025 et en 2026.",
+      "en": "Anna Maria's outdoor basketball tournament, which I covered in 2025 and 2026."
+     },
+     "eds": [
+      {
+       "year": "2026",
+       "sub": {
+        "fr": "Jour 1, de nuit",
+        "en": "Day 1, at night"
+       },
+       "imgs": [
+        248,
+        249,
+        250,
+        251,
+        252,
+        253,
+        254,
+        255
+       ]
+      },
+      {
+       "year": "2025",
+       "sub": {
+        "fr": "Jours 1 et 2",
+        "en": "Days 1 and 2"
+       },
+       "imgs": [
+        256,
+        257,
+        258,
+        259,
+        260,
+        261,
+        262,
+        263
+       ]
+      }
+     ],
+     "series": {
+      "known": null,
+      "unit": "edition",
+      "verify": true
+     }
+    },
+    {
+     "id": "ocruns",
+     "title": "OC Runs",
+     "city": "sn",
+     "place": "Dakar",
+     "sub": {
+      "fr": "Mes propres runs de basket, le soir entre amis.",
+      "en": "My own pickup basketball runs, at night with friends."
+     },
+     "eds": [
+      {
+       "year": "2026",
+       "sub": {
+        "fr": "Run 1",
+        "en": "Run 1"
+       },
+       "imgs": [
+        264,
+        265,
+        266,
+        267,
+        268
+       ]
+      },
+      {
+       "year": "2025",
+       "sub": {
+        "fr": "Runs 3 et 4",
+        "en": "Runs 3 and 4"
+       },
+       "imgs": [
+        269,
+        270,
+        271,
+        272,
+        273,
+        274,
+        348
+       ]
+      }
+     ]
+    },
+    {
+     "id": "jeux",
+     "title": "Jeux Urbains",
+     "city": "mtl",
+     "place": "Montréal",
+     "year": "2026",
+     "sub": {
+      "fr": "Le festival gratuit des sports et de la culture urbaine, du 17 au 22 mars au Centre Eaton : BMX flatland, battles de danse, escrime, taekwondo et DJ sets.",
+      "en": "The free festival of urban sports and culture, March 17 to 22 at the Eaton Centre: BMX flatland, dance battles, fencing, taekwondo and DJ sets."
+     },
+     "imgs": [
+      238,
+      240,
+      241,
+      242,
+      243,
+      245,
+      246,
+      247,
+      930,
+      931
+     ]
+    }
+   ]
+  },
+  {
+   "id": "scene",
+   "city": "mix",
+   "name": {
+    "fr": "Sur scène",
+    "en": "On stage"
+   },
+   "intro": {
+    "fr": "Concerts et festivals, à Montréal comme à Dakar. Je me place au plus près des artistes pour saisir toute l'intensité d'un live.",
+    "en": "Concerts and festivals, in Montréal and in Dakar. I get as close as I can to the artists to catch the full intensity of a live show."
+   },
+   "projects": [
+    {
+     "id": "vj",
+     "title": "VJ",
+     "city": "mix",
+     "place": "Dakar · Montréal",
+     "sub": {
+      "fr": "Chanteur, VJ s'est révélé avec « Dans tes bras », puis a sorti son premier EP, « En Vrai », en 2022. Un artiste, deux scènes : je l'ai suivi à Montréal en janvier 2025, puis à Dakar pour son concert Maggu VJ en 2026.",
+      "en": "A singer, VJ broke through with “Dans tes bras”, then released his first EP, “En Vrai”, in 2022. One artist, two stages: I followed him in Montréal in January 2025, then in Dakar for his Maggu VJ concert in 2026."
+     },
+     "eds": [
+      {
+       "year": "2026",
+       "label": "Maggu VJ",
+       "city": "sn",
+       "place": "Dakar",
+       "sub": {
+        "fr": "Son concert à Dakar, avec la première partie et les artistes invités",
+        "en": "His concert in Dakar, with the opening act and guest artists"
+       },
+       "imgs": [
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        441
+       ]
+      },
+      {
+       "year": "2025",
+       "city": "mtl",
+       "place": "Montréal",
+       "sub": {
+        "fr": "Son concert à Montréal",
+        "en": "His concert in Montréal"
+       },
+       "imgs": [
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        563,
+        105
+       ]
+      }
+     ],
+     "series": {
+      "known": null,
+      "unit": "concert",
+      "verify": true
+     },
+     "featured": 3
+    },
+    {
+     "id": "dlb",
+     "title": "DLB",
+     "city": "sn",
+     "place": "Dakar",
+     "year": "2025",
+     "sub": {
+      "fr": "Le festival de musique DLB, le 26 juillet 2025 à Dakar : les artistes sur scène et l'énergie du public.",
+      "en": "The DLB music festival, July 26, 2025, in Dakar: the artists on stage and the energy of the crowd."
+     },
+     "imgs": [
+      635,
+      636,
+      637,
+      638,
+      639,
+      640,
+      641,
+      642,
+      643,
+      644,
+      645,
+      646,
+      468,
+      469
+     ]
+    },
+    {
+     "id": "bal",
+     "title": "BAL × Wave",
+     "city": "sn",
+     "place": "Dakar",
+     "year": "2026",
+     "sub": {
+      "fr": "La Basketball Africa League et Wave Sénégal ont fait le tour du pays avec le Tournoi des Quartiers, de Ziguinchor à Saint-Louis, Thiès et Dakar. J'étais à la grande finale, au stade Marius Ndiaye : le concert et le public.",
+      "en": "The Basketball Africa League and Wave Senegal toured the country with the Tournoi des Quartiers, from Ziguinchor to Saint-Louis, Thiès and Dakar. I was at the grand final, at the Marius Ndiaye stadium: the concert and the crowd."
+     },
+     "credits": [
+      {
+       "k": {
+        "fr": "Sur scène",
+        "en": "On stage"
+       },
+       "names": [
+        "Abba No Stress",
+        "Ada Boy",
+        "Ndakhte",
+        "Wally Seck"
+       ]
+      }
+     ],
+     "imgs": [
+      936,
+      937,
+      938,
+      939,
+      940,
+      941,
+      942,
+      943,
+      944,
+      945,
+      946,
+      947,
+      948,
+      949
+     ],
+     "series": {
+      "known": 2,
+      "unit": "edition",
+      "note": {
+       "fr": "Première édition en 2025, deuxième en 2026",
+       "en": "First edition in 2025, second in 2026"
+      },
+      "src": "https://aps.sn/wp-content/uploads/2026/07/CP-Tournoi-BAL-SN-.pdf"
+     }
+    },
+    {
+     "id": "canabasse",
+     "title": "Canabasse & Astar",
+     "city": "mtl",
+     "place": "Montréal",
+     "year": "2026",
+     "sub": {
+      "fr": "Canabasse rappe entre wolof, français et anglais, et son titre « Pop a Shit » est devenu un hymne pour toute une génération. Astar, chanteuse, s'est fait connaître avec « Mytho ». Ensemble sur scène à Montréal, en janvier 2026.",
+      "en": "Canabasse raps across Wolof, French and English, and his track “Pop a Shit” became an anthem for a whole generation. Astar, a singer, made her name with “Mytho”. Together on stage in Montréal, in January 2026."
+     },
+     "imgs": [
+      4,
+      106,
+      107,
+      108,
+      109,
+      110,
+      111,
+      112,
+      113,
+      114,
+      115,
+      116,
+      117
+     ]
+    },
+    {
+     "id": "appart",
+     "title": "Appart",
+     "city": "mtl",
+     "place": "Montréal",
+     "sub": {
+      "fr": "Appart est un collectif de rap montréalais. Je l'ai suivi sur scène : son propre concert en 2024, la release party de Ngoundieu en 2025, puis son passage au concert de Canabasse en 2026.",
+      "en": "Appart is a Montréal rap collective. I followed it on stage: its own concert in 2024, Ngoundieu's release party in 2025, then its set at the Canabasse concert in 2026."
+     },
+     "eds": [
+      {
+       "year": "2026",
+       "sub": {
+        "fr": "Sur scène au concert de Canabasse & Astar, en janvier",
+        "en": "On stage at the Canabasse & Astar concert, in January"
+       },
+       "imgs": [
+        695,
+        696,
+        697,
+        698,
+        699,
+        700,
+        701,
+        702,
+        703,
+        704,
+        705,
+        524
+       ]
+      },
+      {
+       "year": "2025",
+       "label": "Release party",
+       "sub": {
+        "fr": "La release party de Ngoundieu, le 5 septembre",
+        "en": "Ngoundieu's release party, September 5"
+       },
+       "imgs": [
+        681,
+        682,
+        683,
+        684,
+        685,
+        686,
+        687,
+        688,
+        689,
+        690,
+        691,
+        692,
+        693,
+        694,
+        522
+       ]
+      },
+      {
+       "year": "2024",
+       "sub": {
+        "fr": "Le concert du collectif, le 6 septembre",
+        "en": "The collective's own concert, September 6"
+       },
+       "imgs": [
+        950,
+        951,
+        952,
+        953,
+        954,
+        955,
+        956,
+        957,
+        958,
+        959,
+        960
+       ]
+      }
+     ],
+     "ig": [
+      "appartv"
+     ],
+     "series": {
+      "known": null,
+      "unit": "concert",
+      "verify": true
+     }
+    },
+    {
+     "id": "ashs",
+     "title": "Ashs the Best",
+     "city": "mtl",
+     "place": "Montréal",
+     "year": "2024",
+     "sub": {
+      "fr": "Rappeur de Guédiawaye, Ashs the Best a été sacré meilleur artiste et révélation de l'année aux Galsen Hip Hop Awards 2020, avec son EP « Million Flow Delux ». On lui doit aussi « Gadaay », avec Obree Daman. Je l'ai photographié en concert à Montréal, et on le retrouve sur scène aux soirées Jelani de 2025 et 2026.",
+      "en": "A rapper from Guédiawaye, Ashs the Best was named best artist and revelation of the year at the 2020 Galsen Hip Hop Awards, with his EP “Million Flow Delux”. He also made “Gadaay” with Obree Daman. I photographed him in concert in Montréal, and he also took the stage at the Jelani parties in 2025 and 2026."
+     },
+     "imgs": [
+      87,
+      88,
+      89,
+      90,
+      91,
+      92,
+      93,
+      657,
+      985,
+      986
+     ]
+    }
+   ]
+  },
+  {
+   "id": "editorial",
+   "city": "mix",
+   "name": {
+    "fr": "Mode et éditorial",
+    "en": "Fashion & editorial"
+   },
+   "short": {
+    "fr": "Mode",
+    "en": "Fashion"
+   },
+   "intro": {
+    "fr": "J'aime montrer tout ce qui se joue en coulisses d'un défilé ou d'un shooting : le travail, le soin et l'exigence qu'un projet demande.",
+    "en": "I love showing everything that happens behind a runway show or a shoot: the work, the care and the craft a project demands."
+   },
+   "projects": [
+    {
+     "id": "mad",
+     "title": "MAD Festival",
+     "city": "mtl",
+     "place": "Montréal",
+     "year": "2025",
+     "sub": {
+      "fr": "La 25e édition du festival Mode, Arts et Divertissement, du 21 au 24 août 2025 dans le Quartier des spectacles. Quatre jours et plus de trente défilés : les podiums, les coulisses, la coiffure et le maquillage, et le public.",
+      "en": "The 25th edition of the Mode, Arts et Divertissement festival, August 21 to 24, 2025, in the Quartier des spectacles. Four days and more than thirty runway shows: the catwalk, backstage, hair and makeup, and the crowd."
+     },
+     "credits": [
+      {
+       "k": {
+        "fr": "Marques",
+        "en": "Brands"
+       },
+       "names": [
+        "1er Mai",
+        "Amesika",
+        "Bleu Ciel",
+        "Collège LaSalle",
+        "Fae and Geist",
+        "Frikiton",
+        "From Us To You",
+        "Gaba Collective",
+        "Guillaume Chaigne",
+        "Hawa B",
+        "La Dame de Feu",
+        "Lakuachimoto",
+        "Mlle Heri",
+        "Né à Montréal",
+        "Nkundi",
+        "Vidalola"
+       ]
+      }
+     ],
+     "imgs": [
+      226,
+      227,
+      228,
+      229,
+      230,
+      231,
+      232,
+      233,
+      234,
+      235,
+      236,
+      237
+     ],
+     "series": {
+      "known": 25,
+      "unit": "edition",
+      "note": {
+       "fr": "25e édition en 2025",
+       "en": "25th edition in 2025"
+      }
+     },
+     "featured": 4
+    },
+    {
+     "id": "naf",
+     "title": "Jelani · New Africa Fashion",
+     "city": "sn",
+     "place": "Dakar",
+     "year": "2026",
+     "sub": {
+      "fr": "Le lookbook de l'édition 2026, shooté dans les rues de Dakar. Chaque look présente une création et ses détails.",
+      "en": "The 2026 edition lookbook, shot in the streets of Dakar. Each look presents one outfit and its details."
+     },
+     "looks": true,
+     "lead": {
+      "img": 144,
+      "credits": [
+       {
+        "k": {
+         "fr": "Tenues",
+         "en": "Outfits"
+        },
+        "v": [
+         "mushei_street",
+         "algueye_dakar",
+         "naru_goor",
+         "sellyrabykane",
+         "nahyelconceptstore",
+         "galeriekolo.design",
+         "papacolab",
+         "af_shal",
+         "sassychicboutiquedakar"
+        ],
+        "extra": {
+         "fr": "Setsy Design",
+         "en": "Setsy Design"
+        }
+       },
+       {
+        "k": {
+         "fr": "Sac",
+         "en": "Bag"
+        },
+        "v": [
+         "maisondetta"
+        ]
+       },
+       {
+        "k": {
+         "fr": "Bijoux",
+         "en": "Jewellery"
+        },
+        "v": [
+         "lartisaneshop"
+        ]
+       }
+      ]
+     },
+     "eds": [
+      {
+       "look": "01",
+       "imgs": [
+        300,
+        301,
+        302
+       ],
+       "order": "fixed"
+      },
+      {
+       "look": "02",
+       "imgs": [
+        303,
+        304,
+        545
+       ],
+       "order": "fixed",
+       "label": "Selly Raby Kane"
+      },
+      {
+       "look": "03",
+       "imgs": [
+        305,
+        306,
+        546
+       ],
+       "order": "fixed"
+      },
+      {
+       "look": "04",
+       "imgs": [
+        307,
+        929,
+        548
+       ],
+       "order": "fixed",
+       "label": "Maison Detta",
+       "sub": {
+        "fr": "Le sac",
+        "en": "The bag"
+       }
+      },
+      {
+       "look": "05",
+       "imgs": [
+        308,
+        309,
+        549
+       ],
+       "order": "fixed",
+       "label": "Nahyel Concept Store",
+       "sub": {
+        "fr": "Création Setsy Design",
+        "en": "Designed by Setsy Design"
+       }
+      },
+      {
+       "look": "06",
+       "imgs": [
+        310,
+        311,
+        550
+       ],
+       "order": "fixed"
+      },
+      {
+       "look": "07",
+       "imgs": [
+        312,
+        313,
+        314
+       ],
+       "order": "fixed",
+       "label": "Al Gueye",
+       "sub": {
+        "fr": "Tenue de gauche, signée Naru Goor",
+        "en": "Outfit on the left, signed Naru Goor"
+       }
+      },
+      {
+       "look": "08",
+       "imgs": [
+        315,
+        316,
+        317
+       ],
+       "order": "fixed"
+      },
+      {
+       "look": "09",
+       "imgs": [
+        319,
+        551,
+        552
+       ],
+       "order": "fixed",
+       "label": "Sassychic"
+      },
+      {
+       "look": "10",
+       "imgs": [
+        320,
+        321,
+        553
+       ],
+       "order": "fixed",
+       "label": "Galerie Kölö"
+      }
+     ]
+    },
+    {
+     "id": "marques",
+     "title": {
+      "fr": "Marques",
+      "en": "Brands"
+     },
+     "city": "mix",
+     "place": "Dakar · Montréal",
+     "sub": {
+      "fr": "Les marques qui m'ont confié leur image, de Dakar à Montréal, en shooting comme en événement.",
+      "en": "The brands that trusted me with their image, from Dakar to Montréal, on shoots and at events."
+     },
+     "eds": [
+      {
+       "brand": "Afitone",
+       "year": "2026",
+       "city": "sn",
+       "place": "Dakar",
+       "sub": {
+        "fr": "Shooting du 1er juin",
+        "en": "June 1 shoot"
+       },
+       "imgs": [
+        615,
+        616,
+        617,
+        618,
+        619,
+        620,
+        895,
+        896,
+        897,
+        898
+       ]
+      },
+      {
+       "brand": "Breadwinner",
+       "year": "2025",
+       "city": "sn",
+       "place": "Dakar",
+       "sub": {
+        "fr": "Shooting du 20 juillet",
+        "en": "July 20 shoot"
+       },
+       "imgs": [
+        597,
+        598,
+        599,
+        600,
+        601,
+        460,
+        903,
+        904,
+        905,
+        906
+       ]
+      },
+      {
+       "brand": "Cenabou",
+       "year": "2025",
+       "city": "sn",
+       "place": "Dakar",
+       "sub": {
+        "fr": "Les coulisses du shooting du 4 juillet",
+        "en": "Behind the scenes of the July 4 shoot"
+       },
+       "imgs": [
+        602,
+        603,
+        604,
+        462,
+        464,
+        908,
+        968,
+        969,
+        970,
+        971,
+        972
+       ]
+      },
+      {
+       "brand": "Creativ Yutes",
+       "year": "2024",
+       "city": "none",
+       "imgs": [
+        582,
+        583,
+        584,
+        914,
+        915,
+        916,
+        917,
+        918,
+        919,
+        920
+       ]
+      },
+      {
+       "brand": "Wanda",
+       "year": "2024",
+       "city": "none",
+       "imgs": [
+        585,
+        586,
+        587,
+        588,
+        921,
+        922,
+        923,
+        924,
+        925,
+        926
+       ]
+      },
+      {
+       "brand": "RL",
+       "year": "2024",
+       "city": "none",
+       "imgs": [
+        589,
+        590,
+        591,
+        592,
+        593,
+        594,
+        595,
+        596,
+        927,
+        928
+       ]
+      }
+     ],
+     "series": {
+      "known": null,
+      "unit": "marque",
+      "verify": true
+     }
+    },
+    {
+     "id": "noblesse",
+     "title": "Noblesse",
+     "city": "mix",
+     "place": "Dakar · Montréal",
+     "sub": {
+      "fr": "Deux rendez-vous avec la marque Noblesse : sa collection World Cup Edition, shootée à Dakar, et son pop-up store à Montréal.",
+      "en": "Two moments with the Noblesse brand: its World Cup Edition collection, shot in Dakar, and its pop-up store in Montréal."
+     },
+     "eds": [
+      {
+       "year": "2026",
+       "label": "World Cup Edition",
+       "city": "sn",
+       "place": "Dakar",
+       "sub": {
+        "fr": "Le shooting de la collection",
+        "en": "The collection shoot"
+       },
+       "imgs": [
+        621,
+        622,
+        623,
+        624,
+        625,
+        626,
+        899,
+        900,
+        901,
+        902
+       ]
+      },
+      {
+       "year": "2024",
+       "label": "Pop-up Store",
+       "city": "mtl",
+       "place": "Montréal",
+       "sub": {
+        "fr": "Le pop-up store de la marque",
+        "en": "The brand's pop-up store"
+       },
+       "imgs": [
+        627,
+        632,
+        634,
+        961,
+        962,
+        963,
+        964,
+        965,
+        966,
+        967
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "projets",
+   "city": "mix",
+   "name": {
+    "fr": "Projets d'exposition",
+    "en": "Exhibition projects"
+   },
+   "short": {
+    "fr": "Expositions",
+    "en": "Exhibitions"
+   },
+   "intro": {
+    "fr": "Mes séries personnelles, pensées et construites pour être exposées. Chacune se lit dans son ordre, comme un récit.",
+    "en": "My personal series, conceived and built for exhibition. Each one reads in its own order, like a story."
+   },
+   "projects": [
+    {
+     "id": "salam",
+     "title": "As salam wa al‑‘usra",
+     "city": "none",
+     "place": "",
+     "year": "2025",
+     "sub": {
+      "fr": "Paix et famille. Mon premier projet éditorial, que j'ai porté comme directeur artistique et photographe.",
+      "en": "Peace and family. My first editorial project, which I led as creative director and photographer."
+     },
+     "order": "fixed",
+     "imgs": [
+      354,
+      355,
+      357,
+      358,
+      360,
+      361,
+      362,
+      363,
+      364,
+      365,
+      366,
+      367,
+      368,
+      369,
+      370,
+      371,
+      372,
+      373,
+      374
+     ],
+     "role": {
+      "fr": "Direction artistique et photographie",
+      "en": "Creative direction and photography"
+     }
+    },
+    {
+     "id": "bourrasque",
+     "title": "La bourrasque de la presqu'île du Cap-Vert",
+     "city": "sn",
+     "place": "Dakar",
+     "sub": {
+      "fr": "Des portraits face à l'océan, sur les plages de la presqu'île du Cap-Vert où s'étend Dakar, du coucher du soleil à la nuit tombée.",
+      "en": "Portraits facing the ocean, on the beaches of the Cap-Vert peninsula where Dakar lies, from sunset into nightfall."
+     },
+     "order": "fixed",
+     "imgs": [
+      375,
+      376,
+      377,
+      379,
+      380,
+      381,
+      382,
+      384,
+      386,
+      387,
+      388,
+      389,
+      390,
+      391,
+      392,
+      393,
+      394,
+      395
+     ]
+    },
+    {
+     "id": "meca",
+     "title": "Mécanique passionnelle",
+     "city": "sn",
+     "place": "Dakar · Olympique Club",
+     "year": "2025",
+     "sub": {
+      "fr": "Une série nocturne née des matchs de basket improvisés entre amis, tard dans la nuit, sous la lumière artificielle du terrain. Des joueurs de toutes les générations et de tous les horizons s'y retrouvent. J'y cherche la mécanique du geste (courir, pivoter, défendre, sauter), devenue chorégraphie collective, et celle des émotions : la colère d'une faute contestée, la joie d'un panier décisif, la respiration lourde après l'effort. Malgré la fatigue et le travail du lendemain, chacun revient sur le terrain. Le temps d'un match, les différences s'effacent : il ne reste que le jeu, une rivalité saine et la fraternité.",
+      "en": "A night series born from pickup basketball games among friends, late at night, under the court's artificial light. Players of every generation and background meet there. I look for the mechanics of the gesture (running, pivoting, defending, jumping), turned into a collective choreography, and the mechanics of emotion: the anger of a disputed foul, the joy of a decisive basket, the heavy breathing after the effort. Despite the fatigue and work the next morning, everyone keeps coming back to the court. For the length of a game, differences fade: all that remains is the game, healthy rivalry and brotherhood."
+     },
+     "credits": [
+      {
+       "k": {
+        "fr": "L'œuvre",
+        "en": "The work"
+       },
+       "names": [
+        {
+         "fr": "10 photographies",
+         "en": "10 photographs"
+        },
+        {
+         "fr": "Tirages giclée sur Canson Rag Photographique 310 g/m²",
+         "en": "Giclée prints on Canson Rag Photographique 310 g/m²"
+        },
+        {
+         "fr": "150 × 100 cm au total",
+         "en": "150 × 100 cm overall"
+        },
+        {
+         "fr": "Contrecollés sur Dibond, cadre galerie noir mat",
+         "en": "Mounted on Dibond, matte black gallery frame"
+        }
+       ]
+      }
+     ],
+     "order": "fixed",
+     "imgs": [
+      399,
+      400,
+      401,
+      402,
+      403,
+      404,
+      405,
+      406,
+      407,
+      408
+     ],
+     "featured": 5
+    }
+   ]
+  },
+  {
+   "id": "entre-deux-villes",
+   "city": "mix",
+   "name": {
+    "fr": "Entre deux villes",
+    "en": "Between two cities"
+   },
+   "short": {
+    "fr": "Deux villes",
+    "en": "Two cities"
+   },
+   "intro": {
+    "fr": "Dakar et Montréal, mes deux villes : leurs rues, leurs lumières, leurs horizons.",
+    "en": "Dakar and Montréal, my two cities: their streets, their light, their horizons."
+   },
+   "projects": [
+    {
+     "id": "rue",
+     "title": {
+      "fr": "Rues et paysages",
+      "en": "Streets and landscapes"
+     },
+     "city": "mix",
+     "place": "Dakar · Montréal",
+     "year": "",
+     "sub": {
+      "fr": "",
+      "en": ""
+     },
+     "imgs": [
+      153,
+      154,
+      155,
+      156,
+      157,
+      158,
+      554,
+      555,
+      556,
+      557,
+      558,
+      559,
+      560,
+      561,
+      562
+     ]
+    }
+   ]
+  }
+ ]
+}

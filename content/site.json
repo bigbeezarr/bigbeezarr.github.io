@@ -1,0 +1,10 @@
+{
+ "email": "baeypro@gmail.com",
+ "phone": "(438) 304-7844",
+ "phoneHref": "+14383047844",
+ "instagram": ["bigbeezarr", "beyethekage"],
+ "api": "",
+ "booking": {"enabled": true, "types": ["soiree", "concert", "sport", "marque", "portrait", "exposition", "autre"]},
+ "legalOk": false,
+ "projectPages": true
+}

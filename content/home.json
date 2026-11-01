@@ -1,0 +1,342 @@
+{
+ "hero": [
+  349,
+  647,
+  564,
+  976,
+  566,
+  706,
+  3,
+  652,
+  655,
+  975,
+  351,
+  977,
+  649,
+  565,
+  974,
+  465,
+  663,
+  656,
+  973,
+  567,
+  978,
+  572,
+  650,
+  568,
+  570,
+  569,
+  571
+ ],
+ "heroLab": {
+  "349": {
+   "name": "SDM",
+   "meta": {
+    "fr": "Concert à Montréal, 2025",
+    "en": "Concert in Montréal, 2025"
+   }
+  },
+  "647": {
+   "name": "Wally Seck",
+   "meta": {
+    "fr": "BAL × Wave, Dakar 2026",
+    "en": "BAL × Wave, Dakar 2026"
+   }
+  },
+  "564": {
+   "name": "Tiakola",
+   "meta": {
+    "fr": "MAD Festival, Montréal 2025",
+    "en": "MAD Festival, Montréal 2025"
+   }
+  },
+  "566": {
+   "name": "Mia Guissé",
+   "meta": {
+    "fr": "Concert de Maggu VJ, Dakar 2026",
+    "en": "Maggu VJ concert, Dakar 2026"
+   }
+  },
+  "706": {
+   "name": "Alphizi",
+   "meta": {
+    "fr": "Créateur des soirées Jelani, Dakar 2026",
+    "en": "Creator of the Jelani parties, Dakar 2026"
+   }
+  },
+  "3": {
+   "name": "Uncle Waffles",
+   "meta": {
+    "fr": "",
+    "en": ""
+   }
+  },
+  "652": {
+   "name": "Massamba Amadeus",
+   "meta": {
+    "fr": "Festival DLB, Dakar 2025",
+    "en": "DLB festival, Dakar 2025"
+   }
+  },
+  "975": {
+   "name": "Astar",
+   "meta": {
+    "fr": "Concert Canabasse & Astar, Montréal 2026",
+    "en": "Concert Canabasse & Astar, Montréal 2026"
+   }
+  },
+  "351": {
+   "name": "Youssef Swatts",
+   "meta": {
+    "fr": "Concert à Montréal, 2025",
+    "en": "Concert in Montréal, 2025"
+   }
+  },
+  "649": {
+   "name": "Dudu fait des vidéos",
+   "meta": {
+    "fr": "Soirée Jelani, Dakar 2025",
+    "en": "Jelani party, Dakar 2025"
+   }
+  },
+  "565": {
+   "name": "Zepeck",
+   "meta": {
+    "fr": "MAD Festival, Montréal 2025",
+    "en": "MAD Festival, Montréal 2025"
+   }
+  },
+  "465": {
+   "name": "Diariatou Sow",
+   "meta": {
+    "fr": "Coulisses du shooting Cenabou, Dakar 2025",
+    "en": "Behind the scenes, Cenabou shoot, Dakar 2025"
+   }
+  },
+  "663": {
+   "name": "Bass Thioung",
+   "meta": {
+    "fr": "Jelani La Croisette, Dakar 2025",
+    "en": "Jelani La Croisette, Dakar 2025"
+   }
+  },
+  "973": {
+   "name": "Canabasse",
+   "meta": {
+    "fr": "Concert Canabasse & Astar, Montréal 2026",
+    "en": "Concert Canabasse & Astar, Montréal 2026"
+   }
+  },
+  "974": {
+   "name": "Ibro Nadio",
+   "meta": {
+    "fr": "Concert de Maggu VJ, Dakar 2026",
+    "en": "Maggu VJ concert, Dakar 2026"
+   }
+  },
+  "978": {
+   "name": "El Hadj Diallo",
+   "meta": {
+    "fr": "OC Runs, Dakar 2025",
+    "en": "OC Runs, Dakar 2025"
+   }
+  },
+  "567": {
+   "name": "Ada Boy",
+   "meta": {
+    "fr": "BAL × Wave, Dakar 2026",
+    "en": "BAL × Wave, Dakar 2026"
+   }
+  },
+  "572": {
+   "name": "Babacar Ossoko",
+   "meta": {
+    "fr": "OC Runs, Dakar 2026",
+    "en": "OC Runs, Dakar 2026"
+   }
+  },
+  "650": {
+   "name": "VJ",
+   "meta": {
+    "fr": "Concert de Maggu VJ, Dakar 2026",
+    "en": "Maggu VJ concert, Dakar 2026"
+   }
+  },
+  "568": {
+   "name": "Ndakhte",
+   "meta": {
+    "fr": "BAL × Wave, Dakar 2026",
+    "en": "BAL × Wave, Dakar 2026"
+   }
+  },
+  "570": {
+   "name": "Pape Djibril Ndiaye",
+   "meta": {
+    "fr": "Coulisses du shooting Cenabou, Dakar 2025",
+    "en": "Behind the scenes, Cenabou shoot, Dakar 2025"
+   }
+  },
+  "569": {
+   "name": "Abba No Stress",
+   "meta": {
+    "fr": "BAL × Wave, Dakar 2026",
+    "en": "BAL × Wave, Dakar 2026"
+   }
+  },
+  "571": {
+   "name": "Jean Jacques Boissy",
+   "meta": {
+    "fr": "OC Runs, Dakar 2025",
+    "en": "OC Runs, Dakar 2025"
+   }
+  },
+  "976": {
+   "name": "ISS 814",
+   "meta": {
+    "fr": "Jelani Caribbean Edition, Dakar 2024",
+    "en": "Jelani Caribbean Edition, Dakar 2024"
+   }
+  },
+  "655": {
+   "name": "Jeeba",
+   "meta": {
+    "fr": "Jelani La Croisette, Dakar 2025",
+    "en": "Jelani La Croisette, Dakar 2025"
+   }
+  },
+  "977": {
+   "name": "Ashs the Best",
+   "meta": {
+    "fr": "Jelani Coachella Edition, Saly 2026",
+    "en": "Jelani Coachella Edition, Saly 2026"
+   }
+  },
+  "656": {
+   "name": "Dip Doundou Guiss",
+   "meta": {
+    "fr": "Jelani La Croisette, Dakar 2025",
+    "en": "Jelani La Croisette, Dakar 2025"
+   }
+  }
+ },
+ "about": [
+  11,
+  12,
+  13,
+  14,
+  15
+ ],
+ "wall": [
+  2,
+  6,
+  7,
+  145,
+  146,
+  147,
+  148,
+  149,
+  151,
+  442,
+  443,
+  444,
+  445,
+  446,
+  447,
+  448,
+  449,
+  450,
+  451,
+  452,
+  453,
+  454,
+  455,
+  456,
+  457,
+  458,
+  459,
+  461,
+  463,
+  466,
+  467,
+  470,
+  471,
+  472,
+  473,
+  474,
+  475,
+  476,
+  477,
+  478,
+  479,
+  480,
+  481,
+  482,
+  483,
+  484,
+  485,
+  486,
+  487,
+  488,
+  489,
+  490,
+  491,
+  492,
+  493,
+  494,
+  495,
+  496,
+  497,
+  498,
+  499,
+  500,
+  501,
+  502,
+  503,
+  504,
+  505,
+  506,
+  507,
+  508,
+  651,
+  510,
+  511,
+  512,
+  513,
+  514,
+  515,
+  516,
+  517,
+  518,
+  519,
+  520,
+  521,
+  523,
+  525,
+  526,
+  527,
+  528,
+  529,
+  530,
+  531,
+  532,
+  533,
+  534,
+  535,
+  536,
+  537,
+  538,
+  539,
+  540
+ ],
+ "me": 159,
+ "cap": {
+  "228": "Collège LaSalle",
+  "229": "Bleu Ciel",
+  "230": "Bleu Ciel",
+  "231": "1er Mai",
+  "232": "Frikiton",
+  "234": "Amesika",
+  "235": "Nkundi",
+  "236": "Né à Montréal"
+ }
+}
