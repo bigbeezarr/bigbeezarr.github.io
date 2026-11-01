@@ -1,4 +1,4 @@
-# Automatic photo updates for bigbeezarr.github.io
+# Automatic photo updates for bigbeezarr.com
 
 A scheduled task runs this runbook once a day. The goal: put the photos Mamadou has
 newly edited and exported from Lightroom on his portfolio, curated with the same standard
@@ -182,4 +182,4 @@ Claude-Session: <this run's session link>
   (records the new and skipped photos as known so the next run does not see them again).
 - Do not update the claude.ai preview artifact: it is over its 511-file limit. GitHub Pages is the site.
 - Report in French, short: projects and years updated with the number of photos, new projects,
-  folders skipped and why, and the link https://bigbeezarr.github.io. The workflow plus GitHub Pages take about three minutes.
+  folders skipped and why, and the link https://bigbeezarr.com. The workflow plus GitHub Pages take about three minutes.

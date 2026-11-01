@@ -7,7 +7,7 @@ n'autorise que les fichiers du site.
 import html, json, os, re
 from PIL import Image, ImageOps
 
-ORIGIN = "https://bigbeezarr.github.io"
+ORIGIN = "https://bigbeezarr.com"
 E = lambda s: html.escape(str(s or ""), quote=True)
 def T(v, lang):
     if v is None: return ""

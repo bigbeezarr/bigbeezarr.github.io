@@ -1,4 +1,4 @@
-# Wrap index.html (built by build.py) as the standalone page of bigbeezarr.github.io, then write the static pages
+# Wrap index.html (built by build.py) as the standalone page of bigbeezarr.com, then write the static pages
 # (projects, 404, legal), icons, fonts, robots.txt, sitemap.xml, security headers and og.jpg.
 # usage: python3 gh_build.py --site /path/to/main-branch-checkout
 import argparse, base64, datetime, hashlib, json, os, re, shutil, sys
@@ -101,6 +101,9 @@ page404 = re.sub(r'(href|src)="\./', r'\1="/', page404)  # chemins absolus : la 
 open(os.path.join(a.site, '404.html'), 'w', encoding='utf-8').write(page404)
 
 # ---- référencement : robots.txt et plan du site (les pages privées n'y figurent pas ; robots.txt n'est pas une protection) ----
+# Domaine personnalisé de GitHub Pages : le fichier CNAME de la branche publiée le fixe (rien pour une adresse *.github.io).
+_host = ORIGIN.split("://", 1)[1].strip("/")
+if not _host.endswith(".github.io"): open(os.path.join(a.site, 'CNAME'), 'w').write(_host + "\n")
 open(os.path.join(a.site, 'robots.txt'), 'w').write(f'User-agent: *\nAllow: /\nSitemap: {ORIGIN}/sitemap.xml\n')
 # lastmod honnête : la date ne change que si la page a changé (empreinte gardée dans .build-pages.json sur le site).
 today = datetime.date.today().isoformat()

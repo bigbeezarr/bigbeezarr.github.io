@@ -6,5 +6,6 @@
  "api": "",
  "booking": {"enabled": true, "types": ["soiree", "concert", "sport", "marque", "portrait", "exposition", "autre"]},
  "legalOk": false,
- "projectPages": true
+ "projectPages": true,
+ "turnstile": "0x4AAAAAAFv6J6VWNrQot6vT"
 }
