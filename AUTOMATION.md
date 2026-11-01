@@ -8,7 +8,13 @@ Branches of `bigbeezarr/bigbeezarr.github.io`:
 - `main`: the published site (`index.html`, `img/f/NNN.webp`, `og.jpg`, `.nojekyll`). GitHub Pages serves it.
   `main` also holds the client gallery (`galerie/`, `admin/`, `worker/`, `.github/workflows/galerie.yml`). Never delete or overwrite those folders: `gh_build.py` only writes `index.html`, `og.jpg`, `img/` (with the phone and tablet copies `img/m` and `img/s`, made by `variants.py`), `robots.txt`, `sitemap.xml`, `_headers` and `.well-known/security.txt`. `galerie/config.js` is written by the gallery deploy workflow; leave it as is.
 - `source` (this branch): the pipeline (`build.py`, `src.html`, `meta.json`, `colors.json`,
-  `hashes.json`, `auto.json`, `new/ids.json`, `gh_build.py`, `variants.py`, `tools/`).
+  `hashes.json`, `new/ids.json`, `gh_build.py`, `pages.py`, `variants.py`, `tools/`) and the **content**:
+  `content/portfolio.json` (chapters, projects, editions, photo ids, alt texts), `content/home.json` (home page),
+  `content/site.json` (contact details, settings), `content/legal/*.html`, `content/404.html`.
+  Mamadou also edits these JSON files from his admin page (`/admin/` → Portfolio): each save is a commit on `source`.
+- Publishing is automatic: every push to `source` that touches the content or the pipeline runs the
+  workflow `.github/workflows/publier.yml`, which rebuilds the site and commits the result on `main`.
+  You never build-and-push `main` by hand any more; you only add the new full-size photos there (step 4).
 
 ## 0. Preconditions
 
@@ -122,7 +128,7 @@ python3 tools/add_photos.py --img ../site/img/f --group auto-YYYYMMDD-<slug> /mn
 ```
 
 `add_photos.py` prints the new ids and rejects near-duplicates of photos already on the site.
-Then record where they go in `auto.json`:
+Then write where they go in an additions file, for example `/tmp/ajouts.json`:
 
 ```json
 {
@@ -131,24 +137,37 @@ Then record where they go in `auto.json`:
     {"project": "afroteo", "year": "2026", "label": "Vol. 2", "sub": {"fr": "Édition du 5 novembre", "en": "November 5th edition"}, "imgs": [441, 442]}
   ],
   "projects": [
-    {"chapter": "scene", "project": {"id": "dlb", "title": "DLB", "city": "sn", "place": "Dakar", "year": "2025",
+    {"chapter": "scene", "project": {"id": "nouveau-projet", "title": "Nouveau projet", "city": "sn", "place": "Dakar", "year": "2025",
       "sub": {"fr": "Concert", "en": "Concert"}, "imgs": [443, 444, 445]}}
   ]
 }
 ```
 
 An edition entry with the same project, year and label as an existing rubric extends it;
-otherwise it creates a new year rubric. Project ids are lowercase ASCII and unique.
+otherwise it creates a new year rubric (brand shoots: add `"brand"`). Project ids are lowercase ASCII and unique:
+`merge_auto.py` refuses an id that already exists (for example `dlb`) and any photo used twice.
 
-Build, test, publish:
+Apply it to the content, check, then publish in this order (photos first, content second):
 
 ```bash
-python3 build.py                                   # writes ./index.html; fails if an image is unused or duplicated
-python3 gh_build.py --site ../site                 # wraps it into ../site/index.html and refreshes og.jpg
-node tools/smoke.js "$(cd ../site && pwd)"   # must print no errors and no broken images
-git add -A && git commit -m "Add photos: <summary>" -m "<trailers>" && git push origin source
-cd ../site && git add -A && git commit -m "Add photos: <summary>" -m "<trailers>" && git push origin main
+git pull --ff-only origin source                   # Mamadou may have saved from the admin page since the clone
+python3 tools/merge_auto.py /tmp/ajouts.json       # writes content/portfolio.json (the file the admin page edits)
+python3 build.py                                   # fails if an image is unused or duplicated
+python3 gh_build.py --site ../site                 # local preview only, to run the smoke test
+node tools/smoke.js "$(cd ../site && pwd)"         # must print no errors and no broken images
+# 1) the new full-size photos on main (nothing else: the workflow regenerates the pages and the smaller copies)
+cd ../site && git restore --staged . && git add img/f && git commit -m "Ajoute les photos : <summary>" -m "<trailers>" && git push origin main
+git checkout -- . && git clean -fdq -e img/f        # drop the local preview build
+# 2) the content and catalogue on source: this push starts « Publier le portfolio », which updates the site
+cd ../src && git add -A && git commit -m "Ajoute les photos : <summary>" -m "<trailers>" && git push origin source
 ```
+
+If the push to `source` is rejected because Mamadou saved from the admin page in the meantime:
+`git pull --rebase origin source`, run `python3 build.py` again, then push. Never force-push.
+Check the run (about two minutes): `gh run list --workflow publier.yml --branch source -L 1` must show `completed success`;
+if `gh` is not signed in, `git -C ../site fetch -q origin main && git -C ../site log -1 --format=%s origin/main` must print
+« Publication automatique du portfolio ». If the run failed, report its error (`gh run view --log-failed`) instead of
+building `main` by hand.
 
 Commit trailers (end every commit message with them):
 
@@ -159,8 +178,8 @@ Claude-Session: <this run's session link>
 
 ## 5. Finish
 
-- Only after both pushes succeeded, on the Mac: `python3 scan_new.py --mark-all`
+- Only after both pushes succeeded and the « Publier le portfolio » run succeeded, on the Mac: `python3 scan_new.py --mark-all`
   (records the new and skipped photos as known so the next run does not see them again).
 - Do not update the claude.ai preview artifact: it is over its 511-file limit. GitHub Pages is the site.
 - Report in French, short: projects and years updated with the number of photos, new projects,
-  folders skipped and why, and the link https://bigbeezarr.github.io. GitHub Pages takes about a minute.
+  folders skipped and why, and the link https://bigbeezarr.github.io. The workflow plus GitHub Pages take about three minutes.
