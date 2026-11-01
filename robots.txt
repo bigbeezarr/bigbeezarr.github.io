@@ -1,5 +1,3 @@
 User-agent: *
 Allow: /
-Disallow: /admin/
-Disallow: /galerie/
 Sitemap: https://bigbeezarr.github.io/sitemap.xml
