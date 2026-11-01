@@ -1,4 +1,4 @@
-// Imitations locales de GitHub (API contents), Stripe (Checkout) et Resend pour les tests. node test/mock_services.mjs 9922
+// Imitations locales de GitHub (API contents), Resend et Turnstile pour les tests. node test/mock_services.mjs 9922
 import http from "node:http";
 const files = new Map(); // chemin -> { sha, content (base64) }
 let n = 0;
@@ -27,10 +27,6 @@ http.createServer(async (req, res) => {
       const nf = { sha: sha(), content: b.content }; files.set(m[1], nf);
       return send(200, { content: { sha: nf.sha }, commit: { sha: "c" + nf.sha } });
     }
-  }
-  if (u.pathname === "/v1/checkout/sessions" && req.method === "POST") {
-    if (!/^Bearer sk_test/.test(req.headers.authorization || "")) return send(401, { error: { message: "Invalid API Key" } });
-    return send(200, { id: "cs_test_" + (++n), url: "https://checkout.stripe.test/pay/cs_test_" + n });
   }
   if (u.pathname === "/emails" && req.method === "POST") return send(200, { id: "em_" + (++n) });
   if (u.pathname === "/turnstile/v0/siteverify" && req.method === "POST") { // jeton « tok-ok » accepté, avec le bon secret

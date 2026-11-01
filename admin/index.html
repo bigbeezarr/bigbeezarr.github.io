@@ -89,7 +89,6 @@ h2.s{margin:0 0 12px;font-family:var(--font-d);font-weight:800;font-size:1.2rem}
 .ev-log div{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
 .login{min-height:calc(100dvh - 61px);display:grid;place-items:center;padding:24px}
 .login .card{width:min(420px,100%);padding:28px}
-input[type=range]{accent-color:var(--accent);width:100%}
 .anav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;border-top:1px solid var(--line)}
 @media (max-width:820px){.anav{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 36px),transparent);padding-right:28px}}
 .anav a{flex:none;padding:12px 12px;font-family:var(--font-d);font-weight:700;font-size:.86rem;color:var(--ink-3);text-decoration:none;border-bottom:2px solid transparent}
@@ -187,7 +186,6 @@ input[type=range]{accent-color:var(--accent);width:100%}
       <button role="tab" data-tab="photos" aria-selected="true">Photos</button>
       <button role="tab" data-tab="settings">Réglages</button>
       <button role="tab" data-tab="guests" id="tabGuests">Invités</button>
-      <button role="tab" data-tab="faces">Visages</button>
       <button role="tab" data-tab="stats">Statistiques</button>
     </nav>
 
@@ -238,7 +236,7 @@ input[type=range]{accent-color:var(--accent);width:100%}
         <div class="field"><span>Type de galerie</span>
           <div class="kinds">
             <label class="kind"><input type="radio" name="kind" value="private"><b>Privée</b><span>Un client. Lien secret, mot de passe possible.</span></label>
-            <label class="kind"><input type="radio" name="kind" value="event"><b>Événement</b><span>Plusieurs participants. Recherche par visage possible.</span></label>
+            <label class="kind"><input type="radio" name="kind" value="event"><b>Événement</b><span>Plusieurs participants. Liste publique possible.</span></label>
             <label class="kind"><input type="radio" name="kind" value="restricted"><b>Restreinte</b><span>Chaque invité télécharge seulement ses photos attribuées.</span></label>
           </div>
         </div>
@@ -260,28 +258,6 @@ input[type=range]{accent-color:var(--accent);width:100%}
       <div class="box" style="margin-bottom:14px"><p>Chaque invité reçoit son propre lien. Dans une galerie restreinte, il ne peut télécharger que les photos que vous lui attribuez (onglet Photos, « Attribuer à… »).</p>
         <form class="row" id="guestForm"><input class="input" name="name" placeholder="Nom de l'invité" style="flex:1;min-width:200px" maxlength="120"><button class="btn primary" type="submit">Ajouter un invité</button></form></div>
       <div class="stack" id="guestList"></div>
-    </div>
-
-    <div data-pane="faces" hidden>
-      <div id="faceOff" class="box warnbox" hidden><p><b>Recherche par visage non configurée.</b> Ajoutez les clés Amazon Rekognition (région Canada) au serveur : voir <code>worker/README.md</code>, section « Reconnaissance faciale ».</p></div>
-      <div id="faceOn" class="stack">
-        <div class="box">
-          <div class="row" style="justify-content:space-between"><div><b style="font-family:var(--font-d);font-size:1.1rem" id="fState"></b><p class="hint" id="fInfo" style="margin:4px 0 0"></p></div><button class="btn" id="fToggle" type="button"></button></div>
-        </div>
-        <div class="box" id="fCfg">
-          <div class="form" style="max-width:none">
-            <label class="field"><span>Seuil « probable » : <b id="thrV"></b> % de similarité</span><input type="range" min="80" max="99" step="1" id="thr"><small class="hint">Plus haut : moins d'erreurs, mais certaines photos de profil ou lointaines peuvent manquer. Les résultats sous ce seuil sont montrés « à vérifier ».</small></label>
-            <label class="field" style="max-width:260px"><span>Effacer l'index après (jours)</span><input class="input" type="number" min="1" max="365" id="ret"></label>
-            <div class="row"><button class="btn small" id="fSave" type="button">Enregistrer</button></div>
-          </div>
-        </div>
-        <div class="box" id="fIdx">
-          <h2 class="s">Index des visages</h2>
-          <p id="fIdxInfo"></p>
-          <div class="bar-prog" style="margin:10px 0 14px"><i id="fBar"></i></div>
-          <div class="row"><button class="btn primary" id="fRun" type="button">Indexer les visages</button><button class="btn small danger" id="fDrop" type="button">Effacer l'index</button></div>
-        </div>
-      </div>
     </div>
 
     <div data-pane="stats" hidden>
@@ -319,20 +295,6 @@ input[type=range]{accent-color:var(--accent);width:100%}
     <p class="err" id="newErr"></p>
     <button class="btn primary" type="button" id="newGo">Créer la galerie</button>
   </form>
-</dialog>
-
-<dialog id="faceDlg" class="bottom">
-  <div class="sheet stack" style="position:relative">
-    <button class="x" type="button" data-close aria-label="Fermer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
-    <h2>Activer la recherche par visage</h2>
-    <p>Les visages de toutes les personnes photographiées dans cette galerie seront indexés. La loi exige leur consentement. Cochez seulement ce qui est vrai.</p>
-    <label class="check"><input type="checkbox" class="fa"><span>Les personnes photographiées ont été informées de la recherche par visage et y ont consenti de façon expresse (inscription, formulaire signé ou équivalent).</span></label>
-    <label class="check"><input type="checkbox" class="fa"><span>Pour une activité au Québec : la déclaration à la Commission d'accès à l'information a été transmise au moins 60 jours avant la mise en service. Pour le Sénégal : les formalités auprès de la CDP sont faites.</span></label>
-    <label class="check"><input type="checkbox" class="fa"><span>Je fixe une durée de conservation courte et j'effacerai l'index dès qu'il ne sert plus.</span></label>
-    <label class="field"><span>Base du consentement (gardée dans le dossier)</span><textarea class="input" id="faNote" maxlength="600" placeholder="Ex. Formulaire signé par les 14 joueurs le 3 octobre 2026 ; déclaration CAI envoyée le 1er août 2026."></textarea></label>
-    <p class="err" id="faErr"></p>
-    <button class="btn primary" type="button" id="faGo" disabled>Activer pour cette galerie</button>
-  </div>
 </dialog>
 
 <dialog id="assignDlg" class="bottom">

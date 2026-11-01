@@ -1,5 +1,5 @@
-// Test de bout en bout de l'API (banc d'essai local + imitation Rekognition).
-// Lancer d'abord : node test/devserver.mjs 8787 <dir> (avec SINGLE_MAX/PART_SIZE petits) et python3 test/mock_rekognition.py 9911
+// Test de bout en bout de l'API (banc d'essai local).
+// Lancer d'abord : node test/devserver.mjs 8787 <dir> (avec SINGLE_MAX/PART_SIZE petits)
 import fs from "node:fs";
 import zlib from "node:zlib";
 import crypto from "node:crypto";
@@ -136,44 +136,13 @@ check((await call("GET", a1.o.replace(`/${r1.id}?`, `/${r2.id}?`))).status === 4
 const rz = await call("POST", `/api/g/${R.slug}/zip`, { token: VG, body: { all: true } });
 check(rz.data.parts[0].count === 1, "le ZIP ne contient que les photos autorisées");
 
-console.log("Reconnaissance faciale (imitation)");
-const J = up.find(u => u.meta.mime === "image/jpeg" && u.id !== up[1].id), RAWF = up.find(u => u.meta.mime !== "image/jpeg");
-check((await call("POST", `/api/g/${G.slug}/faces/search`, { token: V1, raw: J.bytes, headers: { "Content-Type": "image/jpeg", "X-Consent": "1" } })).status === 409, "recherche fermée tant que désactivée");
-check((await call("PATCH", `/api/admin/galleries/${G.id}`, { token: A, body: { face_enabled: 1 } })).status === 400, "activation refusée sans attestation de consentement");
-const en = await call("PATCH", `/api/admin/galleries/${G.id}`, { token: A, body: { face_enabled: 1, face_ack: true, face_note: "Test local", face_threshold: 92 } });
-check(en.status === 200 && en.data.gallery.face_enabled === 1, "activation avec attestation");
-let ix, rounds = 0;
-do { ix = await call("POST", `/api/admin/galleries/${G.id}/faces/index`, { token: A, body: { max: 2 } }); rounds++; } while (ix.status === 200 && ix.data.remaining > 0 && rounds < 10);
-check(ix.status === 200 && ix.data.remaining === 0, "indexation par lots", ix.data);
-const V2 = (await call("POST", `/api/g/${G.slug}/unlock`, { body: { password: "fete2026" } })).data.token;
-check((await call("POST", `/api/g/${G.slug}/faces/search`, { token: V2, raw: J.bytes, headers: { "Content-Type": "image/jpeg" } })).status === 400, "consentement exigé");
-const fs1 = await call("POST", `/api/g/${G.slug}/faces/search`, { token: V2, raw: J.bytes, headers: { "Content-Type": "image/jpeg", "X-Consent": "1" } });
-check(fs1.status === 200 && fs1.data.matches[0] && fs1.data.matches[0].id === J.id && fs1.data.matches[0].s === 100, "la bonne photo arrive en tête", fs1.data);
-const noface = await call("POST", `/api/g/${G.slug}/faces/search`, { token: V2, raw: Buffer.alloc(1500, 1), headers: { "Content-Type": "image/jpeg", "X-Consent": "1" } });
-check(noface.status === 422 && noface.data.error === "no_face", "message clair si aucun visage");
-const badimg = await call("POST", `/api/g/${G.slug}/faces/search`, { token: V2, raw: RAWF.bytes.subarray(0, 4000), headers: { "Content-Type": "image/jpeg", "X-Consent": "1" } });
-check(badimg.status === 415 && badimg.data.error === "bad_image", "image illisible : message clair");
-const fg = await call("POST", `/api/g/${G.slug}/faces/forget`, { token: V2, raw: J.bytes, headers: { "Content-Type": "image/jpeg", "X-Consent": "1" } });
-check(fg.status === 200 && fg.data.removed >= 1, "« effacer mon visage » retire l'index");
-const fs2 = await call("POST", `/api/g/${G.slug}/faces/search`, { token: V2, raw: J.bytes, headers: { "Content-Type": "image/jpeg", "X-Consent": "1" } });
-check(!fs2.data.matches.some(m => m.id === J.id && m.s === 100), "plus retrouvé après effacement");
-const mock = await (await fetch("http://127.0.0.1:9911/")).json();
-check(mock.calls.length > 0 && mock.calls.every(c => c.signed), "toutes les requêtes AWS signées SigV4 (région Canada)");
-check(!fs.readdirSync(process.env.DATA + "/r2").some(n => n.includes("selfie")) && (await call("GET", "/api/admin/overview", { token: A })).status === 200, "aucun selfie stocké");
-
 console.log("Expiration et nettoyage");
-await call("PATCH", `/api/admin/galleries/${G.id}`, { token: A, body: { face_retention_days: 1 } });
-const det = (await call("GET", `/api/admin/galleries/${G.id}`, { token: A })).data;
-check(det.gallery.nfaces > 0 && det.gallery.face_until, "index présent avec date d'effacement");
-// Simule la fin de conservation : on avance face_until dans la base via l'API admin (rétention 1 jour), puis on lance la tâche.
-execFileSync("node", ["--no-warnings", "-e", `const {DatabaseSync}=require('node:sqlite');const d=new DatabaseSync(${JSON.stringify(process.env.DATA + "/db.sqlite")});d.prepare("UPDATE galleries SET face_until=1 WHERE id=?").run(${JSON.stringify(G.id)});`]);
-const cron = JSON.parse(execFileSync("curl", ["-s", API.replace(/:(\d+)$/, (_, p) => ":" + (+p + 1))]).toString());
-check(cron.faceIndexesDeleted === 1, "tâche quotidienne : index des visages effacé à échéance", cron);
-const det2 = (await call("GET", `/api/admin/galleries/${G.id}`, { token: A })).data;
-check(det2.gallery.nfaces === 0 && !det2.gallery.face_until, "plus aucun visage en base");
 await call("PATCH", `/api/admin/galleries/${G.id}`, { token: A, body: { expires_at: Math.floor(Date.now() / 1000) - 10 } });
 check((await call("GET", `/api/g/${G.slug}`)).status === 410, "galerie expirée : page fermée");
 check((await call("GET", ph0.o)).status === 410, "galerie expirée : originaux fermés");
+// Tâche quotidienne : sans « supprimer à l'expiration », une galerie expirée garde ses fichiers.
+const cron = JSON.parse(execFileSync("curl", ["-s", API.replace(/:(\d+)$/, (_, p) => ":" + (+p + 1))]).toString());
+check(cron.galleriesDeleted === 0 && cron.staleUploads === 0, "tâche quotidienne : galerie expirée conservée sans suppression automatique", cron);
 
 console.log("Limites et suppression");
 let last;

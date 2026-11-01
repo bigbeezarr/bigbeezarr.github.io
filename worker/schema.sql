@@ -10,18 +10,12 @@ CREATE TABLE IF NOT EXISTS galleries (
   pass_hash TEXT,                            -- mot de passe (HMAC salé + poivre secret)
   allow_download INTEGER NOT NULL DEFAULT 1,
   guest_view_all INTEGER NOT NULL DEFAULT 1, -- galerie restreinte : l'invité voit tout (1) ou seulement ses photos (0)
-  face_enabled INTEGER NOT NULL DEFAULT 0,
-  face_threshold REAL NOT NULL DEFAULT 90,   -- similarité minimale (%) pour « probable »
-  face_retention_days INTEGER NOT NULL DEFAULT 30,
-  face_until INTEGER,                        -- date d'effacement automatique de l'index des visages
-  face_note TEXT,                            -- base légale / consentement noté par le photographe
   expires_at INTEGER,
   delete_after_expiry INTEGER NOT NULL DEFAULT 0,
   cover_photo TEXT,
   views INTEGER NOT NULL DEFAULT 0,
   downloads INTEGER NOT NULL DEFAULT 0,
   zips INTEGER NOT NULL DEFAULT 0,
-  searches INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );
@@ -42,8 +36,6 @@ CREATE TABLE IF NOT EXISTS photos (
   status TEXT NOT NULL DEFAULT 'uploading',  -- uploading | ready
   version INTEGER NOT NULL DEFAULT 1,
   allow_all INTEGER NOT NULL DEFAULT 0,      -- galerie restreinte : téléchargeable par tous
-  face_state TEXT NOT NULL DEFAULT 'none',   -- none | done | skipped | error
-  faces INTEGER NOT NULL DEFAULT 0,
   downloads INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
@@ -66,16 +58,6 @@ CREATE TABLE IF NOT EXISTS guest_photos (
 );
 CREATE INDEX IF NOT EXISTS guest_photos_photo ON guest_photos(photo_id);
 
--- Seuls les identifiants des visages chez Amazon Rekognition sont gardés ici (aucune image, aucun gabarit).
-CREATE TABLE IF NOT EXISTS faces (
-  face_id TEXT PRIMARY KEY,
-  gallery_id TEXT NOT NULL,
-  photo_id TEXT NOT NULL,
-  created_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS faces_gallery ON faces(gallery_id);
-CREATE INDEX IF NOT EXISTS faces_photo ON faces(photo_id);
-
 CREATE TABLE IF NOT EXISTS zip_tickets (
   id TEXT PRIMARY KEY,
   gallery_id TEXT NOT NULL,
@@ -87,7 +69,7 @@ CREATE TABLE IF NOT EXISTS zip_tickets (
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   gallery_id TEXT NOT NULL,
-  kind TEXT NOT NULL,                        -- view | dl | zip | search | forget
+  kind TEXT NOT NULL,                        -- view | dl | zip | selection
   photo_id TEXT,
   n INTEGER NOT NULL DEFAULT 1,
   at INTEGER NOT NULL
@@ -100,7 +82,7 @@ CREATE TABLE IF NOT EXISTS attempts (
   reset_at INTEGER NOT NULL
 );
 
--- ===== Site (novembre 2026) : réservations, disponibilités, clients, sélections, statistiques, paiements =====
+-- ===== Site (novembre 2026) : réservations, disponibilités, clients, sélections, statistiques =====
 CREATE TABLE IF NOT EXISTS bookings (
   id TEXT PRIMARY KEY,
   created_at INTEGER NOT NULL,
@@ -110,8 +92,7 @@ CREATE TABLE IF NOT EXISTS bookings (
   duration TEXT, people INTEGER, budget TEXT, description TEXT, lang TEXT,
   note TEXT,                                 -- note privée du photographe
   client_id TEXT,
-  price_cents INTEGER, deposit_cents INTEGER, currency TEXT,
-  pay_status TEXT NOT NULL DEFAULT 'none'    -- none | deposit_due | deposit_paid | paid | refunded
+  price_cents INTEGER, deposit_cents INTEGER, currency TEXT -- montants du devis, à titre d'information
 );
 CREATE INDEX IF NOT EXISTS bookings_date ON bookings(date, status);
 CREATE INDEX IF NOT EXISTS bookings_created ON bookings(created_at);
@@ -159,17 +140,3 @@ CREATE TABLE IF NOT EXISTS hits (
   n INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (day, path, device)
 );
-
-CREATE TABLE IF NOT EXISTS payments (
-  id TEXT PRIMARY KEY,
-  booking_id TEXT NOT NULL,
-  kind TEXT NOT NULL,                        -- deposit | full
-  amount_cents INTEGER NOT NULL,
-  currency TEXT NOT NULL,
-  status TEXT NOT NULL,                      -- pending | paid | failed | refunded
-  provider TEXT NOT NULL,
-  provider_ref TEXT,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS payments_booking ON payments(booking_id);

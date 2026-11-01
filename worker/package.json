@@ -2,9 +2,9 @@
   "name": "bbz-galerie",
   "private": true,
   "type": "module",
-  "description": "Serveur de la galerie client BIGBEEZARR (Cloudflare Workers + R2 + D1, Amazon Rekognition en option).",
+  "description": "Serveur de la galerie client BIGBEEZARR (Cloudflare Workers + R2 + D1).",
   "scripts": {
-    "test": "node test/sigv4.test.mjs",
+    "test": "bash test/run-all.sh",
     "dev": "node --no-warnings test/devserver.mjs 8787",
     "deploy": "wrangler deploy"
   },

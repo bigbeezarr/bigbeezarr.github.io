@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Toute la batterie de tests du serveur, sans compte ni réseau : imitations locales d'AWS Rekognition, GitHub, Stripe et Resend.
+# Toute la batterie de tests du serveur, sans compte ni réseau : imitations locales de GitHub, Resend et Turnstile.
 #   bash test/run-all.sh          (depuis worker/ ; demande Node 22+, Python 3 et Pillow)
 # Utilisé aussi par le déploiement automatique, avant toute mise en ligne.
 set -euo pipefail
@@ -25,35 +25,31 @@ open(f"{t}/fichier.NEF", "wb").write(os.urandom(1600000))
 PY
 
 # Un ancien serveur de test resté allumé fausserait tout : on refuse de démarrer si un port est déjà pris.
-for port in 8787 8788 9911 9922; do
+for port in 8787 8788 9922; do
   if curl -s -o /dev/null --max-time 1 "http://127.0.0.1:$port/"; then echo "Port $port déjà utilisé : arrêtez l'ancien serveur de test avant de relancer."; exit 1; fi
 done
 wait_up() { for _ in $(seq 1 60); do curl -fs "$1" >/dev/null 2>&1 && return 0; sleep 0.25; done; echo "serveur injoignable : $1"; exit 1; }
-start_api() { # $1 = mode (full | face | bare)
+start_api() { # $1 = mode (full | bare)
   [ -n "${API_PID:-}" ] && kill "$API_PID" 2>/dev/null && sleep 0.4
   rm -rf "$T/data"
-  local e=(SINGLE_MAX=1048576 PART_SIZE=524288 AWS_ACCESS_KEY_ID=AKIATEST AWS_SECRET_ACCESS_KEY=x AWS_ENDPOINT=http://127.0.0.1:9911/)
-  [ "$1" != bare ] && e+=(FACE_SEARCH=on)
+  local e=(SINGLE_MAX=1048576 PART_SIZE=524288)
   [ "$1" = full ] && e+=(GITHUB_TOKEN=gh_test_ci GITHUB_REPO=bigbeezarr/bigbeezarr.github.io GITHUB_BRANCH=source GITHUB_API=http://127.0.0.1:9922
-    STRIPE_SECRET_KEY=sk_test_ci STRIPE_WEBHOOK_SECRET=whsec_test STRIPE_API=http://127.0.0.1:9922
     RESEND_API_KEY=re_test NOTIFY_EMAIL=photographe@example.com RESEND_ENDPOINT=http://127.0.0.1:9922/emails
     TURNSTILE_SECRET=ts_secret_test TURNSTILE_ENDPOINT=http://127.0.0.1:9922/turnstile/v0/siteverify)
   env "${e[@]}" node --no-warnings test/devserver.mjs 8787 "$T/data" > "$T/api.log" 2>&1 & API_PID=$!; PIDS+=("$API_PID")
   wait_up http://127.0.0.1:8787/api/health
 }
 
-node test/sigv4.test.mjs
-python3 test/mock_rekognition.py 9911 > "$T/rek.log" 2>&1 & PIDS+=($!)
 node test/mock_services.mjs 9922 > "$T/mock.log" 2>&1 & PIDS+=($!)
-wait_up http://127.0.0.1:9911/; wait_up http://127.0.0.1:9922/
+wait_up http://127.0.0.1:9922/
 
-echo "== Galeries, téléchargements, ZIP, visages (imitation) =="
-start_api face
+echo "== Galeries, téléchargements, ZIP =="
+start_api bare
 DATA="$T/data" node --no-warnings test/api.test.mjs "$T/photo1.jpg" "$T/photo2.jpg" "$T/photo3.jpg" "$T/fichier.NEF"
 
-echo "== Réservations, clients, sélections, statistiques, contenu, paiements =="
+echo "== Réservations, clients, sélections, statistiques, contenu =="
 start_api full
-STRIPE_WEBHOOK_SECRET=whsec_test FACE_SEARCH=on node --no-warnings test/site.test.mjs
+node --no-warnings test/site.test.mjs
 
 echo "== Sans aucune clé facultative =="
 start_api bare

@@ -1,4 +1,4 @@
-/* Tableau de bord BIGBEEZARR : galeries, import en masse, réglages d'accès, invités, visages, statistiques. */
+/* Tableau de bord BIGBEEZARR : galeries, import en masse, réglages d'accès, invités, statistiques. */
 (() => {
 "use strict";
 // Ne jamais s'afficher encadrée dans une autre page (protection contre le détournement de clic).
@@ -18,18 +18,16 @@ const fmtWhen = s => new Date(s * 1000).toLocaleString("fr-CA", { day: "numeric"
 const toDay = s => { if (!s) return ""; const d = new Date(s * 1000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const endOfDay = v => v ? Math.floor(new Date(v + "T23:59:59").getTime() / 1000) : null;
 const KIND = { private: "Privée", event: "Événement", restricted: "Restreinte" };
-const EV = { view: "Ouverture de la galerie", dl: "Téléchargement d'une photo", zip: "Téléchargement ZIP", search: "Recherche par visage", forget: "Visage effacé par un participant" };
+const EV = { view: "Ouverture de la galerie", dl: "Téléchargement d'une photo", zip: "Téléchargement ZIP" };
 
 let toastT;
 function toast(msg, bad) { const el = $("#toast"); el.textContent = msg; el.classList.toggle("bad", !!bad); el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 3200); }
 const ERR = {
   bad_password: "Mot de passe incorrect.", too_many_attempts: "Trop d'essais. Patientez quelques minutes.", admin_required: "Session expirée, reconnectez-vous.",
-  title_required: "Le titre est obligatoire.", face_ack_required: "Cochez les attestations et décrivez la base du consentement.", face_not_configured: "Clés AWS absentes : la recherche par visage n'est pas configurée.",
-  face_disabled: "Activez d'abord la recherche par visage.", size_mismatch: "Le fichier reçu n'a pas la bonne taille. Réessayez.", server_not_configured: "Serveur incomplet : la clé de signature manque.",
-  admin_not_configured: "Serveur incomplet : le mot de passe administrateur manque.", face_engine_error: "Amazon Rekognition a refusé la requête. Vérifiez les clés et la région.",
-  face_switched_off: "La recherche par visage est coupée sur le serveur (FACE_SEARCH). Elle ne s'active qu'après les démarches légales : voir worker/README.md.",
+  title_required: "Le titre est obligatoire.", size_mismatch: "Le fichier reçu n'a pas la bonne taille. Réessayez.", server_not_configured: "Serveur incomplet : la clé de signature manque.",
+  admin_not_configured: "Serveur incomplet : le mot de passe administrateur manque.",
   date_taken: "Cette date est déjà confirmée ou bloquée.", content_not_configured: "Édition du portfolio non reliée à GitHub (GITHUB_TOKEN).", content_changed: "Le contenu a changé entre-temps : rechargez la page.",
-  invalid_content: "Contenu refusé par le contrôle.", payments_not_configured: "Paiement en ligne non configuré.", amount_not_set: "Indiquez d'abord le montant.", bad_client: "Client introuvable.",
+  invalid_content: "Contenu refusé par le contrôle.", bad_client: "Client introuvable.",
   github_error: "GitHub a refusé la requête (jeton expiré ou permissions insuffisantes).", name_required: "Le nom est obligatoire.", bad_email: "Adresse courriel invalide.", bad_date: "Date invalide.",
 };
 const errText = e => (e && ERR[e.code]) || (e && e.net ? "Serveur injoignable. Vérifiez votre connexion." : `Erreur${e && e.code ? " : " + e.code : ""}.`);
@@ -96,7 +94,7 @@ async function list() {
   const t = OV.totals, l = t.last30 || {};
   $("#stats").innerHTML = [
     [fmtNum(OV.galleries.length), "galeries"], [fmtNum(t.photos), "photos"], [fmtBytes(t.bytes), "stockage utilisé"],
-    [fmtNum((l.dl || 0) + (l.zip || 0)), "photos téléchargées (30 j)"], [fmtNum(l.view || 0), "visites (30 j)"], [OV.face ? "Activée" : "Non configurée", "recherche par visage"],
+    [fmtNum((l.dl || 0) + (l.zip || 0)), "photos téléchargées (30 j)"], [fmtNum(l.view || 0), "visites (30 j)"],
   ].map(([b, s]) => `<div class="stat"><b>${esc(b)}</b><span>${esc(s)}</span></div>`).join("");
   const box = $("#glist"); box.textContent = "";
   $("#gEmpty").hidden = !!OV.galleries.length;
@@ -104,7 +102,7 @@ async function list() {
     const el = document.createElement("div"); el.className = "grow"; el.tabIndex = 0; el.setAttribute("role", "link");
     const expired = g.expires_at && g.expires_at * 1000 < Date.now();
     el.innerHTML = `<div class="cv">${g.cover ? `<img alt="" loading="lazy" src="${esc(g.cover.url)}">` : ""}</div>
-      <div style="min-width:0"><div class="row" style="gap:8px"><b>${esc(g.title)}</b><span class="pill">${KIND[g.kind]}</span>${g.hasPassword ? '<span class="pill">Mot de passe</span>' : ""}${g.faceLive ? '<span class="pill red">Visages</span>' : ""}${expired ? '<span class="pill warn">Expirée</span>' : ""}${g.archived ? '<span class="pill">Archivée</span>' : ""}${g.new_selections ? `<span class="pill red">${g.new_selections} sélection${g.new_selections > 1 ? "s" : ""}</span>` : ""}${g.client_name ? `<span class="pill">${esc(g.client_name)}</span>` : ""}</div>
+      <div style="min-width:0"><div class="row" style="gap:8px"><b>${esc(g.title)}</b><span class="pill">${KIND[g.kind]}</span>${g.hasPassword ? '<span class="pill">Mot de passe</span>' : ""}${expired ? '<span class="pill warn">Expirée</span>' : ""}${g.archived ? '<span class="pill">Archivée</span>' : ""}${g.new_selections ? `<span class="pill red">${g.new_selections} sélection${g.new_selections > 1 ? "s" : ""}</span>` : ""}${g.client_name ? `<span class="pill">${esc(g.client_name)}</span>` : ""}</div>
       <div class="sub"><span>${fmtNum(g.n)} photos · ${fmtBytes(g.bytes)}</span>${g.event_date ? `<span>${fmtDate(g.event_date)}</span>` : ""}<span>${fmtNum(g.views)} visites · ${fmtNum(g.downloads)} téléchargements</span>${g.expires_at ? `<span>${expired ? "Expirée le" : "Expire le"} ${fmtDate(g.expires_at)}</span>` : ""}</div></div>
       <div class="acts row"><button class="btn small" type="button" data-copy>Copier le lien</button></div>`;
     el.querySelector("[data-copy]").addEventListener("click", ev => { ev.stopPropagation(); copy(g.link); });
@@ -136,14 +134,14 @@ async function openGallery(id, keepTab) {
 }
 async function refresh(id = G && G.id) {
   let d; try { d = await api("/api/admin/galleries/" + id); } catch (e) { if (e.status === 404) location.hash = ""; else if (e.status !== 401) toast(errText(e), true); return; }
-  G = d.gallery; P = d.photos; GUESTS = d.guests; G.events = d.events; G.face = d.face;
-  paintHead(); paintPhotos(); paintSettings(); paintGuests(); paintFaces(); paintStats();
+  G = d.gallery; P = d.photos; GUESTS = d.guests; G.events = d.events;
+  paintHead(); paintPhotos(); paintSettings(); paintGuests(); paintStats();
 }
 function paintHead() {
   $("#gTitle").textContent = G.title;
   const ready = P.filter(p => p.status === "ready");
   $("#gSub").textContent = [G.client, G.event_date && fmtDate(G.event_date), `${fmtNum(ready.length)} photos · ${fmtBytes(P.reduce((s, p) => s + p.size + p.extra_size, 0))}`].filter(Boolean).join(" · ");
-  $("#gPills").innerHTML = `<span class="pill">${KIND[G.kind]}</span>${G.hasPassword ? '<span class="pill">Mot de passe</span>' : ""}${G.allow_download ? "" : '<span class="pill warn">Téléchargement fermé</span>'}${G.faceLive ? '<span class="pill red">Recherche par visage</span>' : ""}${G.expires_at ? `<span class="pill">Expire le ${fmtDate(G.expires_at)}</span>` : ""}`;
+  $("#gPills").innerHTML = `<span class="pill">${KIND[G.kind]}</span>${G.hasPassword ? '<span class="pill">Mot de passe</span>' : ""}${G.allow_download ? "" : '<span class="pill warn">Téléchargement fermé</span>'}${G.expires_at ? `<span class="pill">Expire le ${fmtDate(G.expires_at)}</span>` : ""}`;
   $("#gLink").textContent = G.link; $("#openLink").href = G.link;
   $("#tabGuests").hidden = G.kind !== "restricted" && !GUESTS.length;
 }
@@ -169,7 +167,6 @@ function paintPhotos() {
     const tags = [];
     if (p.status !== "ready") tags.push("Import inachevé");
     if (G.cover_photo === p.id) tags.push('<span class="cov">Couverture</span>');
-    if (p.faces) tags.push(`${p.faces} visage${p.faces > 1 ? "s" : ""}`);
     if (p.downloads) tags.push(`${p.downloads} ↓`);
     if (G.kind === "restricted" && p.allow_all) tags.push("Pour tous");
     if (G.kind === "restricted" && assigned.get(p.id)) tags.push(`${assigned.get(p.id)} invité${assigned.get(p.id) > 1 ? "s" : ""}`);
@@ -433,65 +430,11 @@ $("#guestForm").addEventListener("submit", async e => {
   catch (er) { toast(errText(er), true); }
 });
 
-// ---------------- visages ----------------
-function paintFaces() {
-  $("#faceOff").hidden = !!G.face; $("#faceOn").hidden = !G.face;
-  if (!G.face) return;
-  const on = !!G.face_enabled;
-  const ready = P.filter(p => p.status === "ready" && p.has_preview), done = ready.filter(p => p.face_state !== "none");
-  $("#fState").textContent = on ? "Recherche par visage activée" : "Recherche par visage désactivée";
-  $("#fInfo").textContent = on ? (G.face_note ? "Base du consentement : " + G.face_note : "") : "Désactivée par défaut. L'activer exige le consentement des personnes photographiées.";
-  $("#fToggle").textContent = on ? "Désactiver et effacer l'index" : "Activer…";
-  $("#fToggle").className = on ? "btn danger" : "btn primary";
-  $("#fCfg").hidden = $("#fIdx").hidden = !on;
-  $("#thr").value = G.face_threshold; $("#thrV").textContent = G.face_threshold; $("#ret").value = G.face_retention_days;
-  $("#fIdxInfo").textContent = `${fmtNum(G.nfaces)} visage${G.nfaces > 1 ? "s" : ""} dans ${fmtNum(done.filter(p => p.face_state === "done").length)} photo${done.length > 1 ? "s" : ""} indexée${done.length > 1 ? "s" : ""} sur ${fmtNum(ready.length)}.` + (G.face_until ? ` Effacement automatique le ${fmtDate(G.face_until)}.` : "");
-  $("#fBar").style.width = `${ready.length ? done.length / ready.length * 100 : 0}%`;
-  $("#fRun").disabled = done.length >= ready.length;
-}
-$("#thr").addEventListener("input", e => $("#thrV").textContent = e.target.value);
-$("#fToggle").addEventListener("click", async () => {
-  if (G.face_enabled) {
-    if (!confirm("Désactiver la recherche et effacer tout l'index des visages de cette galerie ?")) return;
-    if (await saveGallery({ face_enabled: 0 })) toast("Recherche désactivée, index effacé.");
-    return;
-  }
-  $$(".fa").forEach(c => c.checked = false); $("#faNote").value = G.face_note || ""; $("#faErr").textContent = ""; $("#faGo").disabled = true;
-  $("#faceDlg").showModal();
-});
-const syncFa = () => $("#faGo").disabled = !($$(".fa").every(c => c.checked) && $("#faNote").value.trim().length > 5);
-$$(".fa").forEach(c => c.addEventListener("change", syncFa)); $("#faNote").addEventListener("input", syncFa);
-$("#faGo").addEventListener("click", async () => {
-  try { await api("/api/admin/galleries/" + G.id, { method: "PATCH", body: { face_enabled: 1, face_ack: true, face_note: $("#faNote").value } }); $("#faceDlg").close(); await refresh(); toast("Activée. Lancez l'indexation."); }
-  catch (e) { $("#faErr").textContent = errText(e); }
-});
-$("#fSave").addEventListener("click", async () => { if (await saveGallery({ face_threshold: +$("#thr").value, face_retention_days: +$("#ret").value })) toast("Réglages des visages enregistrés."); });
-$("#fRun").addEventListener("click", async () => {
-  const btn = $("#fRun"); btn.disabled = true; btn.textContent = "Indexation…";
-  const gid = G.id;
-  try {
-    for (;;) {
-      const r = await api(`/api/admin/galleries/${gid}/faces/index`, { method: "POST", body: { max: 4 } });
-      const ready = P.filter(p => p.status === "ready" && p.has_preview).length;
-      $("#fBar").style.width = `${ready ? (ready - r.remaining) / ready * 100 : 100}%`;
-      $("#fIdxInfo").textContent = `Indexation : ${ready - r.remaining} / ${ready} photos…`;
-      if (r.throttled) await sleep(2500);
-      if (!r.remaining) break;
-    }
-    toast("Indexation terminée.");
-  } catch (e) { toast(errText(e), true); }
-  btn.textContent = "Indexer les visages"; await refresh();
-});
-$("#fDrop").addEventListener("click", async () => {
-  if (!confirm("Effacer tout l'index des visages ? La recherche ne trouvera plus rien jusqu'à une nouvelle indexation.")) return;
-  try { await api(`/api/admin/galleries/${G.id}/faces`, { method: "DELETE" }); await refresh(); toast("Index effacé."); } catch (e) { toast(errText(e), true); }
-});
-
 // ---------------- statistiques ----------------
 function paintStats() {
-  $("#gStats").innerHTML = [[G.views, "visites"], [G.downloads, "photos téléchargées"], [G.zips, "archives ZIP"], [G.searches, "recherches par visage"]]
+  $("#gStats").innerHTML = [[G.views, "visites"], [G.downloads, "photos téléchargées"], [G.zips, "archives ZIP"]]
     .map(([n, s]) => `<div class="stat"><b>${fmtNum(n)}</b><span>${s}</span></div>`).join("");
-  $("#evLog").innerHTML = (G.events || []).map(e => `<div><span>${esc(EV[e.kind] || e.kind)}${e.kind === "zip" || e.kind === "search" ? ` · ${e.n}` : ""}</span><span class="hint">${fmtWhen(e.at)}</span></div>`).join("") || '<p class="hint">Rien pour l\'instant.</p>';
+  $("#evLog").innerHTML = (G.events || []).map(e => `<div><span>${esc(EV[e.kind] || e.kind)}${e.kind === "zip" ? ` · ${e.n}` : ""}</span><span class="hint">${fmtWhen(e.at)}</span></div>`).join("") || '<p class="hint">Rien pour l\'instant.</p>';
   const top = P.filter(p => p.downloads).sort((a, b) => b.downloads - a.downloads).slice(0, 10);
   $("#topLog").innerHTML = top.map(p => `<div><span>${esc(p.name)}</span><span class="hint">${fmtNum(p.downloads)}</span></div>`).join("") || '<p class="hint">Aucun téléchargement direct pour l\'instant.</p>';
 }

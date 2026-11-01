@@ -1,12 +1,10 @@
 // Services du site BIGBEEZARR au-delà des galeries : demandes de réservation, disponibilités, clients,
-// sélections envoyées depuis une galerie, statistiques sans témoin, contenu du portfolio (via GitHub),
-// paiements préparés (Stripe, inactif tant que les clés ne sont pas posées).
-import { fail, json, now, randomId, readJson, rateLimit, clientKey, hmac, hex, safeEqual } from "./util.js";
+// sélections envoyées depuis une galerie, statistiques sans témoin, contenu du portfolio (via GitHub).
+import { fail, json, now, randomId, readJson, rateLimit, clientKey } from "./util.js";
 
 const DAY = 86400;
 const TYPES = new Set(["soiree", "concert", "sport", "marque", "portrait", "exposition", "autre"]);
 const STATUSES = new Set(["new", "discussion", "confirmed", "declined", "cancelled", "done"]);
-const PAY = new Set(["none", "deposit_due", "deposit_paid", "paid", "refunded"]);
 const EMAIL = /^[^\s@<>()[\]\\,;:"]{1,64}@[^\s@<>()[\]\\,;:"]{1,190}\.[A-Za-z]{2,24}$/;
 const DAY_RE = /^\d{4}-\d{2}-\d{2}$/;
 const str = (v, max) => v == null ? null : (String(v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").trim().slice(0, max) || null);
@@ -130,7 +128,6 @@ export async function updateBooking(req, env, id) {
   if ("client_id" in b) s.client_id = b.client_id ? String(b.client_id).slice(0, 20) : null;
   for (const k of ["price_cents", "deposit_cents"]) if (k in b) s[k] = b[k] == null || b[k] === "" ? null : Math.max(0, Math.round(+b[k]));
   if ("currency" in b) s.currency = /^[A-Za-z]{3}$/.test(b.currency || "") ? b.currency.toUpperCase() : null;
-  if ("pay_status" in b) { if (!PAY.has(b.pay_status)) fail(400, "bad_pay_status"); s.pay_status = b.pay_status; }
   const status = s.status || bk.status, date = "date" in s ? s.date : bk.date;
   // Pas de double réservation : une date déjà confirmée (ou bloquée) ne peut pas être confirmée une seconde fois.
   // Vérifié seulement quand on confirme ou qu'on change la date d'une demande confirmée : modifier le prix ou la note reste possible.
@@ -143,7 +140,7 @@ export async function updateBooking(req, env, id) {
   return json({ booking: await env.DB.prepare("SELECT * FROM bookings WHERE id = ?").bind(id).first() });
 }
 export async function deleteBooking(env, id) {
-  await env.DB.batch([env.DB.prepare("DELETE FROM payments WHERE booking_id = ?").bind(id), env.DB.prepare("DELETE FROM bookings WHERE id = ?").bind(id)]);
+  await env.DB.prepare("DELETE FROM bookings WHERE id = ?").bind(id).run();
   return json({ ok: true });
 }
 export async function calendar(env, url) {
@@ -317,51 +314,4 @@ export async function putContent(req, env) {
   if (!r.ok) fail(502, "github_error", { status: r.status });
   const j = await r.json();
   return json({ ok: true, sha: j.content && j.content.sha, commit: j.commit && j.commit.sha });
-}
-
-// ---------------- paiements (préparés, inactifs sans clé) ----------------
-export async function checkout(req, env, url, bookingId) {
-  if (!env.STRIPE_SECRET_KEY) fail(501, "payments_not_configured");
-  const bk = await env.DB.prepare("SELECT * FROM bookings WHERE id = ?").bind(bookingId).first(); if (!bk) fail(404, "not_found");
-  const b = await readJson(req, 2048);
-  const kind = b.kind === "full" ? "full" : "deposit";
-  const amount = kind === "full" ? bk.price_cents : bk.deposit_cents;
-  if (!(amount > 0)) fail(400, "amount_not_set");
-  const currency = (bk.currency || "CAD").toLowerCase(), pid = randomId(14), site = env.SITE_ORIGIN;
-  const form = new URLSearchParams({ mode: "payment", "line_items[0][quantity]": "1", "line_items[0][price_data][currency]": currency, "line_items[0][price_data][unit_amount]": String(amount),
-    "line_items[0][price_data][product_data][name]": kind === "full" ? "Prestation photo BIGBEEZARR" : "Acompte, prestation photo BIGBEEZARR", customer_email: bk.email,
-    success_url: `${site}/?paiement=ok`, cancel_url: `${site}/?paiement=annule`, "metadata[payment_id]": pid, "metadata[booking_id]": bk.id });
-  const r = await fetch(`${env.STRIPE_API || "https://api.stripe.com"}/v1/checkout/sessions`, { method: "POST", headers: { Authorization: `Bearer ${env.STRIPE_SECRET_KEY}`, "Content-Type": "application/x-www-form-urlencoded" }, body: form });
-  const j = await r.json(); if (!r.ok) fail(502, "stripe_error", { message: j.error && j.error.message });
-  const t = now();
-  await env.DB.prepare("INSERT INTO payments (id, booking_id, kind, amount_cents, currency, status, provider, provider_ref, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'pending', 'stripe', ?, ?, ?)").bind(pid, bk.id, kind, amount, currency.toUpperCase(), j.id, t, t).run();
-  if (kind === "deposit") await env.DB.prepare("UPDATE bookings SET pay_status = 'deposit_due', updated_at = ? WHERE id = ?").bind(t, bk.id).run();
-  return json({ url: j.url, id: pid });
-}
-// Signature Stripe : en-tête Stripe-Signature « t=…,v1=… », HMAC-SHA256 de « t.corps » avec le secret du webhook, 5 minutes de tolérance.
-export async function verifyStripe(env, header, payload, at = now()) {
-  if (!env.STRIPE_WEBHOOK_SECRET || !header) return false;
-  const parts = Object.fromEntries(header.split(",").map(x => x.split("=")).filter(x => x.length === 2).map(([k, v]) => [k.trim(), v.trim()]));
-  const t = +parts.t; if (!t || Math.abs(at - t) > 300) return false;
-  const want = hex(await hmac(env.STRIPE_WEBHOOK_SECRET, `${t}.${payload}`));
-  return header.split(",").some(x => x.trim().startsWith("v1=") && safeEqual(x.trim().slice(3), want));
-}
-export async function stripeWebhook(req, env) {
-  if (!env.STRIPE_WEBHOOK_SECRET) fail(501, "payments_not_configured");
-  const len = +req.headers.get("Content-Length") || 0; if (len > 256 * 1024) fail(413, "too_large");
-  const payload = await req.text();
-  if (!(await verifyStripe(env, req.headers.get("Stripe-Signature"), payload))) fail(400, "bad_signature");
-  const ev = JSON.parse(payload);
-  if (ev.type === "checkout.session.completed" || ev.type === "checkout.session.async_payment_succeeded") {
-    const s = ev.data && ev.data.object || {}, pid = s.metadata && s.metadata.payment_id;
-    const p = pid && await env.DB.prepare("SELECT * FROM payments WHERE id = ?").bind(pid).first();
-    if (p && s.payment_status === "paid") {
-      const t = now();
-      await env.DB.batch([
-        env.DB.prepare("UPDATE payments SET status = 'paid', updated_at = ? WHERE id = ?").bind(t, p.id),
-        env.DB.prepare("UPDATE bookings SET pay_status = ?, updated_at = ? WHERE id = ?").bind(p.kind === "full" ? "paid" : "deposit_paid", t, p.booking_id),
-      ]);
-    }
-  }
-  return json({ received: true });
 }

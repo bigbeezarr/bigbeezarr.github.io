@@ -1,7 +1,6 @@
 // Tests des services du site : réservations, anti-robots, disponibilités, double réservation, clients, archives,
-// sélections, statistiques sans témoin, contenu du portfolio (GitHub imité), paiements (Stripe imité), sécurité.
-// Lancer après devserver.mjs (avec GITHUB_*, STRIPE_*, RESEND_* pointant vers mock_services.mjs).
-import crypto from "node:crypto";
+// sélections, statistiques sans témoin, contenu du portfolio (GitHub imité), sécurité.
+// Lancer après devserver.mjs (avec GITHUB_*, RESEND_*, TURNSTILE_* pointant vers mock_services.mjs).
 import zlib from "node:zlib";
 const API = process.env.API || "http://127.0.0.1:8787", MOCK = process.env.MOCK || "http://127.0.0.1:9922";
 let ok = 0, bad = 0;
@@ -132,26 +131,10 @@ check((await call("GET", "/api/admin/content")).status === 401, "contenu fermé 
 const ghCalls = (await (await fetch(MOCK + "/")).json()).calls.filter(c => c.path.includes("/contents/"));
 check(ghCalls.every(c => c.auth.startsWith("Bearer gh_test")), "le jeton GitHub reste côté serveur");
 
-console.log("Paiements (préparés, Stripe imité)");
+console.log("Prix et changement de date");
 const pr = await call("PATCH", `/api/admin/bookings/${b1.data.id}`, { token: A, body: { price_cents: 50000, deposit_cents: 15000, currency: "CAD" } });
 check(pr.status === 200 && pr.data.booking.price_cents === 50000, "prix modifiable sur une demande déjà confirmée", pr.data);
 check((await call("PATCH", `/api/admin/bookings/${b2.data.id}`, { token: A, body: { date: day(40) } })).data.error === "date_taken", "déplacer une demande confirmée vers un jour pris : refusé");
-check((await call("POST", `/api/admin/bookings/${b1.data.id}/checkout`, { token: A, body: { kind: "full" } })).status === 200, "lien de paiement du solde possible aussi");
-const co = await call("POST", `/api/admin/bookings/${b1.data.id}/checkout`, { token: A, body: { kind: "deposit" } });
-check(co.status === 200 && /checkout\.stripe\.test/.test(co.data.url), "lien de paiement d'acompte créé", co.data);
-const stripeCall = (await (await fetch(MOCK + "/")).json()).calls.filter(c => c.path === "/v1/checkout/sessions").pop();
-check(stripeCall && /unit_amount%5D=15000/.test(stripeCall.body) && /currency%5D=cad/.test(stripeCall.body), "montant et devise envoyés à Stripe");
-const evt = JSON.stringify({ type: "checkout.session.completed", data: { object: { payment_status: "paid", metadata: { payment_id: co.data.id } } } });
-const ts = Math.floor(Date.now() / 1000), sig = crypto.createHmac("sha256", process.env.STRIPE_WEBHOOK_SECRET || "whsec_test").update(`${ts}.${evt}`).digest("hex");
-check((await call("POST", "/api/stripe/webhook", { raw: evt, headers: { "Stripe-Signature": `t=${ts},v1=${"0".repeat(64)}`, "Content-Type": "application/json" } })).status === 400, "webhook à signature fausse refusé");
-check((await call("POST", "/api/stripe/webhook", { raw: evt, headers: { "Stripe-Signature": `t=${ts - 3600},v1=${sig}`, "Content-Type": "application/json" } })).status === 400, "webhook trop ancien refusé (rejeu)");
-check((await call("POST", "/api/stripe/webhook", { raw: evt, headers: { "Stripe-Signature": `t=${ts},v1=${sig}`, "Content-Type": "application/json" } })).status === 200, "webhook signé accepté");
-const paid = (await call("GET", "/api/admin/bookings", { token: A })).data.bookings.find(b => b.id === b1.data.id);
-check(paid.pay_status === "deposit_paid", "acompte marqué payé");
-
-console.log("Recherche par visage : interrupteur");
-const h = (await call("GET", "/api/health")).data;
-check(h.face === (process.env.FACE_SEARCH === "on"), "la recherche par visage suit l'interrupteur FACE_SEARCH", h);
 
 console.log(`\n${ok} réussis, ${bad} échoués`);
 process.exit(bad ? 1 : 0);

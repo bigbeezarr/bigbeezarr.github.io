@@ -8,7 +8,6 @@ const SECTIONS = { reservations: "vBook", calendrier: "vCal", clients: "vClients
 const STATUS = { new: "Nouvelle", discussion: "En discussion", confirmed: "Confirmée", declined: "Refusée", cancelled: "Annulée", done: "Réalisée" };
 const STATUS_PILL = { new: "red", discussion: "warn", confirmed: "ok", declined: "", cancelled: "", done: "" };
 const TYPES = { soiree: "Soirée / événement", concert: "Concert / scène", sport: "Sport / équipe", marque: "Marque / mode", portrait: "Portrait / artiste", exposition: "Exposition", autre: "Autre" };
-const PAY = { none: "—", deposit_due: "Acompte demandé", deposit_paid: "Acompte payé", paid: "Payé", refunded: "Remboursé" };
 const head = (kick, title, extra = "") => `<div class="head"><div><p class="kicker" style="margin:0 0 8px;font-family:var(--font-d);font-weight:700;font-size:.78rem;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-text)">${esc(kick)}</p><h1 class="t">${esc(title)}</h1></div><span class="sp"></span>${extra}</div>`;
 const money = c => c == null ? "" : (c / 100).toLocaleString("fr-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const cents = v => { if (v === "" || v == null) return null; const n = Math.round(parseFloat(String(v).replace(",", ".")) * 100); return isNaN(n) ? null : n; };
@@ -36,7 +35,7 @@ async function loadBookings() {
   for (const b of BK) {
     const el = document.createElement("div"); el.className = "box"; el.style.display = "grid"; el.style.gap = "10px";
     el.innerHTML = `<div class="row" style="justify-content:space-between;align-items:flex-start;gap:10px">
-        <div><div class="row" style="gap:8px"><b style="font-family:var(--font-d);font-size:1.1rem">${esc(b.first_name)} ${esc(b.last_name)}</b><span class="pill ${STATUS_PILL[b.status]}">${esc(STATUS[b.status] || b.status)}</span><span class="pill">${esc(TYPES[b.type] || b.type)}</span>${b.pay_status !== "none" ? `<span class="pill">${esc(PAY[b.pay_status])}</span>` : ""}</div>
+        <div><div class="row" style="gap:8px"><b style="font-family:var(--font-d);font-size:1.1rem">${esc(b.first_name)} ${esc(b.last_name)}</b><span class="pill ${STATUS_PILL[b.status]}">${esc(STATUS[b.status] || b.status)}</span><span class="pill">${esc(TYPES[b.type] || b.type)}</span></div>
         <p class="hint" style="margin:6px 0 0">${b.date ? "Date souhaitée : <b>" + esc(A().fmtDate(b.date)) + "</b> · " : ""}${esc([b.city, b.place].filter(Boolean).join(" · "))}${b.people ? " · " + esc(b.people) + " pers." : ""}${b.duration ? " · " + esc(b.duration) : ""}${b.budget ? " · budget " + esc(b.budget) : ""}</p>
         <p class="hint" style="margin:4px 0 0"><a href="mailto:${esc(b.email)}">${esc(b.email)}</a>${b.phone ? ` · <a href="tel:${esc(b.phone.replace(/[^+\d]/g, ""))}">${esc(b.phone)}</a>` : ""} · reçue le ${esc(A().fmtWhen(b.created_at))}</p></div></div>
       <p style="margin:0;white-space:pre-wrap"></p>
@@ -46,15 +45,14 @@ async function loadBookings() {
         <label class="field"><span>Client</span><select class="input" data-k="client_id"><option value="">—</option>${CL.map(c => `<option value="${esc(c.id)}"${c.id === b.client_id ? " selected" : ""}>${esc(c.name)}</option>`).join("")}</select></label>
         <label class="field"><span>Prix (${esc(b.currency || "CAD")})</span><input class="input" inputmode="decimal" data-k="price" value="${esc(money(b.price_cents))}"></label>
         <label class="field"><span>Acompte</span><input class="input" inputmode="decimal" data-k="deposit" value="${esc(money(b.deposit_cents))}"></label>
-        <label class="field"><span>Paiement</span><select class="input" data-k="pay_status">${Object.entries(PAY).map(([k, l]) => `<option value="${k}"${k === b.pay_status ? " selected" : ""}>${k === "none" ? "Aucun" : l}</option>`).join("")}</select></label>
       </div>
       <label class="field"><span>Note privée</span><textarea class="input" data-k="note" maxlength="4000"></textarea></label>
-      <div class="row"><button class="btn small primary" data-a="save" type="button">Enregistrer</button><a class="btn small" href="mailto:${esc(b.email)}?subject=${encodeURIComponent("Votre demande de prestation · BIGBEEZARR")}">Répondre</a><button class="btn small" data-a="client" type="button">Créer la fiche client</button><button class="btn small" data-a="pay" type="button">Lien de paiement</button><span class="sp" style="flex:1"></span><button class="btn small danger" data-a="del" type="button">Supprimer</button></div>`;
+      <div class="row"><button class="btn small primary" data-a="save" type="button">Enregistrer</button><a class="btn small" href="mailto:${esc(b.email)}?subject=${encodeURIComponent("Votre demande de prestation · BIGBEEZARR")}">Répondre</a><button class="btn small" data-a="client" type="button">Créer la fiche client</button><span class="sp" style="flex:1"></span><button class="btn small danger" data-a="del" type="button">Supprimer</button></div>`;
     el.querySelector("p[style*=pre-wrap]").textContent = b.description || "";
     el.querySelector("[data-k=note]").value = b.note || "";
     const val = k => el.querySelector(`[data-k=${k}]`).value;
     el.querySelector("[data-a=save]").addEventListener("click", async () => {
-      const body = { status: val("status"), date: val("date") || null, client_id: val("client_id") || null, price_cents: cents(val("price")), deposit_cents: cents(val("deposit")), pay_status: val("pay_status"), note: val("note") };
+      const body = { status: val("status"), date: val("date") || null, client_id: val("client_id") || null, price_cents: cents(val("price")), deposit_cents: cents(val("deposit")), note: val("note") };
       try { await A().api(`/api/admin/bookings/${b.id}`, { method: "PATCH", body }); A().toast("Demande enregistrée."); loadBookings(); }
       catch (e) {
         if (e.code === "date_taken" && confirm(`Le ${A().fmtDate(e.data.date)} est déjà confirmé ou bloqué. Confirmer quand même (double réservation) ?`)) {
@@ -65,11 +63,6 @@ async function loadBookings() {
     el.querySelector("[data-a=client]").addEventListener("click", async () => {
       try { const r = await A().api("/api/admin/clients", { method: "POST", body: { name: `${b.first_name || ""} ${b.last_name || ""}`.trim() || b.email, email: b.email, phone: b.phone } });
         await A().api(`/api/admin/bookings/${b.id}`, { method: "PATCH", body: { client_id: r.client.id } }); A().toast("Fiche client créée."); CL.push(r.client); loadBookings(); } catch (e) { A().toast(A().errText(e), true); }
-    });
-    el.querySelector("[data-a=pay]").addEventListener("click", async () => {
-      const kind = confirm("OK : lien pour l'acompte. Annuler : lien pour le montant total.") ? "deposit" : "full";
-      try { const r = await A().api(`/api/admin/bookings/${b.id}/checkout`, { method: "POST", body: { kind } }); A().copy(r.url); A().toast("Lien de paiement copié."); }
-      catch (e) { A().toast(e.code === "payments_not_configured" ? "Paiement en ligne non configuré (clés Stripe absentes). Voir worker/README.md." : e.code === "amount_not_set" ? "Indiquez d'abord le prix ou l'acompte, puis enregistrez." : A().errText(e), true); }
     });
     el.querySelector("[data-a=del]").addEventListener("click", async () => { if (!confirm("Supprimer définitivement cette demande ?")) return; try { await A().api(`/api/admin/bookings/${b.id}`, { method: "DELETE" }); loadBookings(); } catch (e) { A().toast(A().errText(e), true); } });
     box.appendChild(el);
@@ -128,7 +121,7 @@ async function clients(openId) {
 async function clientDetail(id) {
   let d; try { d = await A().api(`/api/admin/clients/${id}`); } catch (e) { A().toast(A().errText(e), true); return; }
   const c = d.client, box = $("#clDetail");
-  const EV = { view: "Galerie ouverte", dl: "Photo téléchargée", zip: "Archive ZIP téléchargée", search: "Recherche par visage", forget: "Visage effacé", selection: "Sélection envoyée" };
+  const EV = { view: "Galerie ouverte", dl: "Photo téléchargée", zip: "Archive ZIP téléchargée", selection: "Sélection envoyée" };
   box.innerHTML = `<div class="box" style="display:grid;gap:14px"><h2 class="s">${esc(c.name)}</h2>
     <form class="form" id="clForm" style="max-width:none"><div class="two"><label class="field"><span>Nom</span><input class="input" name="name" required maxlength="120"></label><label class="field"><span>Organisation</span><input class="input" name="org" maxlength="120"></label></div>
     <div class="two"><label class="field"><span>Courriel</span><input class="input" name="email" type="email" maxlength="160"></label><label class="field"><span>Téléphone</span><input class="input" name="phone" maxlength="40"></label></div>

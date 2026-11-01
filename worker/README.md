@@ -1,12 +1,11 @@
 # Galerie client BIGBEEZARR : « Récupérer mes photos »
 
-Livraison de photos en qualité originale, intégrée au portfolio, avec recherche par visage en option.
+Livraison de photos en qualité originale, intégrée au portfolio.
 
 - **Pages** (GitHub Pages, ce dépôt) : `/galerie/` pour les clients, `/admin/` pour le photographe.
 - **Serveur** (`worker/`) : un Cloudflare Worker qui gère les droits d'accès, les liens, les mots de passe, les expirations, les ZIP et les statistiques.
 - **Stockage** : Cloudflare R2. Les originaux sont livrés octet par octet : pas de recompression, pas de redimensionnement, métadonnées intactes. Les téléchargements ne sont pas facturés.
 - **Base** : Cloudflare D1 (galeries, photos, invités, statistiques).
-- **Visages** (optionnel) : Amazon Rekognition, région Canada (Central). Chaque galerie a sa propre collection, et le selfie n'est jamais enregistré.
 
 WeTransfer Pro ne peut pas servir de stockage intégré. Sa documentation développeur indique « Unfortunately we no longer provide support for the WeTransfer API », et ses dépôts officiels sont archivés depuis le 27 octobre 2025.
 
@@ -17,9 +16,8 @@ WeTransfer Pro ne peut pas servir de stockage intégré. Sa documentation dével
 1. Créez un compte gratuit sur dash.cloudflare.com.
 2. Ouvrez **Workers & Pages** une fois et choisissez votre sous-domaine `workers.dev`.
 3. Ouvrez **R2 Object Storage** et activez R2. Cloudflare demande un moyen de paiement, même si les 10 Go gratuits suffisent pour commencer.
-4. Le forfait **Workers Paid** (5 $ US par mois) est recommandé dès que la recherche par visage sert. Sa limite de temps processeur par requête est plus large : 10 ms en gratuit, 30 s en payant.
-5. Créez un **jeton d'API** (My Profile > API Tokens > Create Token) à partir du modèle « Edit Cloudflare Workers ». Ajoutez-y les permissions **Account > D1 > Edit** et **Account > Workers R2 Storage > Edit**.
-6. Notez votre **Account ID**, affiché dans la colonne de droite de la page d'accueil du tableau de bord.
+4. Créez un **jeton d'API** (My Profile > API Tokens > Create Token) à partir du modèle « Edit Cloudflare Workers ». Ajoutez-y les permissions **Account > D1 > Edit** et **Account > Workers R2 Storage > Edit**.
+5. Notez votre **Account ID**, affiché dans la colonne de droite de la page d'accueil du tableau de bord.
 
 ### 2. Secrets GitHub
 
@@ -39,11 +37,6 @@ Secrets **facultatifs** : chaque service ne s'allume que si son secret existe. S
 | `RESEND_API_KEY`, `NOTIFY_EMAIL` | recevoir un courriel à chaque demande de réservation ou sélection | « Notifications » |
 | `NOTIFY_FROM` | expéditeur des notifications (domaine vérifié chez Resend) | « Notifications » |
 | `TURNSTILE_SECRET` | vérification anti-robot du formulaire de réservation | « Anti-robot » |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | liens de paiement d'acompte (préparé, inactif) | « Paiements » |
-| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | recherche par visage | « Reconnaissance faciale » |
-
-Et une **variable** (onglet *Variables*, pas *Secrets*) : `FACE_SEARCH`. Tant qu'elle ne vaut pas `on`, la recherche
-par visage est coupée sur le serveur, même avec les clés AWS. La remettre à `off` puis relancer le déploiement la coupe.
 
 Retirer un secret de GitHub ne le retire pas du serveur : supprimez-le aussi dans Cloudflare
 (Workers & Pages → bbz-galerie → Settings → Variables and Secrets).
@@ -106,15 +99,6 @@ Mettez la clé publique d'abord : le serveur refuse toute demande sans vérifica
 La politique de sécurité (CSP) du site n'autorise le script et le cadre de Cloudflare que si la clé publique est fixée.
 Essayé avec une imitation locale du service ; à vérifier sur le site réel après activation.
 
-### Paiements (préparés, inactifs)
-
-Le bouton « Lien de paiement » d'une demande crée une page de paiement Stripe pour l'acompte ou le solde et copie
-le lien. Il reste inactif tant que `STRIPE_SECRET_KEY` n'existe pas. À ne poser qu'une fois vos conditions de vente,
-d'acompte et de remboursement rédigées et validées. Pour l'activer : compte Stripe vérifié, clé secrète (`sk_live_…`)
-en secret GitHub `STRIPE_SECRET_KEY`, puis un point de terminaison de webhook vers
-`https://<votre serveur>/api/stripe/webhook` (événement `checkout.session.completed`) et son secret en
-`STRIPE_WEBHOOK_SECRET`. La demande passe alors seule à « Acompte payé ». Frais : barème Stripe Canada.
-
 ## Portfolio (édition depuis l'administration)
 
 `/admin/` → **Portfolio** modifie les fichiers `content/*.json` de la branche `source` : titres, textes FR/EN,
@@ -138,7 +122,7 @@ le fichier entre-temps, l'enregistrement est refusé au lieu d'écraser son trav
 
 1. `/admin/` → **Nouvelle galerie**. Choisissez un type :
    - **Privée** : un client, lien secret, mot de passe possible.
-   - **Événement** : plusieurs participants, liste publique possible, recherche par visage possible.
+   - **Événement** : plusieurs participants, liste publique possible.
    - **Restreinte** : chaque invité reçoit son lien et ne télécharge que ses photos attribuées.
 2. Glissez des photos ou des dossiers entiers (JPEG, PNG, HEIC, TIFF, RAW).
    - L'import calcule l'empreinte CRC-32 de chaque original, puis crée un aperçu de 2048 px et une vignette de 640 px.
@@ -154,77 +138,20 @@ Côté client :
 - reprise des téléchargements interrompus (Range) ;
 - archives ZIP sans compression, découpées en parties de 400 photos, avec ZIP64 au-delà de 4 Go.
 
-## Reconnaissance faciale
-
-### Avant d'activer (je ne suis pas avocat : faites valider)
-
-- **Québec** : la loi concernant le cadre juridique des technologies de l'information (articles 44 et 45) exige un **consentement exprès**. Elle exige aussi une **déclaration à la Commission d'accès à l'information au moins 60 jours avant** la mise en service d'une banque de caractéristiques biométriques. La Loi 25 demande une évaluation des facteurs relatifs à la vie privée (EFVP), notamment pour un stockage hors Québec. Le consentement vise **toutes les personnes dont le visage est indexé**, pas seulement celle qui cherche : prévoyez-le à l'inscription, dans un formulaire de participation, ou dans une autorisation signée (par exemple pour une équipe comme La Forge).
-- **Canada** : la LPRPDE s'applique hors Québec. Le Commissariat a publié en août 2025 une orientation sur la biométrie pour les entreprises.
-- **Sénégal** : la loi 2008-12 impose des formalités préalables auprès de la Commission de protection des données personnelles (CDP), et une autorisation pour les transferts hors du pays.
-
-Le tableau de bord refuse d'activer la recherche tant que les trois attestations ne sont pas cochées et que la base du consentement n'est pas notée. La recherche est désactivée par défaut. Désactiver la recherche efface l'index.
-
-Deux verrous s'ajoutent : la variable de dépôt `FACE_SEARCH` (coupée tant qu'elle ne vaut pas `on`) et les clés AWS.
-Le guide de la Commission d'accès à l'information demande aussi d'offrir une autre façon de trouver ses photos, sans
-biométrie : la galerie reste entièrement consultable et téléchargeable sans la recherche par visage.
-
-### Configuration AWS
-
-1. Créez un compte AWS.
-2. Créez un utilisateur IAM `bbz-galerie` (sans accès à la console) avec la stratégie ci-dessous, en remplaçant `ACCOUNT_ID` par votre numéro de compte :
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Action": ["rekognition:CreateCollection", "rekognition:DeleteCollection", "rekognition:IndexFaces",
-               "rekognition:SearchFacesByImage", "rekognition:DeleteFaces"],
-    "Resource": "arn:aws:rekognition:ca-central-1:ACCOUNT_ID:collection/bbz-*"
-  }]
-}
-```
-
-3. Créez une clé d'accès pour cet utilisateur. Ajoutez deux secrets GitHub, `AWS_ACCESS_KEY_ID` et `AWS_SECRET_ACCESS_KEY`, puis relancez le workflow.
-4. Recommandé : refusez qu'AWS réutilise vos contenus pour améliorer ses services d'IA, avec une stratégie de refus des services d'IA (AWS Organizations > Policies > AI services opt-out policies).
-
-**Coût indicatif** (tarif public) :
-
-| Élément | Prix |
-|---|---|
-| Photo indexée | environ 0,001 $ US |
-| Recherche | environ 0,001 $ US |
-| Stockage des empreintes | 0,00001 $ US par visage et par mois |
-
-Une offre gratuite couvre 1 000 images par mois pendant 12 mois pour les nouveaux comptes.
-
-### Fonctionnement
-
-- **Indexation** : l'onglet « Visages » envoie l'aperçu de chaque photo à Rekognition par lots. Jusqu'à 100 visages sont gardés par photo, avec un filtre de qualité automatique.
-- **Recherche** : le visiteur accepte explicitement, puis prend un selfie ou importe une photo, redimensionnée à 1 600 px dans son navigateur. Le serveur compare ce visage à la collection de cette galerie seulement, puis oublie l'image. Les résultats sont triés par similarité :
-  - « probables » au-dessus du seuil réglable (90 % par défaut) ;
-  - « à vérifier » jusqu'à 15 points sous ce seuil.
-
-  Le visiteur peut élargir ou resserrer la recherche, et retirer les erreurs avec « Pas moi ».
-- **Droits** : une correspondance ne montre que des photos que le visiteur voit déjà. Elle ne contourne jamais une galerie privée ou restreinte et ne vaut pas preuve d'identité.
-- **« Effacer mon visage »** : n'importe quel participant peut retirer son visage de l'index de la galerie.
-- **Conservation** : l'index est effacé automatiquement à la date fixée (30 jours par défaut, réglable de 1 à 365 jours) par la tâche quotidienne du Worker.
-
 ## Tests locaux
 
 Le registre npm n'est pas nécessaire pour les tests. Le banc d'essai imite R2 (disque), D1 (SQLite intégré à Node 22),
-Rekognition, GitHub, Stripe, Resend et Turnstile : aucun compte, aucun appel réseau.
+GitHub, Resend et Turnstile : aucun compte, aucun appel réseau.
 
 ```bash
 cd worker
-bash test/run-all.sh      # Node 22+, Python 3 et Pillow ; 125 contrôles en trois configurations
+bash test/run-all.sh      # Node 22+, Python 3 et Pillow ; 99 contrôles en trois passes
 ```
 
 - `test/api.test.mjs` : galeries, import simple et en plusieurs parties, liens signés, ZIP vérifiés octet par octet,
-  galerie restreinte, visages (imitation), expiration et nettoyage ;
+  galerie restreinte, expiration et nettoyage ;
 - `test/site.test.mjs` : réservations (validation, robots, limites, Turnstile), disponibilités, double réservation,
-  clients, archives, sélections, statistiques sans témoin, contenu du portfolio (conflits, validation), paiements
-  (signature du webhook, rejeu) ;
+  clients, archives, sélections, statistiques sans témoin, contenu du portfolio (conflits, validation) ;
 - `test/bare.test.mjs` : sans aucune clé facultative, chaque service préparé refuse clairement au lieu de faire semblant.
 
 Serveur de développement seul : `node --no-warnings test/devserver.mjs 8787 /tmp/bbz-data` (la tâche quotidienne

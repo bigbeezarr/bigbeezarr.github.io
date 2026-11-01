@@ -1,4 +1,4 @@
-/* Galerie client BIGBEEZARR : accès, grille, sélection, téléchargements d'originaux, recherche par visage. */
+/* Galerie client BIGBEEZARR : accès, grille, sélection, téléchargements d'originaux. */
 (() => {
 "use strict";
 // Ne jamais s'afficher encadrée dans une autre page (protection contre le détournement de clic).
@@ -27,9 +27,9 @@ const T = {
     "land.label": "Lien ou code de la galerie", "land.ph": "Collez votre lien ou votre code", "land.go": "Ouvrir",
     "land.bad": "Ce lien ou ce code ne semble pas valide.",
     "how.1": "Ouvrez votre galerie", "how.1s": "Avec le lien ou le code que je vous ai envoyé.",
-    "how.2": "Retrouvez-vous", "how.2s": "Sur les galeries d'événements, un selfie suffit pour trouver vos photos.",
+    "how.2": "Choisissez", "how.2s": "Parcourez la galerie et sélectionnez vos préférées.",
     "how.3": "Téléchargez", "how.3s": "Une photo, une sélection ou tout, en qualité originale.",
-    "ev.h": "Galeries d'événements", "ev.face": "Recherche par visage",
+    "ev.h": "Galeries d'événements",
     "not.ready": "Le service de livraison sera disponible très bientôt.",
     "lock.kick": "Galerie protégée", "lock.pw": "Mot de passe", "lock.code": "Code d'accès", "lock.go": "Ouvrir la galerie",
     "msg.back": "Revenir à l'accueil",
@@ -38,8 +38,8 @@ const T = {
     "e.gone.k": "Galerie expirée", "e.gone.h": "Cette galerie n'est plus disponible", "e.gone.p": "Le délai de téléchargement est passé. Écrivez-moi si vous avez encore besoin de vos photos : baeypro@gmail.com.",
     "e.nf.k": "Lien introuvable", "e.nf.h": "Je ne trouve pas cette galerie", "e.nf.p": "Vérifiez le lien reçu, ou demandez-moi un nouveau lien.",
     "e.net": "Connexion impossible pour le moment. Vérifiez votre réseau et réessayez.",
-    "find": "Retrouver mes photos", "dl.all": "Tout télécharger", "select": "Sélectionner", "select.done": "Terminer",
-    "tab.all": "Toutes", "tab.mine": "Mes photos", "tab.faces": "Où j'apparais",
+    "dl.all": "Tout télécharger", "select": "Sélectionner", "select.done": "Terminer",
+    "tab.all": "Toutes", "tab.mine": "Mes photos",
     "count": (n, s) => `${n} photo${n > 1 ? "s" : ""}${s ? " · " + s : ""}`,
     "until": d => `Disponible jusqu'au ${d}`, "event": "Galerie d'événement", "private": "Galerie privée", "restricted": "Galerie personnelle",
     "hello": n => `Bonjour ${n}`,
@@ -55,30 +55,9 @@ const T = {
     "zip.h": "Téléchargement en plusieurs parties", "zip.p": "Votre sélection est volumineuse : elle est découpée en archives ZIP. Téléchargez chaque partie.",
     "zip.part": (k, n, c, s) => `Partie ${k} sur ${n} · ${c} photos · ${s}`, "zip.prep": "Préparation de l'archive…", "zip.go": "Le téléchargement commence.",
     "dl.start": "Le téléchargement commence.",
-    "face.sum": (a, b) => `${a} photo${a > 1 ? "s" : ""} où vous apparaissez${b ? ` · ${b} à vérifier` : ""}`,
-    "face.zero": "Aucune photo trouvée", "face.none": "Aucune photo trouvée avec ce visage. Essayez une autre photo, bien éclairée, ou élargissez la recherche.",
-    "face.fix": "Retirez les photos qui ne sont pas de vous avec « Pas moi ».", "face.wide": "Plus large", "face.strict": "Plus strict", "face.again": "Nouvelle recherche",
-    "face.check": "À vérifier", "face.notme": "Pas moi",
-    "f.h": "Retrouver mes photos", "f.p": "Prenez un selfie ou choisissez une photo où votre visage est bien visible. Je cherche ce visage dans les photos de cette galerie.",
-    "f.h2": "Effacer mon visage", "f.p2": "Votre visage sera retiré de l'index de recherche de cette galerie : personne ne pourra plus vous retrouver par visage ici.",
-    "c.1": "Votre visage est comparé uniquement aux photos de cette galerie.",
-    "c.2": "Votre photo n'est jamais conservée : elle sert à la recherche puis est oubliée.",
-    "c.3": "L'analyse est faite par Amazon Rekognition, au Canada, pour le compte de BIGBEEZARR.",
-    "c.4": "Une correspondance ne donne accès à aucune autre galerie.",
-    "c.ok": "J'accepte que mon visage soit analysé pour cette recherche.", "c.more": "En savoir plus sur la confidentialité",
-    "f.cam": "Utiliser la caméra", "f.file": "Choisir une photo", "f.forget": "Je ne veux pas être retrouvé·e : effacer mon visage",
-    "f.shoot": "Placez votre visage dans l'ovale", "f.shootp": "De face, bien éclairé, sans lunettes de soleil.",
-    "f.check": "Vérifiez votre photo", "f.checkp": "Votre visage doit être net et bien visible. Si plusieurs personnes y figurent, c'est le plus grand visage qui compte.", "f.snap": "Prendre la photo", "f.retake": "Reprendre", "f.search": "Rechercher", "f.erase": "Effacer mon visage",
-    "f.busy": n => `Recherche dans ${n} photos…`, "f.busyH": "Un instant", "f.erasing": "Retrait de votre visage…",
-    "f.erased": n => n ? `Votre visage a été retiré de ${n} endroit${n > 1 ? "s" : ""} dans l'index de cette galerie.` : "Aucune correspondance trouvée : votre visage n'était pas dans l'index.",
-    "f.erasedH": "C'est fait", "f.retry": "Recommencer",
-    "e.no_face": "Je ne vois pas de visage sur cette photo. Essayez de face, avec plus de lumière.",
-    "e.bad_image": "Ce format d'image n'est pas pris en charge. Essayez une photo JPEG.",
-    "e.face_unavailable": "La recherche par visage n'est pas disponible pour cette galerie.",
-    "e.cam": "Impossible d'ouvrir la caméra. Autorisez-la dans votre navigateur ou choisissez une photo.",
     "e.generic": "Une erreur est survenue. Réessayez dans un instant.",
     "e.download_disabled": "Le téléchargement n'est pas ouvert pour cette galerie.",
-    "ok": "Voir mes photos", "foot.privacy": "Confidentialité",
+    "foot.privacy": "Confidentialité",
     "empty.all": "Cette galerie ne contient pas encore de photos.", "empty.mine": "Aucune photo ne vous est encore attribuée.",
   },
   en: {
@@ -88,9 +67,9 @@ const T = {
     "land.label": "Gallery link or code", "land.ph": "Paste your link or code", "land.go": "Open",
     "land.bad": "This link or code doesn't look right.",
     "how.1": "Open your gallery", "how.1s": "With the link or code I sent you.",
-    "how.2": "Find yourself", "how.2s": "In event galleries, one selfie is enough to find your photos.",
+    "how.2": "Choose", "how.2s": "Browse the gallery and select the ones you like.",
     "how.3": "Download", "how.3s": "One photo, a selection or everything, in original quality.",
-    "ev.h": "Event galleries", "ev.face": "Face search",
+    "ev.h": "Event galleries",
     "not.ready": "The delivery service will be available very soon.",
     "lock.kick": "Protected gallery", "lock.pw": "Password", "lock.code": "Access code", "lock.go": "Open the gallery",
     "msg.back": "Back to start",
@@ -99,8 +78,8 @@ const T = {
     "e.gone.k": "Gallery expired", "e.gone.h": "This gallery is no longer available", "e.gone.p": "The download window has closed. Email me if you still need your photos: baeypro@gmail.com.",
     "e.nf.k": "Link not found", "e.nf.h": "I can't find this gallery", "e.nf.p": "Check the link you received, or ask me for a new one.",
     "e.net": "Can't connect right now. Check your network and try again.",
-    "find": "Find my photos", "dl.all": "Download all", "select": "Select", "select.done": "Done",
-    "tab.all": "All", "tab.mine": "My photos", "tab.faces": "Where I appear",
+    "dl.all": "Download all", "select": "Select", "select.done": "Done",
+    "tab.all": "All", "tab.mine": "My photos",
     "count": (n, s) => `${n} photo${n > 1 ? "s" : ""}${s ? " · " + s : ""}`,
     "until": d => `Available until ${d}`, "event": "Event gallery", "private": "Private gallery", "restricted": "Personal gallery",
     "hello": n => `Hi ${n}`,
@@ -116,30 +95,9 @@ const T = {
     "zip.h": "Download in several parts", "zip.p": "Your selection is large, so it's split into ZIP archives. Download each part.",
     "zip.part": (k, n, c, s) => `Part ${k} of ${n} · ${c} photos · ${s}`, "zip.prep": "Preparing the archive…", "zip.go": "Your download is starting.",
     "dl.start": "Your download is starting.",
-    "face.sum": (a, b) => `${a} photo${a > 1 ? "s" : ""} of you${b ? ` · ${b} to check` : ""}`,
-    "face.zero": "No photos found", "face.none": "No photos found with this face. Try another well-lit photo, or widen the search.",
-    "face.fix": "Remove photos that aren't you with \"Not me\".", "face.wide": "Wider", "face.strict": "Stricter", "face.again": "New search",
-    "face.check": "To check", "face.notme": "Not me",
-    "f.h": "Find my photos", "f.p": "Take a selfie or pick a photo where your face is clearly visible. I'll look for that face in this gallery.",
-    "f.h2": "Erase my face", "f.p2": "Your face will be removed from this gallery's search index: nobody will be able to find you by face here.",
-    "c.1": "Your face is compared only with the photos in this gallery.",
-    "c.2": "Your photo is never kept: it's used for the search, then discarded.",
-    "c.3": "The analysis is done by Amazon Rekognition, in Canada, on behalf of BIGBEEZARR.",
-    "c.4": "A match never gives access to any other gallery.",
-    "c.ok": "I agree to have my face analyzed for this search.", "c.more": "More about privacy",
-    "f.cam": "Use the camera", "f.file": "Choose a photo", "f.forget": "I don't want to be found: erase my face",
-    "f.shoot": "Place your face in the oval", "f.shootp": "Face forward, good light, no sunglasses.",
-    "f.check": "Check your photo", "f.checkp": "Your face should be sharp and clearly visible. If several people are in it, the largest face is used.", "f.snap": "Take the photo", "f.retake": "Retake", "f.search": "Search", "f.erase": "Erase my face",
-    "f.busy": n => `Searching ${n} photos…`, "f.busyH": "One moment", "f.erasing": "Removing your face…",
-    "f.erased": n => n ? `Your face was removed from ${n} place${n > 1 ? "s" : ""} in this gallery's index.` : "No match found: your face wasn't in the index.",
-    "f.erasedH": "Done", "f.retry": "Start again",
-    "e.no_face": "I can't see a face in this photo. Try facing the camera, with more light.",
-    "e.bad_image": "This image format isn't supported. Try a JPEG photo.",
-    "e.face_unavailable": "Face search isn't available for this gallery.",
-    "e.cam": "Can't open the camera. Allow it in your browser or choose a photo.",
     "e.generic": "Something went wrong. Try again in a moment.",
     "e.download_disabled": "Downloads aren't open for this gallery.",
-    "ok": "See my photos", "foot.privacy": "Privacy",
+    "foot.privacy": "Privacy",
     "empty.all": "This gallery has no photos yet.", "empty.mine": "No photos have been assigned to you yet.",
   },
 };
@@ -180,7 +138,7 @@ async function api(path, { method = "GET", body, raw, headers = {}, auth = true 
 }
 
 // ---------------- état ----------------
-const S = { slug: null, code: null, token: null, meta: null, gallery: null, guest: null, photos: [], byId: new Map(), view: "all", face: null, cut: 90, removed: new Set(), sel: new Set(), selecting: false, list: [], shown: 0 };
+const S = { slug: null, code: null, token: null, meta: null, gallery: null, guest: null, photos: [], byId: new Map(), view: "all", sel: new Set(), selecting: false, list: [], shown: 0 };
 const show = id => ["vLand", "vLock", "vMsg", "vGal"].forEach(v => $("#" + v).hidden = v !== id);
 
 function parseInput(v) {
@@ -201,7 +159,7 @@ async function landing() {
     const list = $("#evList"); list.textContent = "";
     for (const g of galleries) {
       const a = document.createElement("a"); a.className = "ev"; a.href = `?g=${encodeURIComponent(g.slug)}`;
-      a.innerHTML = `<figure>${g.cover ? `<img loading="lazy" alt="" src="${String(g.cover.url).replace(/[&<>"']/g, ch => "&#" + ch.charCodeAt(0) + ";")}">` : ""}</figure><div><b></b><small></small>${g.faceSearch ? `<span class="face">${t("ev.face")}</span>` : ""}</div>`;
+      a.innerHTML = `<figure>${g.cover ? `<img loading="lazy" alt="" src="${String(g.cover.url).replace(/[&<>"']/g, ch => "&#" + ch.charCodeAt(0) + ";")}">` : ""}</figure><div><b></b><small></small></div>`;
       a.querySelector("b").textContent = g.title;
       a.querySelector("small").textContent = [g.date && fmtDate(g.date, true), t("count", g.count)].filter(Boolean).join(" · ");
       list.appendChild(a);
@@ -271,7 +229,6 @@ async function loadPhotos() {
   const r = await api(`/api/g/${S.slug}/photos`);
   S.gallery = r.gallery; S.guest = r.guest; S.photos = r.photos; S.byId = new Map(r.photos.map(p => [p.id, p]));
   loadSel();
-  S.cut = r.gallery.faceThreshold || 90;
   show("vGal");
   renderHead(); render();
   return true;
@@ -287,24 +244,19 @@ function renderHead() {
   const meta = [g.date && fmtDate(g.date, true), g.client, t("count", S.photos.length, fmtBytes(size)), g.expiresAt && t("until", fmtDate(g.expiresAt, true))].filter(Boolean);
   $("#gMeta").innerHTML = meta.map((m, i) => `${i ? '<span class="dot" aria-hidden="true"></span>' : ""}<span></span>`).join("");
   [...$("#gMeta").querySelectorAll("span:not(.dot)")].forEach((el, i) => el.textContent = meta[i]);
-  $("#findBtn").hidden = !g.faceSearch;
   $("#allBtn").hidden = !dl.length;
   $("#selBtn").hidden = !dl.length && !g.selections;
   $("#selBtn").textContent = S.selecting ? t("select.done") : t("select");
   const hasMine = S.photos.some(p => p.mine);
-  $("#tabs").hidden = !(hasMine || S.face || S.sel.size);
+  $("#tabs").hidden = !(hasMine || S.sel.size);
   $("#tabs [data-view=mine]").hidden = !hasMine;
   $("#tabs [data-view=picked]").hidden = !S.sel.size;
-  $("#tabs [data-view=faces]").hidden = !S.face;
   $$("#tabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === S.view)));
 }
 
 function currentList() {
   if (S.view === "mine") return S.photos.filter(p => p.mine);
   if (S.view === "picked") return S.photos.filter(p => S.sel.has(p.id));
-  if (S.view === "faces" && S.face) {
-    return S.face.matches.filter(m => m.s >= S.cut && !S.removed.has(m.id) && S.byId.has(m.id)).map(m => ({ ...S.byId.get(m.id), s: m.s }));
-  }
   return S.photos;
 }
 
@@ -314,16 +266,9 @@ function render() {
   const grid = $("#grid");
   S.list = currentList(); S.shown = 0; grid.textContent = "";
   grid.classList.toggle("selecting", S.selecting);
-  const faceMode = S.view === "faces" && S.face;
-  $("#faceBar").hidden = !faceMode;
-  if (faceMode) {
-    const sure = S.list.filter(p => p.s >= S.face.threshold).length;
-    $("#faceSum").textContent = S.list.length ? t("face.sum", S.list.length, S.list.length - sure) : t("face.zero");
-    const cut = $("#cutIn"); cut.min = Math.floor(S.face.floor); cut.max = 99; cut.value = S.cut;
-  }
   $("#countHint").textContent = S.view === "all" ? "" : t("count", S.list.length);
   $("#emptyMsg").hidden = !!S.list.length;
-  if (!S.list.length) $("#emptyMsg").textContent = faceMode ? t("face.none") : S.view === "mine" ? t("empty.mine") : S.view === "picked" ? t("empty.picked") : t("empty.all");
+  if (!S.list.length) $("#emptyMsg").textContent = S.view === "mine" ? t("empty.mine") : S.view === "picked" ? t("empty.picked") : t("empty.all");
   more(); updateSel();
 }
 function more() {
@@ -355,13 +300,7 @@ function tile(p, i) {
   }
   if (p.o || S.gallery.selections) el.insertAdjacentHTML("beforeend", `<span class="sel" aria-hidden="true">${TICK}</span>`);
   if (!p.o) el.insertAdjacentHTML("beforeend", `<span class="lock" aria-hidden="true">${LOCK}</span>`);
-  if (S.view === "faces" && p.s != null) {
-    if (p.s < S.face.threshold) el.insertAdjacentHTML("beforeend", `<span class="badge">${t("face.check")}</span>`);
-    const b = document.createElement("button"); b.type = "button"; b.className = "nope";
-    b.innerHTML = `<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 2l8 8M10 2 2 10" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/></svg>${t("face.notme")}`;
-    b.addEventListener("click", ev => { ev.stopPropagation(); S.removed.add(p.id); S.sel.delete(p.id); render(); });
-    el.appendChild(b);
-  } else if (p.mine && S.view === "all") el.insertAdjacentHTML("beforeend", `<span class="badge">${t("tab.mine")}</span>`);
+  if (p.mine && S.view === "all") el.insertAdjacentHTML("beforeend", `<span class="badge">${t("tab.mine")}</span>`);
   return el;
 }
 $("#grid").addEventListener("click", e => {
@@ -411,7 +350,6 @@ $("#sendForm").addEventListener("submit", async e => {
 });
 $("#allBtn").addEventListener("click", () => download(null));
 $$("#tabs button").forEach(b => b.addEventListener("click", () => { S.view = b.dataset.view; renderHead(); render(); window.scrollTo({ top: $("#tools").offsetTop - 60 }); }));
-$("#cutIn").addEventListener("input", e => { S.cut = +e.target.value; render(); });
 
 function fire(url) { const a = document.createElement("a"); a.href = url; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); }
 async function download(ids) {
@@ -474,82 +412,9 @@ $("#lbStage").addEventListener("pointerup", e => {
   else if (dy > 90) closeLb();
 });
 
-// ---------------- recherche par visage ----------------
-const F = { mode: "search", stream: null, blob: null };
-function fPane(id) { ["fStart", "fShoot", "fBusy", "fDone"].forEach(x => $("#" + x).hidden = x !== id); $("#fErr").textContent = ""; }
-function openFace(mode) {
-  F.mode = mode; stopCam(); F.blob = null;
-  $("#fH").textContent = t(mode === "search" ? "f.h" : "f.h2"); $("#fP").textContent = t(mode === "search" ? "f.p" : "f.p2");
-  $("#fForget").hidden = mode !== "search";
-  $("#fOk").checked = false; syncOk(); fPane("fStart");
-  const d = $("#faceDlg"); if (!d.open) d.showModal();
-}
-function syncOk() { $("#fCam").disabled = $("#fFile").disabled = !$("#fOk").checked; }
-$("#fOk").addEventListener("change", syncOk);
-$("#findBtn").addEventListener("click", () => openFace("search"));
-$("#faceAgain").addEventListener("click", () => openFace("search"));
-$("#fForget").addEventListener("click", () => openFace("forget"));
-$("#fRetry").addEventListener("click", () => openFace(F.mode));
-$("#faceDlg").addEventListener("close", stopCam);
+// ---------------- fenêtres ----------------
 $$("dialog [data-close]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
 $$("dialog").forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
-
-function shootText(cam) {
-  $("#fShootH").textContent = t(cam ? "f.shoot" : "f.check"); $("#fShootP").textContent = t(cam ? "f.shootp" : "f.checkp");
-  $("#fCamBox .oval").hidden = !cam;
-}
-function stopCam() { if (F.stream) { F.stream.getTracks().forEach(tr => tr.stop()); F.stream = null; } }
-$("#fCam").addEventListener("click", async () => {
-  try {
-    F.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } }, audio: false });
-    const v = $("#fVideo"); v.srcObject = F.stream; v.hidden = false; $("#fShot").hidden = true;
-    $("#fSnap").hidden = false; $("#fRetake").hidden = true; $("#fSend").hidden = true;
-    shootText(true); fPane("fShoot");
-  } catch { $("#fErr").textContent = t("e.cam"); }
-});
-$("#fSnap").addEventListener("click", async () => {
-  const v = $("#fVideo"); if (!v.videoWidth) return;
-  const c = document.createElement("canvas"); const s = Math.min(1, 1600 / Math.max(v.videoWidth, v.videoHeight));
-  c.width = Math.round(v.videoWidth * s); c.height = Math.round(v.videoHeight * s);
-  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
-  F.blob = await new Promise(r => c.toBlob(r, "image/jpeg", .9));
-  stopCam();
-  const shot = $("#fShot"); shot.className = ""; shot.src = URL.createObjectURL(F.blob); shot.hidden = false; v.hidden = true;
-  $("#fSnap").hidden = true; $("#fRetake").hidden = false; $("#fSend").hidden = false;
-  $("#fSend").textContent = t(F.mode === "search" ? "f.search" : "f.erase");
-});
-$("#fRetake").addEventListener("click", () => $("#fCam").click());
-$("#fFile").addEventListener("click", () => $("#fInput").click());
-$("#fInput").addEventListener("change", async e => {
-  const file = e.target.files[0]; e.target.value = ""; if (!file) return;
-  try {
-    F.blob = await toJpeg(file);
-    const shot = $("#fShot"); shot.className = "file"; shot.src = URL.createObjectURL(F.blob); shot.hidden = false; $("#fVideo").hidden = true;
-    $("#fSnap").hidden = true; $("#fRetake").hidden = true; $("#fSend").hidden = false;
-    $("#fSend").textContent = t(F.mode === "search" ? "f.search" : "f.erase");
-    shootText(false); fPane("fShoot");
-  } catch { $("#fErr").textContent = t("e.bad_image"); }
-});
-async function toJpeg(file) {
-  const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
-  const s = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
-  const c = document.createElement("canvas"); c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
-  c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height); bmp.close && bmp.close();
-  return new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("encode")), "image/jpeg", .9));
-}
-$("#fSend").addEventListener("click", async () => {
-  if (!F.blob) return;
-  fPane("fBusy");
-  $("#fBusyH").textContent = t("f.busyH"); $("#fBusyT").textContent = F.mode === "search" ? t("f.busy", S.photos.length) : t("f.erasing");
-  try {
-    const r = await api(`/api/g/${S.slug}/faces/${F.mode}`, { method: "POST", raw: F.blob, headers: { "Content-Type": "image/jpeg", "X-Consent": "1" } });
-    F.blob = null;
-    if (F.mode === "forget") { fPane("fDone"); $("#fDoneH").textContent = t("f.erasedH"); $("#fDoneP").textContent = t("f.erased", r.removed); $("#fDone .btn.primary").textContent = t("lb.close"); return; }
-    S.face = r; S.cut = r.threshold; S.removed.clear(); S.view = "faces"; S.sel.clear();
-    $("#faceDlg").close(); renderHead(); render();
-    window.scrollTo({ top: $("#tools").offsetTop - 60, behavior: "smooth" });
-  } catch (e) { fPane("fStart"); $("#fOk").checked = true; syncOk(); $("#fErr").textContent = errText(e); }
-});
 
 // ---------------- démarrage ----------------
 const q = new URLSearchParams(location.search);

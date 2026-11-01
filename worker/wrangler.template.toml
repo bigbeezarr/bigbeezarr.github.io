@@ -7,12 +7,9 @@ workers_dev = true
 
 [vars]
 SITE_ORIGIN = "https://bigbeezarr.github.io"
-AWS_REGION = "ca-central-1"
 # Éditeur du portfolio : fichiers content/*.json de ce dépôt, sur la branche du pipeline (le jeton est un secret à part).
 GITHUB_REPO = "bigbeezarr/bigbeezarr.github.io"
 GITHUB_BRANCH = "source"
-# Interrupteur de la recherche par visage : remplacé au déploiement par la variable GitHub FACE_SEARCH (« off » par défaut).
-FACE_SEARCH = "off"
 
 [[r2_buckets]]
 binding = "BUCKET"
@@ -23,7 +20,7 @@ binding = "DB"
 database_name = "bbz-galerie"
 database_id = "__D1_ID__"
 
-# Nettoyage quotidien : index des visages échus, galeries expirées, imports abandonnés.
+# Nettoyage quotidien : galeries expirées, imports abandonnés.
 [triggers]
 crons = ["17 8 * * *"]
 
