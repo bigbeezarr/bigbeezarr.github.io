@@ -680,6 +680,9 @@ h1.vh:focus,section:focus,article:focus,[tabindex="-1"]:focus{outline:none}
 .p-series b{color:var(--accent-text);font-weight:850}
 .p-links{display:flex;flex-wrap:wrap;gap:6px 18px;margin-top:10px;font-family:var(--font-d);font-weight:700;font-size:.86rem;letter-spacing:.04em}
 .p-links a{padding-block:6px;color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:1.5px;text-underline-offset:4px}
+.ed-more-p{margin:14px 0 0;display:flex;justify-content:flex-end}
+.ed-more{display:inline-block;padding:10px 0;font-family:var(--font-d);font-weight:700;font-size:.86rem;letter-spacing:.04em;color:var(--ink);text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:1.5px;text-underline-offset:4px}
+@media (hover:hover) and (pointer:fine){.ed-more:hover{color:var(--accent)}}
 .yrs .miss{opacity:.5;border-style:dashed;cursor:default}
 .ct-ctas{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
 .foot-links{display:flex;flex-wrap:wrap;align-items:center;gap:2px 18px}
@@ -997,6 +1000,7 @@ const T = {
     "motion.now.reduce": "Animations réduites : pas de flash, pas de mouvement de défilement", "motion.now.full": "Animations complètes rétablies",
     "feat.h": "À la une", "feat.sub": "Les projets que je suis depuis le plus longtemps, un par chapitre.", "feat.go": "Voir le projet",
     "proj.page": "Page du projet", "ig.aria": h => `Instagram de ${h}`,
+    "home.of": (a, b) => `${a} photos sur ${b}`, "home.more": (n, y) => `Voir les ${n} photos${y ? " de " + y : ""} sur la page du projet →`,
     "book.cta": "Demander une date", "book.mail": "Écrire un courriel", "book.k": "Prestation", "book.h": "Demande de réservation",
     "book.close": "Fermer le formulaire",
     "book.p": "Décrivez votre projet : je vous réponds par courriel. Une demande n’est pas une réservation confirmée tant que je ne l’ai pas acceptée.",
@@ -1061,6 +1065,7 @@ const T = {
     "motion.now.reduce": "Reduced animations: no flashes, no scroll motion", "motion.now.full": "Full animations restored",
     "feat.h": "Featured", "feat.sub": "The projects I have followed the longest, one per chapter.", "feat.go": "See the project",
     "proj.page": "Project page", "ig.aria": h => `${h} on Instagram`,
+    "home.of": (a, b) => `${a} of ${b} photos`, "home.more": (n, y) => `See all ${n}${y ? " " + y : ""} photos on the project page →`,
     "book.cta": "Request a date", "book.mail": "Send an email", "book.k": "Booking", "book.h": "Booking request",
     "book.close": "Close the form",
     "book.p": "Tell me about your project and I will reply by email. A request is not a confirmed booking until I accept it.",
@@ -1127,11 +1132,12 @@ const addSeq = (i, ctx) => { ctx.i = i; ctxOf[i] = ctx; SEQ.push(i); };
 DATA.hero.forEach((i, n) => addSeq(i, { kind: "sel", n: n + 1, k: DATA.hero.length, i }));
 const heroLab = i => (DATA.heroLab || {})[i];
 DATA.about.forEach((i, n) => addSeq(i, { kind: "about", n: n + 1, k: DATA.about.length }));
-DATA.chapters.forEach((c, ci) => c.projects.forEach((p, pi) => (p.lead ? [{ lead: true, imgs: [p.lead.img] }] : []).concat(edsOf(p)).forEach((e, ei) => {
+DATA.chapters.forEach((c, ci) => c.projects.forEach((p, pi) => (p.lead ? [{ lead: true, imgs: [p.lead.img] }] : []).concat(p.home || edsOf(p)).forEach((e, ei) => {
   if (e.lead) { addSeq(e.imgs[0], { kind: "p", ci, pi, ei: -1, n: 1, k: 1 }); return; }
   ei -= p.lead ? 1 : 0;
   const list = (e.feature ? [e.feature.img] : []).concat(e.imgs);
-  list.forEach((i, n) => addSeq(i, { kind: "p", ci, pi, ei, n: n + 1, k: list.length }));
+  // projet à la une : 10 photos par année sur l'accueil, chacune garde son édition d'origine pour sa légende
+  list.forEach((i, n) => addSeq(i, { kind: "p", ci, pi, ei: p.home ? e.from[i] : ei, n: n + 1, k: list.length }));
 })));
 DATA.wall.forEach((i, n) => addSeq(i, { kind: "wall", n: n + 1, k: DATA.wall.length }));
 addSeq(DATA.me, { kind: "me", n: 1, k: 1 });
@@ -1414,13 +1420,49 @@ DATA.chapters.forEach((c, ci) => {
       const esc = v => String(v).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
       onLang(() => cr.innerHTML = p.credits.map(r => `<span class="cr-k">${esc(L(r.k))}</span><span class="pc-v">${r.names.map(n => `<span>${esc(L(n))}</span>`).join("")}</span>`).join(""));
     }
-    if (p.eds && eds.length > 1 && !p.looks) {
+    if (p.home) {
+      // Projet à la une : une rubrique par année, 10 photos choisies ; la page du projet les montre toutes.
+      if (p.home.length > 1) { yrs = mk("nav", "yrs", ph); onLang(() => yrs.setAttribute("aria-label", t("yrs.aria"))); }
+      const unit = p.series && UNIT[p.series.unit] && p.series.unit !== "saison" ? UNIT[p.series.unit] : null;
+      p.home.forEach(b => {
+        const host = p.eds ? mk("section", "ed", w) : w;
+        const shown = b.imgs.length + (b.feature ? 1 : 0), one = b.k.length === 1 ? eds[b.k[0]] : null;
+        if (p.eds) {
+          const edId = `p-${p.id}-${slug(b.year)}`;
+          host.id = edId; host.dataset.city = (one && one.city) || p.city;
+          const eh = mk("header", "ed-head", host);
+          letters(mk("h4", "ed-year", eh), b.year);
+          const tx = mk("div", "ed-txt", eh);
+          if (one && one.label) bindText(mk("span", "ed-label", tx), () => lab(one));
+          if (one && one.sub) bindText(mk("p", "ed-sub", tx), () => L(one.sub));
+          const n = mk("span", "ed-n", eh);
+          if (one && one.city && one.city !== p.city) mk("span", "dot", n).dataset.c = one.city;
+          bindText(mk("span", "", n), () => [one && one.place && one.place !== p.place ? one.place : "",
+            !one && unit ? `${b.k.length} ${lang === "fr" ? unit[1] : unit[4]}` : "",
+            shown < b.n ? t("home.of")(shown, b.n) : t("photos")(b.n)].filter(Boolean).join(" · "));
+          if (yrs) { const chip = mk("a", "", yrs); chip.href = "#" + edId; chip.dataset.ed = edId; chip.textContent = b.year; }
+        }
+        if (b.feature) {
+          const capd = !!(b.feature.fr || b.feature.en);
+          const f = mk("figure", "feature" + (capd ? "" : " solo"), host);
+          f.appendChild(tile(b.feature.img));
+          if (capd) bindText(mk("figcaption", "", f), () => L(b.feature));
+        }
+        mosaic(mk("div", "gallery", host), b.imgs);
+        if (shown < b.n) {
+          const more = mk("a", "ed-more", mk("p", "ed-more-p", host));
+          more.href = `projets/${encodeURIComponent(p.id)}/#${b.anchor}`;
+          bindText(more, () => t("home.more")(b.n, p.eds ? b.year : ""));
+        }
+      });
+    }
+    if (!p.home && p.eds && eds.length > 1 && !p.looks) {
       yrs = mk("nav", "yrs", ph);
       onLang(() => yrs.setAttribute("aria-label", t("yrs.aria")));
     }
     const dupY = new Set(eds.map(e => e.year).filter((y, k, a) => a.indexOf(y) !== k));
     const dupB = new Set(eds.map(e => e.brand).filter((y, k, a) => y && a.indexOf(y) !== k));
-    eds.forEach((e, ei) => {
+    (p.home ? [] : eds).forEach((e, ei) => {
       const host = p.eds ? mk("section", "ed", w) : w;
       let edId = "";
       if (p.eds) {

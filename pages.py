@@ -25,6 +25,14 @@ def vsrc(up, i, pref):
     for k in ([pref] + [x for x in ("s", "m", "f") if x != pref]):
         if SITE_DIR is None or os.path.exists(os.path.join(SITE_DIR, "img", k, f"{pad(i)}.webp")): return f"{up}img/{k}/{pad(i)}.webp"
     return f"{up}img/f/{pad(i)}.webp"
+def vset(up, i, w, h):
+    """srcset des copies 480 et 960 px (quand elles existent) et de la pleine taille, comme srcsetOf() de l'accueil."""
+    L, out = max(w, h), []
+    for k, n in (("s", 480), ("m", 960)):
+        if L > n * 1.05 and (SITE_DIR is None or os.path.exists(os.path.join(SITE_DIR, "img", k, f"{pad(i)}.webp"))):
+            out.append(f"{up}img/{k}/{pad(i)}.webp {round(w * n / L)}w")
+    out.append(f"{up}img/f/{pad(i)}.webp {w}w")
+    return ", ".join(out)
 def eds_of(p): return p.get("eds") or [{"year": p.get("year", ""), "imgs": p.get("imgs", []), "feature": p.get("feature"), "single": True}]
 def ed_imgs(e): return ([e["feature"]["img"]] if e.get("feature") else []) + list(e["imgs"])
 def gallery_html(e, ids):
@@ -160,8 +168,24 @@ def project_page(site, D, c, ci, p, NCH, all_projects, SITE):
                 if ids: sel.append(ids[0])
         else:
             sel = ed_imgs(eds[0])[:8]
-    sel = [i for i in sel if str(i) in D["img"]][:8]
-    sel_html = "".join(f'<figure class="s ph-sel" data-cover="{i}"><button class="ph-open" type="button" data-i="{i}"><img data-i="{i}" src="{vsrc(up, i, "s")}" sizes="(max-width:620px) 50vw, 22vw" alt="" loading="lazy" decoding="async"></button></figure>' for i in sel)
+    mine = set(i for e in eds for i in ed_imgs(e)) | ({p["lead"]["img"]} if p.get("lead") else set())
+    sel = [i for i in dict.fromkeys(sel) if str(i) in D["img"] and i in mine][:8]
+    # 8 vignettes verticales (2:3) ; une photo horizontale y est recadrée autour de son sujet (« selFocus », 0 à 100 %
+    # de la largeur), la visionneuse l'ouvre entière.
+    focus = p.get("selFocus") or {}
+    def sel_fig(i):
+        w, h = D["img"][str(i)][:2]
+        wide = w / h > 2 / 3 + 0.01
+        style = ""
+        if wide:
+            r = (2 / 3) / (w / h)                          # part de la largeur visible dans le cadre 2:3
+            cx = float(focus.get(str(i), 50)) / 100
+            pos = 0 if r >= 1 else min(1, max(0, (cx - r / 2) / (1 - r)))
+            style = f' data-pos="{pos * 100:.0f}"'   # appliqué par projet.js (la CSP interdit les attributs style)
+        sz = f"(max-width:620px) {round(50 / r)}vw, {round(24 / r)}vw" if wide else "(max-width:620px) 50vw, 24vw"
+        return (f'<figure class="s ph-sel" data-cover="{i}"><button class="ph-open" type="button" data-i="{i}"><img data-i="{i}" src="{vsrc(up, i, "m")}"'
+                f' srcset="{vset(up, i, w, h)}" sizes="{sz}" alt="" loading="lazy" decoding="async"{style}></button></figure>')
+    sel_html = "".join(sel_fig(i) for i in sel)
     for i in sel: use(i)
     # faits
     role = p.get("role") or {"fr": "Photographie", "en": "Photography"}

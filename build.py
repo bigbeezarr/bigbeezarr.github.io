@@ -124,6 +124,43 @@ featured = sorted([p for c in CHAPTERS for p in c["projects"] if p.get("featured
 FEATURED = [p["id"] for p in featured][:5]
 for c in CHAPTERS:
     c["projects"] = [p for p in c["projects"] if not p.get("hidden")]
+# ---- projets à la une : l'accueil n'en montre que 10 photos par année, la page du projet les garde toutes ----
+# Le choix vient de « homePicks » ({année: [photos]}) ; une photo retirée du projet est ignorée et une année sans choix
+# (nouvelle année ajoutée par la tâche planifiée) prend ses premières photos. Chaque photo garde son édition d'origine
+# (« from ») pour la légende de la visionneuse. Sans pages de projet, rien n'est réduit : les photos resteraient introuvables.
+HOME_N = 10
+for c in CHAPTERS:
+    for p in c["projects"]:
+        picks = p.pop("homePicks", None) or {}
+        if p["id"] not in FEATURED or not SITE.get("projectPages", True): continue
+        eds = p.get("eds") or [p]
+        years_order, by = [], {}
+        for k, e in enumerate(eds):
+            y = str(e.get("year") or p.get("year") or "")
+            if y not in by: by[y] = []; years_order.append(y)
+            by[y].append(k)
+        blocks, trimmed = [], False
+        for y in years_order:
+            ks = by[y]
+            pool = []
+            for k in ks:
+                e = eds[k]
+                if e.get("feature"): pool.append((e["feature"]["img"], k))
+                pool += [(i, k) for i in e["imgs"]]
+            src_of = dict(pool)
+            n = min(HOME_N, len(pool))
+            want = [i for i in dict.fromkeys(picks.get(y) or []) if i in src_of][:n]
+            want += [i for i, _ in pool if i not in want][:n - len(want)]
+            feat = next((eds[k]["feature"] for k in ks if eds[k].get("feature") and eds[k]["feature"]["img"] in want), None)
+            imgs = [i for i in want if not feat or i != feat["img"]]
+            if any(eds[k].get("order") == "fixed" for k in ks): imgs = [i for i, _ in pool if i in imgs]
+            else: imgs = gradient(imgs)
+            b = {"year": y, "imgs": imgs, "from": {str(i): src_of[i] for i in want}, "n": len(pool), "k": ks,
+                 "anchor": f"ed-{ks[0] + 1}" if p.get("eds") else "h-all"}
+            if feat: b["feature"] = feat
+            blocks.append(b)
+            trimmed = trimmed or len(pool) > len(want)
+        if trimmed: p["home"] = blocks
 shown = set(HERO + ABOUT + WALL + [ME])
 for c in CHAPTERS:
     for p in c["projects"]:

@@ -8,6 +8,8 @@
   const pad = n => String(n).padStart(3, "0");
   const motion = store.get("bbz-motion", ""), calm = () => motion === "reduce" || (motion !== "full" && matchMedia("(prefers-reduced-motion: reduce)").matches);
   if (motion === "reduce") root.classList.add("calm");
+  /* sélection : une photo horizontale est recadrée en vertical autour de son sujet */
+  $$(".sel img[data-pos]").forEach(im => { im.style.objectPosition = `${im.dataset.pos}% 50%`; });
 
   /* langue : la même préférence que la page d'accueil */
   let lang = store.get("bbz-lang", (navigator.language || "fr").toLowerCase().startsWith("fr") ? "fr" : "en") === "en" ? "en" : "fr";
