@@ -55,8 +55,9 @@ def ed_title(p, e):
     if e.get("look"): parts_fr = [t, f"Look {e['look']}"] + ([T(e.get('label'), 'fr')] if e.get('label') else []); parts_en = [te, f"Look {e['look']}"] + ([T(e.get('label'), 'en')] if e.get('label') else [])
     return {"fr": " · ".join(parts_fr), "en": " · ".join(parts_en)}
 LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10" fill="none" stroke="currentColor" stroke-width="1.6"/><ellipse cx="16" cy="16" rx="4.6" ry="10" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".55"/><path d="M6 16h20" stroke="currentColor" stroke-width="1.2" opacity=".55"/><ellipse cx="16" cy="16" rx="15" ry="5" fill="none" stroke="#E8141C" stroke-width="1.8" transform="rotate(-18 16 16)"/></svg>'
-CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; "
-       "base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests")
+CSP_TPL = ("default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' __API__; manifest-src 'self'; "
+           "base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests")
+CSP = CSP_TPL.replace("__API__", "https://*.workers.dev")  # remplacé dans build() par l'adresse du serveur si elle est fixée
 def head(up, title, desc, path, og, extra=""):
     return f'''<!doctype html>
 <html lang="fr">
@@ -182,7 +183,7 @@ def project_page(site, D, c, ci, p, NCH, all_projects, SITE):
           "isPartOf": {"@type": "WebSite", "name": "BIGBEEZARR", "url": ORIGIN + "/"}}
     if place: ld["contentLocation"] = {"@type": "Place", "name": place}
     if ys: ld["temporalCoverage"] = ys.replace("–", "/")
-    pdata = {"id": pid, "img": imgs, "eds": pd_eds, "alt": {k: v for k, v in (D.get("alt") or {}).items() if k in imgs}}
+    pdata = {"id": pid, "base": up, "img": imgs, "eds": pd_eds, "alt": {k: v for k, v in (D.get("alt") or {}).items() if k in imgs}}
     chap_fr, chap_en = T(c["name"], "fr"), T(c["name"], "en")
     n_ph = count(p)
     page = head(up, page_title, desc, path, f"{path}og.jpg", f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>\n') + f'''
@@ -223,7 +224,7 @@ def projects_index(site, D, all_projects, SITE):
         cov = p.get("cover") if p.get("cover") is not None else (p["lead"]["img"] if p.get("lead") else (e0["feature"]["img"] if e0.get("feature") else e0["imgs"][0]))
         used[str(cov)] = D["img"][str(cov)]
         cards.append(card(up, p, c, D))
-    pdata = {"id": "_", "img": used, "eds": [], "alt": {}}
+    pdata = {"id": "_", "base": up, "img": used, "eds": [], "alt": {}}
     title = "Tous les projets · BIGBEEZARR, photographe à Dakar et Montréal"
     desc = f"Les {len(all_projects)} projets photo de BIGBEEZARR (Mamadou Beye) : soirées, sport, concerts, mode, marques et projets d’exposition, à Dakar et à Montréal."
     page = head(up, title, desc, "/projets/", "/og.jpg") + f'''
@@ -257,7 +258,7 @@ def simple_page(site, folder, title, desc, body_html, back=("Accueil", "Home"), 
 {body_html}
 </main>
 {foot(up or "./", "baeypro@gmail.com")}
-<script type="application/json" id="pdata">{{"id":"_","img":{{}},"eds":[],"alt":{{}}}}</script>
+<script type="application/json" id="pdata">{{"id":"_","base":"{up or "/"}","img":{{}},"eds":[],"alt":{{}}}}</script>
 {LIGHTBOX}
 <script src="{up or "./"}assets/projet.js"></script>
 </body>
@@ -270,6 +271,9 @@ def build(site, base):
     SITE_DIR = site
     D = json.load(open(os.path.join(base, "build", "data.json"), encoding="utf-8"))
     SITE = json.load(open(os.path.join(base, "content", "site.json"), encoding="utf-8"))
+    global CSP  # même règle que la page d'accueil : seule l'adresse du serveur fixée dans les réglages, sinon workers.dev
+    m = re.match(r"https://[^/\s\"']+", (SITE.get("api") or "").strip())
+    CSP = CSP_TPL.replace("__API__", m.group(0) if m else "https://*.workers.dev")
     NCH = len(D["chapters"])
     all_projects = [(c, p) for c in D["chapters"] for p in c["projects"]]
     paths = []

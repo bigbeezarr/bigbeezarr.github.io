@@ -1508,7 +1508,21 @@ fetch("galerie/config.js", { cache: "no-store" }).then(r => r.ok ? r.text() : ""
   if (!m) return;
   $$(".ph-link, .ct-photos").forEach(a => a.hidden = false);
   if (!API) API = m[1].replace(/\/+$/, "");
+  hit("/");
 }).catch(() => {});
+/* audience statistics without cookies: one anonymous count per page, chapter and action (nothing if the visitor asks not to be tracked) */
+const hitDone = new Set();
+const noTrack = () => navigator.globalPrivacyControl === true || navigator.doNotTrack === "1" || window.doNotTrack === "1";
+function hit(p) {
+  if (!API || hitDone.has(p) || noTrack()) return; hitDone.add(p);
+  const d = matchMedia("(pointer:coarse)").matches ? (Math.min(screen.width, screen.height) >= 700 ? "tablet" : "mobile") : "desktop";
+  try { navigator.sendBeacon(API + "/api/hit", JSON.stringify({ p, d })); } catch (e) {}
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest && e.target.closest("a[href]"); if (!a) return;
+  const h = a.getAttribute("href");
+  if (h.startsWith("mailto:")) hit("@mail"); else if (/instagram\.com/.test(h)) hit("@instagram"); else if (h.startsWith("projets/")) hit("@project-page");
+}, true);
 
 /* ---------- spring (critically damped by default) ---------- */
 function spring({ from, to, velocity = 0, response = 0.4, damping = 1, onUpdate, onDone }) {
@@ -1780,6 +1794,7 @@ const LB = {
     setTimeout(() => { lbImg.style.transition = lbScrim.style.transition = lbUi.style.transition = ""; done && done(); }, 230);
   },
   show(i) {
+    hit("@lightbox");
     this.pos = SEQ.indexOf(i); this.i = i; this.open = true; this.lastFocus = document.activeElement;
     lb.hidden = false; root.style.overflow = "hidden";
     lb.classList.remove("vf"); void lb.offsetWidth; lb.classList.add("vf");
@@ -2263,6 +2278,7 @@ function levelName(sec) {
   return c ? L(c.name) : sec === "index" ? "Index" : sec === "favs" ? t("favs") : sec === "contact" ? "Contact" : t("lv.intro");
 }
 function gameHud(sec, force) {
+  if (sec && sec !== lvSec) hit("#" + sec);
   if (sec !== lvSec || force) {
     const prev = lvSec; lvSec = sec;
     hudLv.textContent = pad2(levelNo(sec)); hudName.textContent = levelName(sec);
@@ -2651,7 +2667,7 @@ onLang(paintMotion);
   function open() {
     if (!bk.hidden) return;
     if (LB.open) LB.hide(); if (!menu.hidden) menuClose(true);
-    last = document.activeElement; bk.hidden = false; form.hidden = false; ok.hidden = true; err.textContent = "";
+    last = document.activeElement; bk.hidden = false; form.hidden = false; ok.hidden = true; err.textContent = ""; hit("@book-open");
     root.style.overflow = "hidden"; openedAt = Date.now(); F.date.min = today();
     note.textContent = t(API ? "book.note.api" : "book.note.mail");
     setTimeout(() => F.first_name.focus(), 30);
@@ -2693,7 +2709,7 @@ onLang(paintMotion);
       const r = await fetch(API + "/api/booking", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...d, consent: true, elapsed: Date.now() - openedAt, website: "" }) });
       if (r.status === 429) { err.textContent = t("book.err.rate"); return; }
       if (!r.ok) throw new Error("http " + r.status);
-      done(t("book.ok.api"));
+      hit("@book-sent"); done(t("book.ok.api"));
     } catch (x) { err.textContent = t("book.err.net"); copyB.hidden = false; }
     finally { btn.disabled = false; }
   });

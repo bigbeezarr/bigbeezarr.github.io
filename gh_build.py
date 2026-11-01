@@ -59,7 +59,9 @@ hashes = sorted({"'sha256-" + base64.b64encode(hashlib.sha256(m.encode()).digest
                  for m in re.findall(r'<script>(.*?)</script>', html, re.S)})
 api = (SITE.get('api') or '').rstrip('/')
 api_origin = re.match(r'https://[^/]+', api).group(0) if re.match(r'https://[^/]+', api) else ''
-connect = " ".join(x for x in ("'self'", "https://*.workers.dev", api_origin) if x)
+# Adresse du serveur fixée dans les réglages : seule cette origine est permise ; sinon, n'importe quel sous-domaine workers.dev
+# (l'adresse exacte n'est connue qu'après le premier déploiement du serveur, dans galerie/config.js).
+connect = f"'self' {api_origin}" if api_origin else "'self' https://*.workers.dev"
 csp = ("default-src 'none'; script-src " + " ".join(hashes) + "; style-src 'self' 'unsafe-inline'; "
        f"font-src 'self'; img-src 'self' data: blob:; connect-src {connect}; manifest-src 'self'; "
        "base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests")
@@ -89,8 +91,19 @@ open(os.path.join(a.site, '404.html'), 'w', encoding='utf-8').write(page404)
 
 # ---- référencement : robots.txt et plan du site (les pages privées n'y figurent pas ; robots.txt n'est pas une protection) ----
 open(os.path.join(a.site, 'robots.txt'), 'w').write(f'User-agent: *\nAllow: /\nSitemap: {ORIGIN}/sitemap.xml\n')
+# lastmod honnête : la date ne change que si la page a changé (empreinte gardée dans .build-pages.json sur le site).
 today = datetime.date.today().isoformat()
-urls = "".join(f'<url><loc>{ORIGIN}{p}</loc><lastmod>{today}</lastmod></url>' for p in paths)
+state_path = os.path.join(a.site, '.build-pages.json')
+try: state = json.load(open(state_path))
+except Exception: state = {}
+new_state = {}
+for p in paths:
+    f = os.path.join(a.site, p.strip('/'), 'index.html') if p != '/' else os.path.join(a.site, 'index.html')
+    h = hashlib.sha256(re.sub(r"'sha256-[^']+'", '', open(f, encoding='utf-8').read()).encode()).hexdigest()[:16] if os.path.exists(f) else ''
+    old_h, old_d = (state.get(p) or ['', ''])
+    new_state[p] = [h, old_d if (h == old_h and old_d) else today]
+json.dump(new_state, open(state_path, 'w'), indent=0, sort_keys=True)
+urls = "".join(f'<url><loc>{ORIGIN}{p}</loc><lastmod>{new_state[p][1]}</lastmod></url>' for p in paths)
 open(os.path.join(a.site, 'sitemap.xml'), 'w').write(f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
 hero0 = json.loads(re.search(r'"hero":\[(\d+)', src).group(1))
 im = Image.open(os.path.join(a.site, 'img', 'f', f'{hero0:03d}.webp')).convert('RGB')

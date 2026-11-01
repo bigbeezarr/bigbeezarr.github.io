@@ -25,7 +25,7 @@ home = {
     'cap': {str(k): v for k, v in ns['CAP'].items()},
 }
 os.makedirs(os.path.join(BASE, 'content'), exist_ok=True)
-json.dump({'chapters': chapters}, open(os.path.join(BASE, 'content', 'portfolio.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
-json.dump(home, open(os.path.join(BASE, 'content', 'home.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+json.dump({'chapters': chapters}, open(os.path.join(BASE, 'content', 'portfolio.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1); open(os.path.join(BASE, 'content', 'portfolio.json'), 'a').write('\n')
+json.dump(home, open(os.path.join(BASE, 'content', 'home.json'), 'w', encoding='utf-8'), ensure_ascii=False, indent=1); open(os.path.join(BASE, 'content', 'home.json'), 'a').write('\n')
 n = sum(len(e['imgs']) for c in chapters for p in c['projects'] for e in p.get('eds', [p]))
 print('ok', len(chapters), 'chapitres', sum(len(c['projects']) for c in chapters), 'projets', n, 'photos dans les rubriques')

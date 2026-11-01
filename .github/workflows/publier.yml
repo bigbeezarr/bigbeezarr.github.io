@@ -1,0 +1,85 @@
+# Publie le portfolio quand son contenu change : enregistrement depuis l'administration (content/*.json),
+# ajout de photos par la tâche planifiée, ou modification du pipeline.
+#   branche source      → reconstruit et publie sur main (le site en ligne, GitHub Pages)
+#   branche dev-source  → reconstruit sur dev (version de développement, jamais servie au public)
+# Seuls les fichiers produits par gh_build.py changent sur la branche cible : galerie/, admin/ et worker/ restent intacts.
+name: Publier le portfolio
+
+on:
+  push:
+    branches: [source, dev-source]
+    paths:
+      - "content/**"
+      - "src.html"
+      - "build.py"
+      - "gh_build.py"
+      - "pages.py"
+      - "variants.py"
+      - "assets/**"
+      - "fonts/**"
+      - "meta.json"
+      - "colors.json"
+      - "hashes.json"
+      - "auto.json"
+      - ".github/workflows/publier.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publier-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    if: github.ref_name == 'source' || github.ref_name == 'dev-source'
+    runs-on: ubuntu-latest
+    env:
+      TARGET: ${{ github.ref_name == 'source' && 'main' || 'dev' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET }}
+          path: site
+          fetch-depth: 1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Outils
+        run: pip install --disable-pip-version-check Pillow==12.3.0 numpy==2.5.3
+
+      - name: Construire et publier
+        env:
+          SRC_SHA: ${{ github.sha }}
+        run: |
+          cd site
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cd ..
+          # Jusqu'à 3 essais : si la branche cible a bougé pendant la construction (tâche planifiée, autre publication),
+          # on repart de sa dernière version.
+          for essai in 1 2 3; do
+            ( cd src && python3 build.py && python3 gh_build.py --site ../site )
+            # Contrôle : chaque photo du catalogue existe en pleine taille sur la branche cible.
+            python3 - <<'PY'
+          import json, os, sys
+          meta = json.load(open("src/meta.json"))
+          ids = meta.keys() if isinstance(meta, dict) else [m["id"] for m in meta]
+          miss = [i for i in ids if not os.path.exists(f"site/img/f/{int(i):03d}.webp")]
+          if miss: sys.exit(f"photos manquantes sur la branche cible : {miss[:20]}")
+          print(len(list(ids)), "photos vérifiées")
+          PY
+            cd site
+            git add -A
+            if git diff --cached --quiet; then echo "Rien n'a changé : pas de publication."; exit 0; fi
+            git commit -q -m "Publication automatique du portfolio" -m "Source : ${GITHUB_REPOSITORY}@${SRC_SHA::7} (${GITHUB_REF_NAME})"
+            if git push origin "HEAD:${TARGET}"; then echo "Publié sur ${TARGET}."; exit 0; fi
+            echo "La branche ${TARGET} a changé entre-temps, nouvel essai ($essai)."
+            git fetch -q --depth=1 origin "${TARGET}" && git reset -q --hard FETCH_HEAD && git clean -qfd
+            cd ..
+          done
+          echo "::error::Publication impossible après 3 essais."; exit 1

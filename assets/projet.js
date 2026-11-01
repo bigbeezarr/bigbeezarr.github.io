@@ -3,7 +3,7 @@
   "use strict";
   const D = JSON.parse(document.getElementById("pdata").textContent);
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  const root = document.documentElement, BASE = "../../";
+  const root = document.documentElement, BASE = D.base || "../../";
   const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
   const pad = n => String(n).padStart(3, "0");
   const motion = store.get("bbz-motion", ""), calm = () => motion === "reduce" || (motion !== "full" && matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -147,5 +147,13 @@
       if (dy > 110 && Math.abs(dy) > Math.abs(dx)) LB.hide(); else if (dx < -60) LB.go(1); else if (dx > 60) LB.go(-1); };
     st.addEventListener("pointerup", end); st.addEventListener("pointercancel", end);
     st.addEventListener("wheel", e => { if (!LB.open) return; e.preventDefault(); Z.at(Z.z * Math.exp(-e.deltaY * (e.ctrlKey ? .012 : .0022)), e.clientX, e.clientY); }, { passive: false }); }
+  /* statistiques sans témoin (comme la page d'accueil) : rien si le visiteur demande à ne pas être suivi */
+  if (!(navigator.globalPrivacyControl === true || navigator.doNotTrack === "1")) {
+    fetch(BASE + "galerie/config.js", { cache: "no-store" }).then(r => r.ok ? r.text() : "").then(js => {
+      const m = /BBZ_API\s*=\s*"(https:\/\/[^"\s]+)"/.exec(js); if (!m) return;
+      const d = matchMedia("(pointer:coarse)").matches ? (Math.min(screen.width, screen.height) >= 700 ? "tablet" : "mobile") : "desktop";
+      try { navigator.sendBeacon(m[1].replace(/\/+$/, "") + "/api/hit", JSON.stringify({ p: location.pathname, d })); } catch (e) {}
+    }).catch(() => {});
+  }
   applyLang();
 })();
