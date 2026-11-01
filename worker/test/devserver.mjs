@@ -99,6 +99,11 @@ const env = {
   AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
   AWS_ENDPOINT: process.env.AWS_ENDPOINT, AWS_REGION: "ca-central-1",
   SINGLE_MAX: process.env.SINGLE_MAX, PART_SIZE: process.env.PART_SIZE,
+  FACE_SEARCH: process.env.FACE_SEARCH,
+  GITHUB_TOKEN: process.env.GITHUB_TOKEN, GITHUB_REPO: process.env.GITHUB_REPO, GITHUB_BRANCH: process.env.GITHUB_BRANCH, GITHUB_API: process.env.GITHUB_API,
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET, STRIPE_API: process.env.STRIPE_API,
+  RESEND_API_KEY: process.env.RESEND_API_KEY, NOTIFY_EMAIL: process.env.NOTIFY_EMAIL, RESEND_ENDPOINT: process.env.RESEND_ENDPOINT,
+  TURNSTILE_SECRET: process.env.TURNSTILE_SECRET, TURNSTILE_ENDPOINT: process.env.TURNSTILE_ENDPOINT,
 };
 const worker = (await import("../src/index.js")).default;
 const pending = new Set();

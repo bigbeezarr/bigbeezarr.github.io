@@ -1,4 +1,5 @@
 /* Pages de projet BIGBEEZARR : mêmes couleurs, mêmes polices et mêmes formes que la page d'accueil. */
+[hidden]{display:none!important}
 @font-face{font-family:"Archivo";src:url(../fonts/archivo.woff2) format("woff2");font-weight:100 900;font-stretch:62% 125%;font-style:normal;font-display:swap}
 @font-face{font-family:"Schibsted Grotesk";src:url(../fonts/schibsted.woff2) format("woff2");font-weight:400 800;font-style:normal;font-display:swap}
 @font-face{font-family:"Schibsted Grotesk";src:url(../fonts/schibsted-italic.woff2) format("woff2");font-weight:400 800;font-style:italic;font-display:swap}
@@ -103,7 +104,8 @@ html[lang="fr"] [data-l="fr"],html[lang="en"] [data-l="en"]{display:revert}
 @media (hover:none){.lb-prev,.lb-next{display:none}}
 .lb-bar{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:16px;padding:14px 18px calc(16px + env(safe-area-inset-bottom,0px));font-size:.92rem}
 .lb-title{font-family:var(--font-d);font-weight:700}
-.lb-count{font-family:var(--font-d);font-weight:800;font-variant-numeric:tabular-nums;background:var(--accent);color:#fff;padding:2px 8px;border-radius:4px}
+.lb-count{font-family:var(--font-d);font-weight:800;font-variant-numeric:tabular-nums;background:var(--accent);color:#fff;padding:3px 10px 4px;border-radius:4px;line-height:1.1;white-space:nowrap}
+.lb-count b{font-size:2em;font-weight:850;font-stretch:115%;vertical-align:-.12em;margin-right:.1em}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important}}
 html.calm *,html.calm *::before,html.calm *::after{transition-duration:.01ms!important;animation-duration:.01ms!important}
 /* pages de texte : 404, confidentialité, conditions */

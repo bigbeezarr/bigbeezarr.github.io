@@ -3,7 +3,7 @@
   "use strict";
   const D = JSON.parse(document.getElementById("pdata").textContent);
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
-  const root = document.documentElement, BASE = "../../";
+  const root = document.documentElement, BASE = D.base || "../../";
   const store = { get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
   const pad = n => String(n).padStart(3, "0");
   const motion = store.get("bbz-motion", ""), calm = () => motion === "reduce" || (motion !== "full" && matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -106,7 +106,7 @@
       lbFull.classList.remove("on"); lbFull.src = `${BASE}img/f/${pad(i)}.webp`; lbFull.decode().catch(() => {}).then(() => { if (SEQ[this.pos] === i) lbFull.classList.add("on"); });
       this.caption(); $("#lbPrev").disabled = this.pos === 0; $("#lbNext").disabled = this.pos === SEQ.length - 1;
       const nx = SEQ[this.pos + 1]; if (nx != null) { const im = new Image(); im.src = `${BASE}img/f/${pad(nx)}.webp`; } },
-    caption() { const i = SEQ[this.pos], c = ctx[i]; $("#lbTitle").textContent = lang === "fr" ? c.e.t.fr : c.e.t.en; $("#lbCount").textContent = `${pad(this.pos + 1)} / ${pad(SEQ.length)}`; lbFull.alt = altOf(i); },
+    caption() { const i = SEQ[this.pos], c = ctx[i]; $("#lbTitle").textContent = lang === "fr" ? c.e.t.fr : c.e.t.en; { const cn = $("#lbCount"); cn.textContent = ""; const b = document.createElement("b"); b.textContent = pad(this.pos + 1); cn.append(b, ` / ${pad(SEQ.length)}`); } lbFull.alt = altOf(i); },
     go(d) { const np = this.pos + d; if (np < 0 || np >= SEQ.length) return; this.pos = np; this.load(); },
     hide() { if (!this.open) return; this.open = false; lb.hidden = true; root.style.overflow = ""; lbFull.removeAttribute("src"); if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {}); if (this.last && this.last.focus) this.last.focus({ preventScroll: true }); } };
   document.addEventListener("click", e => { const b = e.target.closest(".ph-open"); if (!b) return; e.preventDefault(); LB.show(SEQ.indexOf(+b.dataset.i)); });
@@ -147,5 +147,13 @@
       if (dy > 110 && Math.abs(dy) > Math.abs(dx)) LB.hide(); else if (dx < -60) LB.go(1); else if (dx > 60) LB.go(-1); };
     st.addEventListener("pointerup", end); st.addEventListener("pointercancel", end);
     st.addEventListener("wheel", e => { if (!LB.open) return; e.preventDefault(); Z.at(Z.z * Math.exp(-e.deltaY * (e.ctrlKey ? .012 : .0022)), e.clientX, e.clientY); }, { passive: false }); }
+  /* statistiques sans témoin (comme la page d'accueil) : rien si le visiteur demande à ne pas être suivi */
+  if (!(navigator.globalPrivacyControl === true || navigator.doNotTrack === "1")) {
+    fetch(BASE + "galerie/config.js", { cache: "no-store" }).then(r => r.ok ? r.text() : "").then(js => {
+      const m = /BBZ_API\s*=\s*"(https:\/\/[^"\s]+)"/.exec(js); if (!m) return;
+      const d = matchMedia("(pointer:coarse)").matches ? (Math.min(screen.width, screen.height) >= 700 ? "tablet" : "mobile") : "desktop";
+      try { navigator.sendBeacon(m[1].replace(/\/+$/, "") + "/api/hit", JSON.stringify({ p: location.pathname, d })); } catch (e) {}
+    }).catch(() => {});
+  }
   applyLang();
 })();

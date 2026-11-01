@@ -27,6 +27,10 @@ const ERR = {
   title_required: "Le titre est obligatoire.", face_ack_required: "Cochez les attestations et décrivez la base du consentement.", face_not_configured: "Clés AWS absentes : la recherche par visage n'est pas configurée.",
   face_disabled: "Activez d'abord la recherche par visage.", size_mismatch: "Le fichier reçu n'a pas la bonne taille. Réessayez.", server_not_configured: "Serveur incomplet : la clé de signature manque.",
   admin_not_configured: "Serveur incomplet : le mot de passe administrateur manque.", face_engine_error: "Amazon Rekognition a refusé la requête. Vérifiez les clés et la région.",
+  face_switched_off: "La recherche par visage est coupée sur le serveur (FACE_SEARCH). Elle ne s'active qu'après les démarches légales : voir worker/README.md.",
+  date_taken: "Cette date est déjà confirmée ou bloquée.", content_not_configured: "Édition du portfolio non reliée à GitHub (GITHUB_TOKEN).", content_changed: "Le contenu a changé entre-temps : rechargez la page.",
+  invalid_content: "Contenu refusé par le contrôle.", payments_not_configured: "Paiement en ligne non configuré.", amount_not_set: "Indiquez d'abord le montant.", bad_client: "Client introuvable.",
+  github_error: "GitHub a refusé la requête (jeton expiré ou permissions insuffisantes).", name_required: "Le nom est obligatoire.", bad_email: "Adresse courriel invalide.", bad_date: "Date invalide.",
 };
 const errText = e => (e && ERR[e.code]) || (e && e.net ? "Serveur injoignable. Vérifiez votre connexion." : `Erreur${e && e.code ? " : " + e.code : ""}.`);
 
@@ -64,8 +68,14 @@ async function copy(text) {
   toast("Lien copié.");
 }
 
-const views = ["vLogin", "vNone", "vList", "vGal"];
-const show = id => { views.forEach(v => $("#" + v).hidden = v !== id); $("#logout").hidden = id === "vLogin" || id === "vNone"; window.scrollTo(0, 0); };
+const views = ["vLogin", "vNone", "vList", "vGal", "vBook", "vCal", "vClients", "vSel", "vPort", "vStats"];
+const show = id => {
+  views.forEach(v => { const el = $("#" + v); if (el) el.hidden = v !== id; });
+  $("#logout").hidden = id === "vLogin" || id === "vNone";
+  const nav = $("#anav"); if (nav) { nav.hidden = id === "vLogin" || id === "vNone"; $$("#anav a").forEach(a => a.setAttribute("aria-current", String(a.dataset.v === id || (id === "vGal" && a.dataset.v === "vList"))));
+    const cur = nav && nav.querySelector('[aria-current="true"]'); if (cur && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = Math.max(0, cur.offsetLeft - nav.clientWidth / 2 + cur.offsetWidth / 2); }
+  window.scrollTo(0, 0);
+};
 $$("dialog [data-close]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));
 $$("dialog").forEach(d => d.addEventListener("click", e => { if (e.target === d) d.close(); }));
 
@@ -94,7 +104,7 @@ async function list() {
     const el = document.createElement("div"); el.className = "grow"; el.tabIndex = 0; el.setAttribute("role", "link");
     const expired = g.expires_at && g.expires_at * 1000 < Date.now();
     el.innerHTML = `<div class="cv">${g.cover ? `<img alt="" loading="lazy" src="${esc(g.cover.url)}">` : ""}</div>
-      <div style="min-width:0"><div class="row" style="gap:8px"><b>${esc(g.title)}</b><span class="pill">${KIND[g.kind]}</span>${g.hasPassword ? '<span class="pill">Mot de passe</span>' : ""}${g.faceLive ? '<span class="pill red">Visages</span>' : ""}${expired ? '<span class="pill warn">Expirée</span>' : ""}</div>
+      <div style="min-width:0"><div class="row" style="gap:8px"><b>${esc(g.title)}</b><span class="pill">${KIND[g.kind]}</span>${g.hasPassword ? '<span class="pill">Mot de passe</span>' : ""}${g.faceLive ? '<span class="pill red">Visages</span>' : ""}${expired ? '<span class="pill warn">Expirée</span>' : ""}${g.archived ? '<span class="pill">Archivée</span>' : ""}${g.new_selections ? `<span class="pill red">${g.new_selections} sélection${g.new_selections > 1 ? "s" : ""}</span>` : ""}${g.client_name ? `<span class="pill">${esc(g.client_name)}</span>` : ""}</div>
       <div class="sub"><span>${fmtNum(g.n)} photos · ${fmtBytes(g.bytes)}</span>${g.event_date ? `<span>${fmtDate(g.event_date)}</span>` : ""}<span>${fmtNum(g.views)} visites · ${fmtNum(g.downloads)} téléchargements</span>${g.expires_at ? `<span>${expired ? "Expirée le" : "Expire le"} ${fmtDate(g.expires_at)}</span>` : ""}</div></div>
       <div class="acts row"><button class="btn small" type="button" data-copy>Copier le lien</button></div>`;
     el.querySelector("[data-copy]").addEventListener("click", ev => { ev.stopPropagation(); copy(g.link); });
@@ -372,6 +382,11 @@ function paintSettings() {
   f.password.value = ""; $("#pwState").textContent = G.hasPassword ? "Un mot de passe est actif." : "Aucun mot de passe : le lien suffit.";
   $("#clearPw").hidden = !G.hasPassword;
   f.allow_download.checked = !!G.allow_download; f.listed.checked = !!G.listed; f.guest_view_all.checked = !!G.guest_view_all; f.delete_after_expiry.checked = !!G.delete_after_expiry;
+  f.selections_open.checked = G.selectionsOpen !== false; f.archived.checked = !!G.archived;
+  api("/api/admin/clients").then(r => {
+    f.client_id.innerHTML = '<option value="">Aucun</option>' + r.clients.map(c => `<option value="${esc(c.id)}">${esc(c.name)}</option>`).join("");
+    f.client_id.value = G.clientId || "";
+  }).catch(() => {});
   syncKind();
 }
 function syncKind() { const k = $("#setForm").querySelector("[name=kind]:checked").value; $("#rowListed").hidden = k !== "event"; $("#rowViewAll").hidden = k !== "restricted"; }
@@ -386,6 +401,7 @@ $("#setForm").addEventListener("submit", async e => {
     title: f.title.value, client: f.client.value, event_date: f.event_date.value || null, expires_at: endOfDay(f.expires.value),
     kind: f.querySelector("[name=kind]:checked").value, allow_download: f.allow_download.checked, listed: f.listed.checked,
     guest_view_all: f.guest_view_all.checked, delete_after_expiry: f.delete_after_expiry.checked,
+    selections_open: f.selections_open.checked, archived: f.archived.checked, client_id: f.client_id.value || null,
   };
   if (f.password.value) body.password = f.password.value;
   if (await saveGallery(body)) toast("Réglages enregistrés.");
@@ -485,8 +501,13 @@ function route() {
   if (!API) { show("vNone"); return; }
   if (!auth.get()) { showLogin(); return; }
   const m = /^#g\/([A-Za-z0-9]+)/.exec(location.hash);
-  if (m) openGallery(m[1], G && G.id === m[1]); else list();
+  if (m) { openGallery(m[1], G && G.id === m[1]); return; }
+  const sec = location.hash.slice(1);
+  if (window.BBZS && window.BBZS.has(sec)) { window.BBZS.open(sec); return; }
+  list();
 }
 window.addEventListener("hashchange", route);
+/* outils partagés avec admin/site.js (réservations, calendrier, clients, sélections, portfolio, statistiques) */
+window.BBZA = { api, toast, esc, errText, show, fmtDate, fmtWhen, fmtNum, fmtBytes, copy, API, ERR };
 route();
 })();

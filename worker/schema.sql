@@ -99,3 +99,77 @@ CREATE TABLE IF NOT EXISTS attempts (
   n INTEGER NOT NULL,
   reset_at INTEGER NOT NULL
 );
+
+-- ===== Site (novembre 2026) : réservations, disponibilités, clients, sélections, statistiques, paiements =====
+CREATE TABLE IF NOT EXISTS bookings (
+  id TEXT PRIMARY KEY,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'new',        -- new | discussion | confirmed | declined | cancelled | done
+  first_name TEXT, last_name TEXT, email TEXT NOT NULL, phone TEXT, type TEXT, date TEXT, city TEXT, place TEXT,
+  duration TEXT, people INTEGER, budget TEXT, description TEXT, lang TEXT,
+  note TEXT,                                 -- note privée du photographe
+  client_id TEXT,
+  price_cents INTEGER, deposit_cents INTEGER, currency TEXT,
+  pay_status TEXT NOT NULL DEFAULT 'none'    -- none | deposit_due | deposit_paid | paid | refunded
+);
+CREATE INDEX IF NOT EXISTS bookings_date ON bookings(date, status);
+CREATE INDEX IF NOT EXISTS bookings_created ON bookings(created_at);
+
+CREATE TABLE IF NOT EXISTS blocked_days (
+  day TEXT PRIMARY KEY,                      -- AAAA-MM-JJ
+  note TEXT,
+  created_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS clients (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT, phone TEXT, org TEXT, note TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+-- Réglages ajoutés aux galeries sans modifier la table d'origine (le schéma reste rejouable à chaque déploiement).
+CREATE TABLE IF NOT EXISTS gallery_extra (
+  gallery_id TEXT PRIMARY KEY,
+  client_id TEXT,
+  archived_at INTEGER,                       -- galerie archivée : fermée aux visiteurs, fichiers conservés
+  selections_open INTEGER NOT NULL DEFAULT 1
+);
+CREATE INDEX IF NOT EXISTS gallery_extra_client ON gallery_extra(client_id);
+
+CREATE TABLE IF NOT EXISTS selections (
+  id TEXT PRIMARY KEY,
+  gallery_id TEXT NOT NULL,
+  guest_id TEXT,
+  name TEXT, email TEXT, note TEXT,
+  purpose TEXT,                              -- download | retouch | print | other
+  ids TEXT NOT NULL,                         -- liste JSON des photos choisies
+  created_at INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'new'         -- new | seen | done
+);
+CREATE INDEX IF NOT EXISTS selections_gallery ON selections(gallery_id, created_at);
+
+-- Statistiques sans témoin : un compteur par jour, page et type d'appareil (aucune adresse IP, aucun identifiant).
+CREATE TABLE IF NOT EXISTS hits (
+  day TEXT NOT NULL,
+  path TEXT NOT NULL,
+  device TEXT NOT NULL,
+  n INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, path, device)
+);
+
+CREATE TABLE IF NOT EXISTS payments (
+  id TEXT PRIMARY KEY,
+  booking_id TEXT NOT NULL,
+  kind TEXT NOT NULL,                        -- deposit | full
+  amount_cents INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  status TEXT NOT NULL,                      -- pending | paid | failed | refunded
+  provider TEXT NOT NULL,
+  provider_ref TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS payments_booking ON payments(booking_id);

@@ -165,6 +165,7 @@
           <button type="button" data-view="all" aria-pressed="true" data-t="tab.all"></button>
           <button type="button" data-view="mine" hidden data-t="tab.mine"></button>
           <button type="button" data-view="faces" hidden data-t="tab.faces"></button>
+          <button type="button" data-view="picked" hidden data-t="tab.picked"></button>
         </div>
         <span class="sp"></span>
         <span class="hint" id="countHint"></span>
@@ -193,6 +194,7 @@
   <div class="n" id="selN"></div>
   <span class="sp"></span>
   <button class="btn small ghost" id="selAll" type="button" data-t="sel.all"></button>
+  <button class="btn small ghost" id="selSend" type="button" hidden><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10 17 3l-4 14-3.2-5.8L3 10Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span data-t="sel.send"></span></button>
   <button class="btn small primary" id="selDl" type="button"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10m-4-4 4 4 4-4M4 16h12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-t="sel.dl"></span></button>
   <button class="icon-btn" id="selX" type="button" data-ta="sel.cancel"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
 </div>
@@ -260,6 +262,21 @@
     </div>
     <p class="err" id="fErr" role="alert"></p>
   </div>
+</dialog>
+
+<!-- envoi de la sélection au photographe -->
+<dialog id="sendDlg" class="bottom">
+  <form class="sheet stack" id="sendForm" method="dialog" style="position:relative" novalidate>
+    <button class="x" type="button" data-close data-ta="lb.close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <h2 data-t="send.h"></h2>
+    <p id="sendP"></p>
+    <label class="field"><span data-t="send.name"></span><input id="sendName" maxlength="120" autocomplete="name"></label>
+    <label class="field"><span data-t="send.email"></span><input id="sendEmail" type="email" maxlength="160" autocomplete="email" inputmode="email"></label>
+    <label class="field"><span data-t="send.why"></span><select id="sendWhy"><option value="download" data-t="send.why.download"></option><option value="retouch" data-t="send.why.retouch"></option><option value="print" data-t="send.why.print"></option><option value="other" data-t="send.why.other"></option></select></label>
+    <label class="field"><span data-t="send.note"></span><textarea id="sendNote" maxlength="2000" rows="3"></textarea></label>
+    <p class="err" id="sendErr" role="alert"></p>
+    <button class="btn primary" type="submit" data-t="send.go"></button>
+  </form>
 </dialog>
 
 <!-- ZIP en plusieurs parties -->

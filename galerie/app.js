@@ -44,6 +44,13 @@ const T = {
     "until": d => `Disponible jusqu'au ${d}`, "event": "Galerie d'événement", "private": "Galerie privée", "restricted": "Galerie personnelle",
     "hello": n => `Bonjour ${n}`,
     "sel.n": n => `${n} sélectionnée${n > 1 ? "s" : ""}`, "sel.all": "Tout", "sel.dl": "Télécharger", "sel.cancel": "Annuler la sélection",
+    "sel.send": "Envoyer au photographe", "tab.picked": "Ma sélection", "empty.picked": "Votre sélection est vide. Touchez « Sélectionner », puis les photos qui vous plaisent.",
+    "send.h": "Envoyer ma sélection", "send.p": n => `${n} photo${n > 1 ? "s" : ""} seront transmises au photographe, avec leurs noms de fichiers.`,
+    "send.name": "Votre nom", "send.email": "Votre courriel (pour la réponse)", "send.why": "Pour quoi faire ?", "send.note": "Un message (facultatif)",
+    "send.why.download": "Les récupérer", "send.why.retouch": "Les faire retoucher", "send.why.print": "Des tirages", "send.why.other": "Autre",
+    "send.go": "Envoyer", "send.ok": "Sélection envoyée. Elle reste enregistrée dans ce navigateur.", "send.saved": "Votre sélection est gardée dans ce navigateur.",
+    "e.selections_closed": "L'envoi de sélections n'est pas ouvert pour cette galerie.", "e.nothing_selected": "Sélectionnez au moins une photo.",
+    "e.archived.k": "Galerie archivée", "e.archived.h": "Cette galerie est archivée", "e.archived.p": "Elle n'est plus consultable en ligne. Écrivez-moi si vous avez besoin de vos photos : baeypro@gmail.com.",
     "lb.dl": "Télécharger l'original", "lb.nodl": "Le téléchargement de cette photo n'est pas ouvert.", "lb.close": "Fermer", "lb.prev": "Photo précédente", "lb.next": "Photo suivante", "lb.sel": "Sélectionner cette photo",
     "zip.h": "Téléchargement en plusieurs parties", "zip.p": "Votre sélection est volumineuse : elle est découpée en archives ZIP. Téléchargez chaque partie.",
     "zip.part": (k, n, c, s) => `Partie ${k} sur ${n} · ${c} photos · ${s}`, "zip.prep": "Préparation de l'archive…", "zip.go": "Le téléchargement commence.",
@@ -98,6 +105,13 @@ const T = {
     "until": d => `Available until ${d}`, "event": "Event gallery", "private": "Private gallery", "restricted": "Personal gallery",
     "hello": n => `Hi ${n}`,
     "sel.n": n => `${n} selected`, "sel.all": "All", "sel.dl": "Download", "sel.cancel": "Clear selection",
+    "sel.send": "Send to the photographer", "tab.picked": "My selection", "empty.picked": "Your selection is empty. Tap “Select”, then the photos you like.",
+    "send.h": "Send my selection", "send.p": n => `${n} photo${n > 1 ? "s" : ""} will be sent to the photographer, with their file names.`,
+    "send.name": "Your name", "send.email": "Your email (for the reply)", "send.why": "What for?", "send.note": "A message (optional)",
+    "send.why.download": "To get them", "send.why.retouch": "Retouching", "send.why.print": "Prints", "send.why.other": "Other",
+    "send.go": "Send", "send.ok": "Selection sent. It stays saved in this browser.", "send.saved": "Your selection is kept in this browser.",
+    "e.selections_closed": "Sending selections is not open for this gallery.", "e.nothing_selected": "Select at least one photo.",
+    "e.archived.k": "Gallery archived", "e.archived.h": "This gallery is archived", "e.archived.p": "It can no longer be viewed online. Email me if you need your photos: baeypro@gmail.com.",
     "lb.dl": "Download original", "lb.nodl": "Downloads aren't open for this photo.", "lb.close": "Close", "lb.prev": "Previous photo", "lb.next": "Next photo", "lb.sel": "Select this photo",
     "zip.h": "Download in several parts", "zip.p": "Your selection is large, so it's split into ZIP archives. Download each part.",
     "zip.part": (k, n, c, s) => `Part ${k} of ${n} · ${c} photos · ${s}`, "zip.prep": "Preparing the archive…", "zip.go": "Your download is starting.",
@@ -214,7 +228,7 @@ async function openGallery() {
   if (saved && saved.e * 1000 > Date.now() && (!S.code || saved.c === S.code)) S.token = saved.token;
   try { S.meta = await api(`/api/g/${S.slug}`, { auth: false }); }
   catch (e) {
-    if (e.status === 410) return message("gone");
+    if (e.status === 410) return message(e.data && e.data.archived ? "archived" : "gone");
     if (e.status === 404) return message("nf");
     show("vMsg"); $("#msgKick").textContent = ""; $("#msgTitle").textContent = t("e.net"); $("#msgText").textContent = ""; return;
   }
@@ -250,9 +264,13 @@ async function unlock(body) {
   await loadPhotos();
 }
 
+const selKey = () => "bbz-sel-" + S.slug;
+function saveSel() { try { localStorage.setItem(selKey(), JSON.stringify([...S.sel])); } catch {} }
+function loadSel() { try { (JSON.parse(localStorage.getItem(selKey()) || "[]") || []).forEach(id => { if (S.byId.has(id)) S.sel.add(id); }); } catch {} }
 async function loadPhotos() {
   const r = await api(`/api/g/${S.slug}/photos`);
   S.gallery = r.gallery; S.guest = r.guest; S.photos = r.photos; S.byId = new Map(r.photos.map(p => [p.id, p]));
+  loadSel();
   S.cut = r.gallery.faceThreshold || 90;
   show("vGal");
   renderHead(); render();
@@ -271,17 +289,19 @@ function renderHead() {
   [...$("#gMeta").querySelectorAll("span:not(.dot)")].forEach((el, i) => el.textContent = meta[i]);
   $("#findBtn").hidden = !g.faceSearch;
   $("#allBtn").hidden = !dl.length;
-  $("#selBtn").hidden = !dl.length;
+  $("#selBtn").hidden = !dl.length && !g.selections;
   $("#selBtn").textContent = S.selecting ? t("select.done") : t("select");
   const hasMine = S.photos.some(p => p.mine);
-  $("#tabs").hidden = !(hasMine || S.face);
+  $("#tabs").hidden = !(hasMine || S.face || S.sel.size);
   $("#tabs [data-view=mine]").hidden = !hasMine;
+  $("#tabs [data-view=picked]").hidden = !S.sel.size;
   $("#tabs [data-view=faces]").hidden = !S.face;
   $$("#tabs button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.view === S.view)));
 }
 
 function currentList() {
   if (S.view === "mine") return S.photos.filter(p => p.mine);
+  if (S.view === "picked") return S.photos.filter(p => S.sel.has(p.id));
   if (S.view === "faces" && S.face) {
     return S.face.matches.filter(m => m.s >= S.cut && !S.removed.has(m.id) && S.byId.has(m.id)).map(m => ({ ...S.byId.get(m.id), s: m.s }));
   }
@@ -303,7 +323,7 @@ function render() {
   }
   $("#countHint").textContent = S.view === "all" ? "" : t("count", S.list.length);
   $("#emptyMsg").hidden = !!S.list.length;
-  if (!S.list.length) $("#emptyMsg").textContent = faceMode ? t("face.none") : S.view === "mine" ? t("empty.mine") : t("empty.all");
+  if (!S.list.length) $("#emptyMsg").textContent = faceMode ? t("face.none") : S.view === "mine" ? t("empty.mine") : S.view === "picked" ? t("empty.picked") : t("empty.all");
   more(); updateSel();
 }
 function more() {
@@ -333,8 +353,8 @@ function tile(p, i) {
     el.insertAdjacentHTML("beforeend", `<span class="ph-raw"><b></b><span></span></span>`);
     el.querySelector(".ph-raw b").textContent = ext.slice(0, 5); el.querySelector(".ph-raw span").textContent = p.name;
   }
-  if (p.o) el.insertAdjacentHTML("beforeend", `<span class="sel" aria-hidden="true">${TICK}</span>`);
-  else el.insertAdjacentHTML("beforeend", `<span class="lock" aria-hidden="true">${LOCK}</span>`);
+  if (p.o || S.gallery.selections) el.insertAdjacentHTML("beforeend", `<span class="sel" aria-hidden="true">${TICK}</span>`);
+  if (!p.o) el.insertAdjacentHTML("beforeend", `<span class="lock" aria-hidden="true">${LOCK}</span>`);
   if (S.view === "faces" && p.s != null) {
     if (p.s < S.face.threshold) el.insertAdjacentHTML("beforeend", `<span class="badge">${t("face.check")}</span>`);
     const b = document.createElement("button"); b.type = "button"; b.className = "nope";
@@ -356,24 +376,41 @@ $("#grid").addEventListener("keydown", e => {
   if (S.selecting) toggle(p); else openLb(+el.dataset.i);
 });
 function toggle(p) {
-  if (!p || !p.o) return;
+  if (!p || !(p.o || S.gallery.selections)) return;
   S.sel.has(p.id) ? S.sel.delete(p.id) : S.sel.add(p.id);
   const el = $(`.tile[data-id="${p.id}"]`); if (el) el.classList.toggle("on", S.sel.has(p.id));
-  updateSel();
+  saveSel(); updateSel();
 }
 function updateSel() {
-  const n = S.sel.size, size = [...S.sel].reduce((s, id) => s + (S.byId.get(id)?.size || 0), 0);
+  const n = S.sel.size, dl = [...S.sel].filter(id => S.byId.get(id)?.o), size = dl.reduce((s, id) => s + (S.byId.get(id)?.size || 0), 0);
   $("#selN").innerHTML = `<span></span><small></small>`;
-  $("#selN span").textContent = t("sel.n", n); $("#selN small").textContent = fmtBytes(size);
+  $("#selN span").textContent = t("sel.n", n); $("#selN small").textContent = dl.length ? fmtBytes(size) : t("send.saved");
   $("#selbar").classList.toggle("show", n > 0 || S.selecting);
-  $("#selDl").disabled = !n;
+  $("#selDl").disabled = !dl.length; $("#selDl").hidden = !S.photos.some(p => p.o);
+  $("#selSend").hidden = !(S.gallery && S.gallery.selections); $("#selSend").disabled = !n;
+  $("#tabs [data-view=picked]").hidden = !n; if (n && $("#tabs").hidden) $("#tabs").hidden = false;
 }
-$("#selBtn").addEventListener("click", () => { S.selecting = !S.selecting; if (!S.selecting) S.sel.clear(); renderHead(); render(); });
-$("#selX").addEventListener("click", () => { S.sel.clear(); S.selecting = false; renderHead(); render(); });
-$("#selAll").addEventListener("click", () => { S.list.forEach(p => p.o && S.sel.add(p.id)); render(); });
-$("#selDl").addEventListener("click", () => download([...S.sel]));
+/* the selection stays in this browser: leaving select mode keeps it, the cross clears it */
+$("#selBtn").addEventListener("click", () => { S.selecting = !S.selecting; renderHead(); render(); });
+$("#selX").addEventListener("click", () => { S.sel.clear(); saveSel(); S.selecting = false; if (S.view === "picked") S.view = "all"; renderHead(); render(); });
+$("#selAll").addEventListener("click", () => { S.list.forEach(p => (p.o || S.gallery.selections) && S.sel.add(p.id)); saveSel(); render(); });
+$("#selDl").addEventListener("click", () => download([...S.sel].filter(id => S.byId.get(id)?.o)));
+$("#selSend").addEventListener("click", () => {
+  const d = $("#sendDlg"); $("#sendP").textContent = t("send.p", S.sel.size);
+  if (S.guest && !$("#sendName").value) $("#sendName").value = S.guest;
+  $("#sendErr").textContent = ""; d.showModal(); setTimeout(() => $("#sendName").focus(), 40);
+});
+$("#sendForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const btn = $("#sendForm button[type=submit]"); btn.disabled = true; $("#sendErr").textContent = "";
+  try {
+    await api(`/api/g/${S.slug}/selection`, { method: "POST", body: { ids: [...S.sel], name: $("#sendName").value.trim(), email: $("#sendEmail").value.trim(), purpose: $("#sendWhy").value, note: $("#sendNote").value.trim() } });
+    $("#sendDlg").close(); toast(t("send.ok"));
+  } catch (er) { $("#sendErr").textContent = errText(er); }
+  finally { btn.disabled = false; }
+});
 $("#allBtn").addEventListener("click", () => download(null));
-$$("#tabs button").forEach(b => b.addEventListener("click", () => { S.view = b.dataset.view; S.sel.clear(); renderHead(); render(); window.scrollTo({ top: $("#tools").offsetTop - 60 }); }));
+$$("#tabs button").forEach(b => b.addEventListener("click", () => { S.view = b.dataset.view; renderHead(); render(); window.scrollTo({ top: $("#tools").offsetTop - 60 }); }));
 $("#cutIn").addEventListener("input", e => { S.cut = +e.target.value; render(); });
 
 function fire(url) { const a = document.createElement("a"); a.href = url; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); }

@@ -6,6 +6,7 @@ import {
 } from "./util.js";
 import { planZip, streamZip, uniqueNames } from "./zip.js";
 import * as face from "./aws.js";
+import * as site from "./site.js";
 
 const KINDS = new Set(["private", "event", "restricted"]);
 const SINGLE_MAX = 95 * 1024 * 1024;        // au-delà : import en plusieurs parties
@@ -22,7 +23,9 @@ const pkey = (gid, pid) => `g/${gid}/p/${pid}`;
 const tkey = (gid, pid) => `g/${gid}/t/${pid}`;
 const isExpired = g => !!(g.expires_at && g.expires_at <= now());
 const passKey = g => g.pass_hash ? g.pass_hash.slice(-10) : "";
-const faceLive = (env, g) => !!(g.face_enabled && g.face_until && g.face_until > now() && face.faceConfigured(env));
+// Recherche par visage : jamais active sans l'interrupteur FACE_SEARCH = "on" (posé seulement après les démarches légales) ET les clés AWS.
+const faceOn = env => env.FACE_SEARCH === "on" && face.faceConfigured(env);
+const faceLive = (env, g) => !!(g.face_enabled && g.face_until && g.face_until > now() && faceOn(env));
 const galleryLink = (env, g, code) => `${env.SITE_ORIGIN}/galerie/?g=${g.slug}${code ? `&c=${code}` : ""}`;
 
 export default {
@@ -57,7 +60,13 @@ async function route(req, env, ctx) {
   const m = req.method;
   const is = (method, ...parts) => m === method && p.length === parts.length && parts.every((x, i) => x === "*" || x === p[i]);
 
-  if (is("GET", "api", "health")) return json({ ok: true, face: face.faceConfigured(env) });
+  if (is("GET", "api", "health")) return json({ ok: true, face: faceOn(env), booking: true, payments: !!env.STRIPE_SECRET_KEY, content: !!(env.GITHUB_TOKEN && env.GITHUB_REPO), notify: !!(env.RESEND_API_KEY && env.NOTIFY_EMAIL) });
+
+  // ---------- site : réservations, disponibilités, statistiques, paiements ----------
+  if (is("POST", "api", "booking")) return site.createBooking(req, env, ctx);
+  if (is("GET", "api", "availability")) return site.availability(env);
+  if (is("POST", "api", "hit")) return site.hit(req, env);
+  if (is("POST", "api", "stripe", "webhook")) return site.stripeWebhook(req, env);
 
   // ---------- fichiers signés ----------
   if (is("GET", "m", "*", "*", "*", "*")) return media(req, env, url, p[1], p[2], p[4]);
@@ -68,11 +77,14 @@ async function route(req, env, ctx) {
   if (is("GET", "api", "public")) return publicList(env, url);
   if (p[0] === "api" && p[1] === "g" && p[2]) {
     const g = await gallery(env, "slug", p[2]);
+    const gx = await site.extraOf(env, g.id);
+    if (gx.archived_at) return json({ title: g.title, archived: true }, 410); /* archivée : fermée aux visiteurs, fichiers conservés */
     if (is("GET", "api", "g", "*")) return galleryMeta(env, url, g);
     if (is("POST", "api", "g", "*", "unlock")) return unlock(req, env, g);
     if (isExpired(g)) fail(410, "expired");
     const v = await visitor(req, env, g);
-    if (is("GET", "api", "g", "*", "photos")) return visitorPhotos(env, url, g, v);
+    if (is("GET", "api", "g", "*", "photos")) return visitorPhotos(env, url, g, v, gx);
+    if (is("POST", "api", "g", "*", "selection")) { const { photos } = await visibleSet(env, g, v); return site.sendSelection(req, env, ctx, g, new Set(photos.map(x => x.id)), v.guest); }
     if (is("POST", "api", "g", "*", "zip")) return createZip(req, env, url, g, v);
     if (is("POST", "api", "g", "*", "faces", "search")) return faceSearch(req, env, g, v, false);
     if (is("POST", "api", "g", "*", "faces", "forget")) return faceSearch(req, env, g, v, true);
@@ -85,6 +97,28 @@ async function route(req, env, ctx) {
     await admin(req, env);
     if (is("GET", "api", "admin", "overview")) return overview(env, url);
     if (is("POST", "api", "admin", "galleries")) return createGallery(req, env);
+    // réservations, calendrier, clients, sélections, statistiques, contenu du portfolio, paiements
+    if (is("GET", "api", "admin", "bookings")) return site.listBookings(env, url);
+    if (p[2] === "bookings" && p[3]) {
+      if (is("PATCH", "api", "admin", "bookings", "*")) return site.updateBooking(req, env, p[3]);
+      if (is("DELETE", "api", "admin", "bookings", "*")) return site.deleteBooking(env, p[3]);
+      if (is("POST", "api", "admin", "bookings", "*", "checkout")) return site.checkout(req, env, url, p[3]);
+    }
+    if (is("GET", "api", "admin", "calendar")) return site.calendar(env, url);
+    if (is("PUT", "api", "admin", "blocked", "*")) return site.blockDay(req, env, p[3], true);
+    if (is("DELETE", "api", "admin", "blocked", "*")) return site.blockDay(req, env, p[3], false);
+    if (is("GET", "api", "admin", "clients")) return site.listClients(env);
+    if (is("POST", "api", "admin", "clients")) return site.createClient(req, env);
+    if (p[2] === "clients" && p[3]) {
+      if (is("GET", "api", "admin", "clients", "*")) return site.clientDetail(env, p[3]);
+      if (is("PATCH", "api", "admin", "clients", "*")) return site.updateClient(req, env, p[3]);
+      if (is("DELETE", "api", "admin", "clients", "*")) return site.deleteClient(env, p[3]);
+    }
+    if (is("GET", "api", "admin", "selections")) return site.listSelections(env, url);
+    if (is("PATCH", "api", "admin", "selections", "*")) return site.updateSelection(req, env, p[3]);
+    if (is("GET", "api", "admin", "stats")) return site.stats(env, url);
+    if (is("GET", "api", "admin", "content")) return site.getContent(env);
+    if (is("PUT", "api", "admin", "content")) return site.putContent(req, env);
     if (p[2] === "galleries" && p[3]) {
       const g = await gallery(env, "id", p[3]);
       if (is("GET", "api", "admin", "galleries", "*")) return galleryDetail(env, url, g);
@@ -229,14 +263,14 @@ async function visibleSet(env, g, v) {
   return { photos, canDl, mine };
 }
 
-async function visitorPhotos(env, url, g, v) {
+async function visitorPhotos(env, url, g, v, gx = {}) {
   const { photos, canDl, mine } = await visibleSet(env, g, v);
   const sig = await mediaSig(env, g.id, MEDIA_TTL, g.expires_at);
   const u = v.guest ? v.guest.id : "-";
   const oe = Math.min(now() + MEDIA_TTL, g.expires_at || Infinity);
   const os = await signPath(env, `o/${g.id}/${u}`, oe);
   return json({
-    gallery: { title: g.title, client: g.client, date: g.event_date, kind: g.kind, allowDownload: !!g.allow_download, faceSearch: faceLive(env, g), faceThreshold: g.face_threshold, expiresAt: g.expires_at },
+    gallery: { title: g.title, client: g.client, date: g.event_date, kind: g.kind, allowDownload: !!g.allow_download, faceSearch: faceLive(env, g), faceThreshold: g.face_threshold, expiresAt: g.expires_at, selections: gx.selections_open !== 0 },
     guest: v.guest ? v.guest.name : null,
     photos: photos.map(ph => ({
       id: ph.id, name: ph.name, size: ph.size, w: ph.w, h: ph.h, mine: mine.has(ph.id),
@@ -259,10 +293,11 @@ async function original(req, env, ctx, url, gid, pid) {
   const u = url.searchParams.get("u") || "-";
   if (!(await checkPath(env, `o/${gid}/${u}`, url.searchParams.get("e"), url.searchParams.get("s")))) fail(403, "bad_signature");
   const row = await env.DB.prepare(
-    "SELECT p.*, g.allow_download, g.kind, g.expires_at FROM photos p JOIN galleries g ON g.id = p.gallery_id WHERE p.id = ? AND p.gallery_id = ? AND p.status = 'ready'"
+    "SELECT p.*, g.allow_download, g.kind, g.expires_at, x.archived_at FROM photos p JOIN galleries g ON g.id = p.gallery_id LEFT JOIN gallery_extra x ON x.gallery_id = g.id WHERE p.id = ? AND p.gallery_id = ? AND p.status = 'ready'"
   ).bind(pid, gid).first();
   if (!row) fail(404, "not_found");
   if (isExpired(row)) fail(410, "expired");
+  if (row.archived_at) fail(410, "archived"); // archivée : les liens de téléchargement déjà émis cessent de fonctionner
   if (!row.allow_download) fail(403, "download_disabled");
   if (row.kind === "restricted" && !row.allow_all) {
     const ok = u !== "-" && await env.DB.prepare("SELECT 1 x FROM guest_photos WHERE guest_id = ? AND photo_id = ?").bind(u, pid).first();
@@ -315,6 +350,7 @@ async function zipDownload(req, env, ctx, id) {
   if (!t || t.exp < now()) fail(410, "link_expired");
   const g = await gallery(env, "id", t.gallery_id);
   if (isExpired(g)) fail(410, "expired");
+  if ((await site.extraOf(env, g.id)).archived_at) fail(410, "archived");
   if (!g.allow_download) fail(403, "download_disabled");
   const ids = JSON.parse(t.ids);
   const rows = [];
@@ -383,7 +419,7 @@ async function faceSearch(req, env, g, v, forget) {
 }
 
 async function indexGallery(req, env, g) {
-  if (!face.faceConfigured(env)) fail(501, "face_not_configured");
+  if (!faceOn(env)) fail(501, "face_not_configured");
   if (!g.face_enabled) fail(409, "face_disabled");
   const body = await readJson(req);
   const max = Math.max(1, Math.min(8, +body.max || 4));
@@ -437,23 +473,29 @@ async function dropPhotoFaces(env, ph) {
 // ================= administration =================
 function galleryOut(env, g, extra = {}) {
   const { pass_hash, ...rest } = g;
-  return { ...rest, hasPassword: !!pass_hash, link: galleryLink(env, g), faceLive: faceLive(env, g), ...extra };
+  const { gallery_id, archived_at, client_id, selections_open, ...more } = extra;
+  return { ...rest, hasPassword: !!pass_hash, link: galleryLink(env, g), faceLive: faceLive(env, g), archived: !!archived_at, archivedAt: archived_at || null, clientId: client_id || null, selectionsOpen: selections_open !== 0, ...more };
 }
 
 async function overview(env, url) {
   const { results } = await env.DB.prepare(`
-    SELECT g.*,
+    SELECT g.*, x.archived_at, x.client_id, x.selections_open, c.name AS client_name,
+      (SELECT COUNT(*) FROM selections s WHERE s.gallery_id = g.id AND s.status = 'new') AS new_selections,
       (SELECT COUNT(*) FROM photos p WHERE p.gallery_id = g.id AND p.status = 'ready') AS n,
       (SELECT COALESCE(SUM(p.size + p.extra_size), 0) FROM photos p WHERE p.gallery_id = g.id) AS bytes,
       (SELECT COUNT(*) FROM faces f WHERE f.gallery_id = g.id) AS nfaces
-    FROM galleries g ORDER BY g.created_at DESC`).all();
+    FROM galleries g LEFT JOIN gallery_extra x ON x.gallery_id = g.id LEFT JOIN clients c ON c.id = x.client_id ORDER BY g.created_at DESC`).all();
   const out = [];
-  for (const g of results) out.push(galleryOut(env, g, { cover: await coverFor(env, url.origin, g) }));
+  for (const row of results) {
+    const { archived_at, client_id, selections_open, ...g } = row;
+    out.push(galleryOut(env, g, { archived_at, client_id, selections_open: selections_open == null ? 1 : selections_open, cover: await coverFor(env, url.origin, g) }));
+  }
   const tot = await env.DB.prepare("SELECT COUNT(*) n, COALESCE(SUM(size + extra_size), 0) bytes, COALESCE(SUM(downloads), 0) dl FROM photos").first();
   const week = await env.DB.prepare("SELECT kind, COALESCE(SUM(n), 0) n FROM events WHERE at > ? GROUP BY kind").bind(now() - 30 * DAY).all();
   return json({
     galleries: out, totals: { photos: tot.n, bytes: tot.bytes, downloads: tot.dl, last30: Object.fromEntries(week.results.map(r => [r.kind, r.n])) },
-    face: face.faceConfigured(env), region: env.AWS_REGION || "ca-central-1",
+    face: faceOn(env), faceKeys: face.faceConfigured(env), region: env.AWS_REGION || "ca-central-1",
+    services: { content: !!(env.GITHUB_TOKEN && env.GITHUB_REPO), payments: !!env.STRIPE_SECRET_KEY, notify: !!(env.RESEND_API_KEY && env.NOTIFY_EMAIL), turnstile: !!env.TURNSTILE_SECRET },
   });
 }
 
@@ -488,17 +530,19 @@ async function createGallery(req, env) {
 
 async function updateGallery(req, env, g) {
   const body = await readJson(req);
+  if ("archived" in body || "client_id" in body || "selections_open" in body) await site.setExtra(env, g.id, body);
   const s = pickSettings(body, g);
   if ("password" in body) s.pass_hash = body.password ? await hashPassword(env, String(body.password)) : null;
   if (s.face_enabled === 1 && !g.face_enabled) {
     if (!body.face_ack || !String(body.face_note || g.face_note || "").trim()) fail(400, "face_ack_required");
+    if (!faceOn(env)) fail(409, "face_switched_off");
   }
   if (s.face_enabled === 0 && g.face_enabled) await dropFaceIndex(env, g.id);
   if ("face_retention_days" in s && g.face_until) s.face_until = Math.min(g.face_until, now() + s.face_retention_days * DAY);
   s.updated_at = now();
   const cols = Object.keys(s);
   await env.DB.prepare(`UPDATE galleries SET ${cols.map(c => `${c} = ?`).join(", ")} WHERE id = ?`).bind(...cols.map(c => s[c]), g.id).run();
-  return json({ gallery: galleryOut(env, await gallery(env, "id", g.id)) });
+  return json({ gallery: galleryOut(env, await gallery(env, "id", g.id), await site.extraOf(env, g.id)) });
 }
 
 async function relink(env, g) {
@@ -516,10 +560,10 @@ async function galleryDetail(env, url, g) {
   const byGuest = {};
   for (const a of assign) (byGuest[a.guest_id] ||= []).push(a.photo_id);
   return json({
-    gallery: galleryOut(env, g, { nfaces: nf.n }),
+    gallery: galleryOut(env, g, { ...(await site.extraOf(env, g.id)), nfaces: nf.n }),
     photos: photos.map(ph => ({ ...ph, t: ph.has_preview ? mediaUrl(url.origin, g, ph, "t", sig) : null })),
     guests: guests.map(x => ({ ...x, link: galleryLink(env, g, x.code), photos: byGuest[x.id] || [] })),
-    events, face: face.faceConfigured(env),
+    events, face: faceOn(env),
   });
 }
 
@@ -538,6 +582,8 @@ async function deleteGallery(env, gid) {
     env.DB.prepare("DELETE FROM photos WHERE gallery_id = ?").bind(gid),
     env.DB.prepare("DELETE FROM zip_tickets WHERE gallery_id = ?").bind(gid),
     env.DB.prepare("DELETE FROM events WHERE gallery_id = ?").bind(gid),
+    env.DB.prepare("DELETE FROM selections WHERE gallery_id = ?").bind(gid),
+    env.DB.prepare("DELETE FROM gallery_extra WHERE gallery_id = ?").bind(gid),
     env.DB.prepare("DELETE FROM galleries WHERE id = ?").bind(gid),
   ]);
 }
@@ -674,6 +720,8 @@ export async function cleanup(env) {
     env.DB.prepare("DELETE FROM zip_tickets WHERE exp < ?").bind(t),
     env.DB.prepare("DELETE FROM attempts WHERE reset_at < ?").bind(t),
     env.DB.prepare("DELETE FROM events WHERE at < ?").bind(t - 400 * DAY),
+    env.DB.prepare("DELETE FROM hits WHERE day < ?").bind(new Date((t - 396 * DAY) * 1000).toISOString().slice(0, 10)),
+    env.DB.prepare("DELETE FROM bookings WHERE status IN ('declined','cancelled','done') AND updated_at < ?").bind(t - 730 * DAY),
   ]);
   return { faceIndexesDeleted: faceDue.results.length, galleriesDeleted: gone.results.length, staleUploads: stale.results.length };
 }
