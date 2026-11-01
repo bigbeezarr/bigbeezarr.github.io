@@ -52,6 +52,14 @@ ld = json.dumps([
      "sameAs": [f"https://www.instagram.com/{h}/" for h in SITE.get('instagram', [])]},
     {"@context": "https://schema.org", "@type": "WebSite", "name": "BIGBEEZARR", "url": f"{ORIGIN}/", "inLanguage": ["fr", "en"], "author": {"@id": f"{ORIGIN}/#mamadou"}}], ensure_ascii=False)
 body = src[cut:]
+# Préchargement de la première photo du bandeau (l'élément LCP) : la variante exacte que choisira l'image, selon la densité
+# de l'écran (mesuré : img/m à partir de 1,5 dppx, img/s en dessous). Le téléchargement part avec la page, pas après le script.
+hero0 = json.loads(re.search(r'"hero":\[(\d+)', src).group(1))
+with Image.open(os.path.join(a.site, 'img', 'f', f'{hero0:03d}.webp')) as _h: _L = max(_h.size)
+_hi = 'm' if _L > 960 * 1.05 else 'f'
+_lo = 's' if _L > 480 * 1.05 else _hi
+meta += (f'<link rel="preload" as="image" href="img/{_hi}/{hero0:03d}.webp" fetchpriority="high" media="(min-resolution:1.5dppx)">'
+         f'<link rel="preload" as="image" href="img/{_lo}/{hero0:03d}.webp" fetchpriority="high" media="(max-resolution:1.49dppx)">')
 html = f'<!doctype html>\n<html lang="fr">\n<head>\n{meta}\n__CSP__\n{head_part}<script type="application/ld+json">{ld}</script>\n</head>\n<body>\n{body}\n</body>\n</html>\n'
 # Content-Security-Policy : seuls les scripts en ligne de cette page (par empreinte) peuvent s'exécuter ; les envois réseau
 # ne vont qu'au site lui-même et au serveur des galeries (Cloudflare Workers, ou l'adresse fixée dans content/site.json).
@@ -108,7 +116,6 @@ for p in paths:
 json.dump(new_state, open(state_path, 'w'), indent=0, sort_keys=True)
 urls = "".join(f'<url><loc>{ORIGIN}{p}</loc><lastmod>{new_state[p][1]}</lastmod></url>' for p in paths)
 open(os.path.join(a.site, 'sitemap.xml'), 'w').write(f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{urls}</urlset>\n')
-hero0 = json.loads(re.search(r'"hero":\[(\d+)', src).group(1))
 im = Image.open(os.path.join(a.site, 'img', 'f', f'{hero0:03d}.webp')).convert('RGB')
 ImageOps.fit(im, (1200, 630), Image.LANCZOS, centering=(0.5, 0.3)).save(os.path.join(a.site, 'og.jpg'), quality=86)
 open(os.path.join(a.site, '.nojekyll'), 'w').close()
