@@ -43,6 +43,9 @@ jobs:
     # Seule la branche main déploie : ni une demande de fusion, ni un lancement manuel depuis une autre branche.
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write   # relancer « Publier le portfolio » après avoir relié le formulaire de réservation
     # Les secrets ne sont donnés qu'aux étapes qui en ont besoin (jamais à l'installation des paquets).
     env:
       WRANGLER_SEND_METRICS: "false"
@@ -98,8 +101,11 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           npx wrangler deploy 2>&1 | tee deploy.log
-          URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
-          [ -n "$URL" ] || { echo "::error::Adresse workers.dev introuvable. Activez votre sous-domaine workers.dev dans le tableau de bord Cloudflare (Workers & Pages)."; exit 1; }
+          # Adresse publique : le domaine personnalisé de wrangler.template.toml (api.bigbeezarr.com), sinon l'adresse workers.dev.
+          HOST=$(sed -n 's/^pattern *= *"\([^"/*]*\)".*/\1/p' wrangler.template.toml | head -1)
+          URL=${HOST:+https://$HOST}
+          [ -n "$URL" ] || URL=$(grep -oE 'https://[a-zA-Z0-9.-]+\.workers\.dev' deploy.log | head -1)
+          [ -n "$URL" ] || { echo "::error::Adresse du serveur introuvable (ni domaine personnalisé, ni workers.dev)."; exit 1; }
           echo "API_URL=$URL" >> "$GITHUB_ENV"
 
       - name: Secrets du Worker
@@ -111,8 +117,6 @@ jobs:
           BBZ_ADMIN_PASSWORD: ${{ secrets.BBZ_ADMIN_PASSWORD }}
           BBZ_CONTENT_TOKEN: ${{ secrets.BBZ_CONTENT_TOKEN }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          NOTIFY_EMAIL: ${{ secrets.NOTIFY_EMAIL }}
-          NOTIFY_FROM: ${{ secrets.NOTIFY_FROM }}
           TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
         run: |
           printf '%s' "$BBZ_ADMIN_PASSWORD" | npx wrangler secret put ADMIN_PASSWORD
@@ -124,24 +128,44 @@ jobs:
           put() { if [ -n "$2" ]; then printf '%s' "$2" | npx wrangler secret put "$1" >/dev/null && echo "relié : $1"; else echo "absent : $1"; fi; }
           put GITHUB_TOKEN "$BBZ_CONTENT_TOKEN"
           put RESEND_API_KEY "$RESEND_API_KEY"
-          put NOTIFY_EMAIL "$NOTIFY_EMAIL"
-          put NOTIFY_FROM "$NOTIFY_FROM"
           put TURNSTILE_SECRET "$TURNSTILE_SECRET"
 
       - name: Vérifier le serveur
         if: steps.check.outputs.ready == 'true'
         run: |
-          for i in 1 2 3 4 5 6; do
-            if curl -fsS "$API_URL/api/health" | tee health.json; then echo; break; fi
-            sleep 5
+          # Un nouveau domaine personnalisé attend son certificat quelques minutes : jusqu'à 5 minutes d'essais.
+          for i in $(seq 1 30); do
+            if curl -fsS "$API_URL/api/health" > health.json 2>/dev/null && grep -q '"ok":true' health.json; then cat health.json; echo; break; fi
+            sleep 10
           done
-          grep -q '"ok":true' health.json
+          grep -q '"ok":true' health.json || { echo "::error::Le serveur ne répond pas sur $API_URL/api/health"; exit 1; }
 
       - name: Relier les pages au serveur
         if: steps.check.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           printf '// Adresse du serveur des galeries. Écrite automatiquement par le déploiement (voir worker/README.md).\nwindow.BBZ_API = "%s";\n' "$API_URL" > galerie/config.js
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add galerie/config.js
           if ! git diff --cached --quiet; then git commit -m "Relie la galerie client au serveur $API_URL" && git push; fi
+          # Formulaire de réservation de l'accueil : « api » de content/site.json (branche source) prend l'adresse du serveur,
+          # puis le portfolio est republié (un envoi fait avec le jeton du workflow ne relance pas les autres workflows).
+          git fetch -q --depth=1 origin source
+          git worktree add -q ../src FETCH_HEAD
+          cd ../src
+          python3 - "$API_URL" <<'PY'
+          import json, re, sys
+          p = "content/site.json"; s = open(p, encoding="utf-8").read()
+          if json.loads(s).get("api") != sys.argv[1]:
+              s = re.sub(r'"api": *"[^"]*"', '"api": ' + json.dumps(sys.argv[1]), s, count=1)
+              assert json.loads(s)["api"] == sys.argv[1]
+              open(p, "w", encoding="utf-8").write(s)
+          PY
+          git add content/site.json
+          if ! git diff --cached --quiet; then
+            git commit -m "Relie le formulaire de réservation au serveur $API_URL"
+            git push origin HEAD:source
+            gh workflow run publier.yml --ref source
+          fi

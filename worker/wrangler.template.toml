@@ -3,10 +3,19 @@
 name = "bbz-galerie"
 main = "src/index.js"
 compatibility_date = "2025-09-15"
-workers_dev = true
+workers_dev = false
+
+# Adresse publique du serveur : sous-domaine de bigbeezarr.com (la zone est sur ce compte Cloudflare ; le déploiement crée
+# l'enregistrement DNS et le certificat). Le jeton d'API doit avoir « Zone > Workers Routes > Edit » sur bigbeezarr.com.
+[[routes]]
+pattern = "api.bigbeezarr.com"
+custom_domain = true
 
 [vars]
-SITE_ORIGIN = "https://bigbeezarr.github.io"
+SITE_ORIGIN = "https://bigbeezarr.com"
+# Notifications (Resend) : expéditeur sur le domaine vérifié, destinataire = l'adresse de contact du site. La clé RESEND_API_KEY reste un secret.
+NOTIFY_FROM = "BIGBEEZARR <reservations@bigbeezarr.com>"
+NOTIFY_EMAIL = "baeypro@gmail.com"
 # Éditeur du portfolio : fichiers content/*.json de ce dépôt, sur la branche du pipeline (le jeton est un secret à part).
 GITHUB_REPO = "bigbeezarr/bigbeezarr.github.io"
 GITHUB_BRANCH = "source"

@@ -1,4 +1,4 @@
 Contact: mailto:baeypro@gmail.com
 Expires: 2027-10-30T00:00:00.000Z
 Preferred-Languages: fr, en
-Canonical: https://bigbeezarr.github.io/.well-known/security.txt
+Canonical: https://bigbeezarr.com/.well-known/security.txt

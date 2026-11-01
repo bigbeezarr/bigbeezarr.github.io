@@ -9,52 +9,47 @@ Livraison de photos en qualité originale, intégrée au portfolio.
 
 WeTransfer Pro ne peut pas servir de stockage intégré. Sa documentation développeur indique « Unfortunately we no longer provide support for the WeTransfer API », et ses dépôts officiels sont archivés depuis le 27 octobre 2025.
 
-## Mise en route (une seule fois, environ 15 minutes)
+## Mise en route (une seule fois)
 
-### 1. Cloudflare
+Déjà fait le 1er novembre 2026 sur le compte Cloudflare de baeypro@gmail.com : le domaine **bigbeezarr.com** (zone active,
+enregistrements DNS de GitHub Pages et de Resend), le domaine d'envoi Resend (vérifié) et le widget Turnstile
+« BIGBEEZARR reservations » (clé publique déjà dans `content/site.json`). Le serveur répondra sur **https://api.bigbeezarr.com** :
+le déploiement crée lui-même cet enregistrement DNS, son certificat, le stockage R2 et la base D1.
 
-1. Créez un compte gratuit sur dash.cloudflare.com.
-2. Ouvrez **Workers & Pages** une fois et choisissez votre sous-domaine `workers.dev`.
-3. Ouvrez **R2 Object Storage** et activez R2. Cloudflare demande un moyen de paiement, même si les 10 Go gratuits suffisent pour commencer.
-4. Créez un **jeton d'API** (My Profile > API Tokens > Create Token) à partir du modèle « Edit Cloudflare Workers ». Ajoutez-y les permissions **Account > D1 > Edit** et **Account > Workers R2 Storage > Edit**.
-5. Notez votre **Account ID**, affiché dans la colonne de droite de la page d'accueil du tableau de bord.
+### 1. Secrets GitHub
 
-### 2. Secrets GitHub
+Dans le dépôt `bigbeezarr/bigbeezarr.github.io` : Settings > Secrets and variables > Actions > New repository secret.
 
-Dans le dépôt `bigbeezarr/bigbeezarr.github.io`, ouvrez Settings > Secrets and variables > Actions > New repository secret :
-
-| Nom | Valeur |
-|---|---|
-| `CLOUDFLARE_API_TOKEN` | le jeton créé ci-dessus |
-| `CLOUDFLARE_ACCOUNT_ID` | l'identifiant du compte |
-| `BBZ_ADMIN_PASSWORD` | le mot de passe du tableau de bord (au moins 10 caractères, unique) |
-
-Secrets **facultatifs** : chaque service ne s'allume que si son secret existe. Sans eux, le site et les galeries fonctionnent.
-
-| Nom | Sert à | Voir |
+| Nom | Valeur | Où la trouver |
 |---|---|---|
-| `BBZ_CONTENT_TOKEN` | modifier le portfolio depuis `/admin/` → Portfolio | « Portfolio » ci-dessous |
-| `RESEND_API_KEY`, `NOTIFY_EMAIL` | recevoir un courriel à chaque demande de réservation ou sélection | « Notifications » |
-| `NOTIFY_FROM` | expéditeur des notifications (domaine vérifié chez Resend) | « Notifications » |
-| `TURNSTILE_SECRET` | vérification anti-robot du formulaire de réservation | « Anti-robot » |
+| `CLOUDFLARE_ACCOUNT_ID` | `5ced07d1addac100cb8c4a05a1d43014` | tableau de bord Cloudflare, page d'accueil du compte |
+| `CLOUDFLARE_API_TOKEN` | un jeton d'API | Cloudflare → My Profile → API Tokens → Create Token → modèle « Edit Cloudflare Workers » ; ajoutez **Account > D1 > Edit** et **Account > Workers R2 Storage > Edit** ; *Zone Resources* : **bigbeezarr.com** (le modèle donne déjà « Zone > Workers Routes > Edit », nécessaire pour api.bigbeezarr.com) |
+| `BBZ_ADMIN_PASSWORD` | le mot de passe de `/admin/` | à choisir : au moins 10 caractères, utilisé nulle part ailleurs |
+| `RESEND_API_KEY` | une clé d'API Resend | resend.com → API Keys → Create API Key, permission *Sending access*, domaine bigbeezarr.com |
+| `TURNSTILE_SECRET` | la clé secrète du widget | Cloudflare → Turnstile → « BIGBEEZARR reservations » → Settings → Secret key |
+| `BBZ_CONTENT_TOKEN` | un jeton GitHub à accès précis | voir « Portfolio » ci-dessous |
+
+Les trois premiers sont indispensables ; chacun des trois autres n'allume son service que s'il existe. L'expéditeur
+(`reservations@bigbeezarr.com`) et le destinataire des notifications (baeypro@gmail.com) sont des réglages publics
+de `wrangler.template.toml`, pas des secrets.
 
 Retirer un secret de GitHub ne le retire pas du serveur : supprimez-le aussi dans Cloudflare
 (Workers & Pages → bbz-galerie → Settings → Variables and Secrets).
 
-### 3. Déployer
+### 2. Déployer
 
-Allez dans l'onglet **Actions**, choisissez « Déployer la galerie client », puis **Run workflow**. Le workflow :
+Onglet **Actions** → « Déployer la galerie client » → **Run workflow**. Le workflow :
 
-- crée le stockage R2 et la base D1 s'ils n'existent pas ;
-- installe le schéma de la base ;
-- déploie le Worker et pose les secrets ;
-- génère une clé de signature aléatoire au premier passage ;
-- écrit l'adresse du serveur dans `galerie/config.js`.
+- lance la batterie de tests (`worker/test/run-all.sh`, sans compte ni réseau) : un seul échec et rien n'est déployé ;
+- crée le stockage R2 et la base D1 s'ils n'existent pas, puis installe le schéma de la base ;
+- déploie le Worker sur api.bigbeezarr.com, pose les secrets et génère une clé de signature au premier passage ;
+- attend que le serveur réponde (le certificat d'un nouveau sous-domaine prend quelques minutes) ;
+- écrit l'adresse du serveur dans `galerie/config.js` et dans `content/site.json` (branche `source`), puis relance
+  « Publier le portfolio » : le formulaire « Demander une date » passe alors du courriel au serveur.
 
-Avant toute mise en ligne, le workflow lance la batterie de tests (`worker/test/run-all.sh`, sans compte ni réseau) :
-un seul échec et rien n'est déployé. Seule la branche `main` déploie ; une demande de fusion ne fait que tester.
-
-Les pages `bigbeezarr.github.io/galerie/` et `bigbeezarr.github.io/admin/` sont ensuite opérationnelles. Chaque modification de `worker/` redéploie automatiquement.
+Seule la branche `main` déploie ; une demande de fusion ne fait que tester. Ensuite, `bigbeezarr.com/galerie/` et
+`bigbeezarr.com/admin/` sont opérationnelles, et chaque modification de `worker/` redéploie automatiquement.
+Si un envoi du workflow échoue avec une erreur 403 : Settings → Actions → General → Workflow permissions → **Read and write**.
 
 ## Réservations, calendrier, clients
 
@@ -75,28 +70,19 @@ Les pages `bigbeezarr.github.io/galerie/` et `bigbeezarr.github.io/admin/` sont 
 - **Statistiques** : un compteur par jour, par page et par type d'appareil. Ni témoin, ni identifiant, ni adresse IP ;
   Global Privacy Control et Do Not Track respectés. Conservées 13 mois.
 
-### Notifications (facultatif)
+### Notifications
 
-Sans service de courriel, les demandes restent visibles dans `/admin/`. Pour être prévenu par courriel :
+Sans clé Resend, les demandes restent visibles dans `/admin/`. Avec `RESEND_API_KEY`, chaque demande de réservation ou
+sélection envoie un courriel de `BIGBEEZARR <reservations@bigbeezarr.com>` (domaine vérifié chez Resend le
+1er novembre 2026) à baeypro@gmail.com. Le bouton « Répondre » de la notification écrit directement au client.
 
-1. Créez un compte sur resend.com avec **baeypro@gmail.com**, puis une clé d'API (*Sending access*).
-2. Secrets GitHub : `RESEND_API_KEY` = la clé, `NOTIFY_EMAIL` = baeypro@gmail.com. Relancez le déploiement.
-
-Sans domaine vérifié, l'expéditeur par défaut de Resend ne peut écrire qu'à l'adresse du compte Resend : c'est
-précisément le cas ici. Avec un domaine à vous (par exemple après l'achat d'un nom de domaine), vérifiez-le chez Resend
-et ajoutez `NOTIFY_FROM` = `BIGBEEZARR <reservations@votre-domaine>`. Le bouton « Répondre » de la notification écrit
-directement au client.
-
-### Anti-robot (facultatif)
+### Anti-robot
 
 Cloudflare Turnstile ajoute une vérification invisible ou en un clic au formulaire. Les deux moitiés vont ensemble :
-
-1. Cloudflare → Turnstile → *Add widget*, domaine `bigbeezarr.github.io`, mode *Managed*.
-2. La **clé publique** (*Site Key*) : `/admin/` → Portfolio → Réglages du site → « Clé publique Turnstile ». Publiez.
-3. La **clé secrète** : secret GitHub `TURNSTILE_SECRET`, puis relancez le déploiement.
-
-Mettez la clé publique d'abord : le serveur refuse toute demande sans vérification dès que le secret est posé.
-La politique de sécurité (CSP) du site n'autorise le script et le cadre de Cloudflare que si la clé publique est fixée.
+la clé publique est déjà dans `content/site.json` (modifiable dans `/admin/` → Portfolio → Réglages du site), la clé
+secrète devient le secret GitHub `TURNSTILE_SECRET`. Gardez cet ordre : le serveur refuse toute demande sans
+vérification dès que le secret est posé. La politique de sécurité (CSP) du site n'autorise le script et le cadre de
+Cloudflare que si la clé publique est fixée, et le script ne se charge que si le serveur est relié.
 Essayé avec une imitation locale du service ; à vérifier sur le site réel après activation.
 
 ## Portfolio (édition depuis l'administration)
