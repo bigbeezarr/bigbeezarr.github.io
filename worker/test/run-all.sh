@@ -24,6 +24,10 @@ c.save(f"{t}/photo3.jpg", quality=85)
 open(f"{t}/fichier.NEF", "wb").write(os.urandom(1600000))
 PY
 
+# Un ancien serveur de test resté allumé fausserait tout : on refuse de démarrer si un port est déjà pris.
+for port in 8787 8788 9911 9922; do
+  if curl -s -o /dev/null --max-time 1 "http://127.0.0.1:$port/"; then echo "Port $port déjà utilisé : arrêtez l'ancien serveur de test avant de relancer."; exit 1; fi
+done
 wait_up() { for _ in $(seq 1 60); do curl -fs "$1" >/dev/null 2>&1 && return 0; sleep 0.25; done; echo "serveur injoignable : $1"; exit 1; }
 start_api() { # $1 = mode (full | face | bare)
   [ -n "${API_PID:-}" ] && kill "$API_PID" 2>/dev/null && sleep 0.4
