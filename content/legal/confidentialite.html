@@ -1,5 +1,5 @@
 <!-- title: Politique de confidentialité · BIGBEEZARR -->
-<!-- description: Comment BIGBEEZARR (Mamadou Beye, photographe) traite les renseignements personnels : visite du site, demandes de réservation, galeries clients, recherche par visage. -->
+<!-- description: Comment BIGBEEZARR (Mamadou Beye, photographe) traite les renseignements personnels : visite du site, demandes de réservation, galeries clients. -->
 <article class="wrap legal">
 <div data-l="fr">
 <h1>Politique de confidentialité</h1>
@@ -20,7 +20,6 @@
 <tr><td>Demande de réservation</td><td>Prénom, nom, courriel, téléphone (facultatif), type de prestation, date souhaitée, ville, lieu, durée, nombre de participants, description du projet, budget indicatif (facultatif).</td><td>Répondre à votre demande, préparer un devis et organiser la prestation. Une demande n’est pas une réservation.</td><td>Tant que le serveur des galeries n’est pas activé, le formulaire prépare un courriel envoyé par votre propre messagerie à baeypro@gmail.com (Gmail, Google). Une fois le serveur activé, la demande est enregistrée dans sa base (Cloudflare) et une notification m’est envoyée (par le service d’envoi Resend, États-Unis, s’il est activé ; sinon je la consulte dans mon espace d’administration). Si la vérification anti-robot est activée, Cloudflare Turnstile reçoit des informations techniques de votre navigateur pour vérifier qu’une personne envoie la demande. Conservation : 24 mois après notre dernier échange, ou plus longtemps si un contrat l’exige (obligations fiscales).</td></tr>
 <tr><td>Espace client (galeries privées)</td><td>Les photos livrées, le titre et le nom du client, la date, les liens d’accès, les mots de passe (conservés sous forme d’empreinte, jamais en clair), le nombre de consultations et de téléchargements.</td><td>Vous livrer vos photos en qualité originale, de façon sécurisée.</td><td>Cloudflare (Workers, R2, D1). Chaque galerie a une date d’expiration choisie avec vous ; elle peut être supprimée à votre demande. L’adresse IP n’est pas enregistrée dans les statistiques ; elle sert seulement, sous forme d’empreinte et pour quelques minutes, à limiter les tentatives abusives. Votre navigateur garde la clé d’accès de la galerie ouverte le temps de la session, et votre sélection de photos (stockage local) jusqu’à ce que vous l’effaciez.</td></tr>
 <tr><td>Sélection de photos envoyée depuis une galerie</td><td>Les photos choisies, et, si vous les donnez, votre nom, votre courriel et un message.</td><td>Savoir quelles photos vous voulez récupérer ou faire retoucher.</td><td>Base du serveur des galeries (Cloudflare), jusqu’à la suppression de la galerie.</td></tr>
-<tr><td>Recherche par visage (seulement si elle est activée pour une galerie)</td><td>Un selfie ou une photo que vous choisissez d’envoyer, et les empreintes des visages présents dans les photos de cette galerie.</td><td>Vous aider à retrouver les photos où vous apparaissez, parmi celles que vous avez déjà le droit de voir.</td><td>Voir la section 4.</td></tr>
 <tr><td>Statistiques de fréquentation (si elles sont activées)</td><td>Un comptage par jour des pages vues et du type d’appareil (téléphone, tablette, ordinateur). Aucun témoin, aucun identifiant, aucune adresse IP enregistrée.</td><td>Savoir quelles pages et quels projets sont consultés.</td><td>Base du serveur des galeries (Cloudflare), 13 mois. Rien n’est compté si votre navigateur envoie le signal « Global Privacy Control » ou « Do Not Track ».</td></tr>
 </tbody>
 </table>
@@ -28,44 +27,27 @@
 <h2>3. Consentement</h2>
 <p>Le formulaire de réservation n’est envoyé que si vous cochez la case d’acceptation. Vous pouvez retirer votre consentement à tout moment en m’écrivant : vos renseignements seront alors supprimés, sauf ceux que la loi oblige à conserver. Les formulaires ne s’adressent pas aux personnes de moins de 14 ans sans l’accord d’un parent ou tuteur.</p>
 
-<h2>4. Recherche par visage</h2>
-<p>Cette fonction est <b>désactivée par défaut</b>. Elle ne sera proposée qu’après les démarches exigées par la loi, notamment :</p>
-<ul>
-<li>au Québec, le consentement exprès des personnes concernées et la déclaration à la Commission d’accès à l’information <b>au moins 60 jours avant</b> la mise en service d’une banque de caractéristiques biométriques (Loi concernant le cadre juridique des technologies de l’information, articles 44 et 45), ainsi qu’une évaluation des facteurs relatifs à la vie privée ;</li>
-<li>au Sénégal, les formalités prévues par la loi n° 2008-12 auprès de la Commission de protection des données personnelles (CDP).</li>
-</ul>
-<p>Lorsqu’elle est activée pour une galerie :</p>
-<ul>
-<li>vous l’utilisez seulement si vous l’acceptez explicitement, et vous pouvez toujours parcourir la galerie sans elle, ou me demander de chercher vos photos ;</li>
-<li>votre selfie est comparé aux visages de cette seule galerie, puis oublié : il n’est enregistré ni dans la base, ni dans le stockage ;</li>
-<li>les empreintes des visages des photos sont calculées par Amazon Rekognition (Amazon Web Services, région Canada Centre) et effacées automatiquement à la date fixée pour la galerie (30 jours par défaut) ;</li>
-<li>le bouton « Effacer mon visage » retire votre visage de l’index de la galerie ;</li>
-<li>un résultat est une suggestion, pas une preuve d’identité, et ne montre jamais une photo que vous n’avez pas déjà le droit de voir.</li>
-</ul>
-
-<h2>5. Les personnes photographiées</h2>
+<h2>4. Les personnes photographiées</h2>
 <p>Si vous apparaissez sur une photo publiée dans le portfolio et souhaitez qu’elle soit retirée, écrivez à <a href="mailto:baeypro@gmail.com">baeypro@gmail.com</a> en indiquant la page ou le numéro de la photo. Elle sera retirée dans les meilleurs délais.</p>
 
-<h2>6. Prestataires et transferts hors du Québec</h2>
+<h2>5. Prestataires et transferts hors du Québec</h2>
 <p>Certains renseignements sont confiés à des prestataires techniques, qui ne peuvent les utiliser que pour rendre leur service :</p>
 <ul>
 <li>GitHub, Inc. (États-Unis) : hébergement du site ;</li>
 <li>Cloudflare, Inc. (réseau mondial) : serveur, base de données et stockage de l’espace client et des demandes ;</li>
 <li>Google LLC (États-Unis) : messagerie Gmail, pour les courriels échangés ;</li>
-<li>Resend (États-Unis) : envoi des notifications de demande et de sélection à mon adresse, seulement si ce service est activé ;</li>
-<li>Amazon Web Services (région Canada Centre) : recherche par visage, si elle est activée ;</li>
-<li>un prestataire de paiement (par exemple Stripe), seulement si le paiement en ligne est mis en place un jour.</li>
+<li>Resend (États-Unis) : envoi des notifications de demande et de sélection à mon adresse, seulement si ce service est activé.</li>
 </ul>
 <p>Avant de communiquer des renseignements personnels hors du Québec, une évaluation des facteurs relatifs à la vie privée est réalisée, comme le prévoit la loi.</p>
 
-<h2>7. Sécurité</h2>
+<h2>6. Sécurité</h2>
 <p>Le site est servi en HTTPS. Les galeries privées utilisent des liens secrets et des liens de fichiers signés à durée limitée ; les mots de passe sont conservés sous forme d’empreinte ; l’accès d’administration est protégé et le nombre de tentatives est limité ; aucune clé secrète n’est présente dans les pages publiques. Aucun système n’étant infaillible, tout incident de confidentialité présentant un risque sérieux sera signalé aux personnes concernées et à l’autorité compétente.</p>
 
-<h2>8. Vos droits</h2>
+<h2>7. Vos droits</h2>
 <p>Vous pouvez demander l’accès à vos renseignements, leur rectification, leur suppression, leur communication dans un format technologique courant, ou retirer votre consentement. Écrivez à <a href="mailto:baeypro@gmail.com">baeypro@gmail.com</a> ; une réponse vous sera donnée dans un délai de 30 jours.</p>
 <p>Vous pouvez aussi vous adresser à la <a href="https://www.cai.gouv.qc.ca/" rel="noopener noreferrer" target="_blank">Commission d’accès à l’information du Québec</a>, au <a href="https://www.priv.gc.ca/" rel="noopener noreferrer" target="_blank">Commissariat à la protection de la vie privée du Canada</a> ou à la <a href="https://www.cdp.sn/" rel="noopener noreferrer" target="_blank">Commission de protection des données personnelles du Sénégal</a>.</p>
 
-<h2>9. Modifications</h2>
+<h2>8. Modifications</h2>
 <p>Cette politique peut évoluer, par exemple si un nouveau service est activé. La date de mise à jour figure en haut de la page.</p>
 </div>
 
@@ -82,22 +64,19 @@
 <li><b>Booking requests:</b> first and last name, email, phone (optional), type of shoot, preferred date, city, venue, length, number of people, project description, budget (optional), used to answer you and prepare a quote. Until the gallery server is switched on, the form prepares an email sent from your own email app to baeypro@gmail.com (Gmail, Google). Once it is on, requests are stored in its database (Cloudflare) and a notification may be sent to me through Resend (USA) if that service is switched on; if the anti-robot check is switched on, Cloudflare Turnstile receives technical details from your browser to check that a person is sending the request. Kept 24 months after our last exchange, or longer when a contract requires it (tax rules).</li>
 <li><b>Client area:</b> delivered photos, gallery title and client name, access links, passwords (stored as hashes, never in clear), view and download counts, stored with Cloudflare until the expiry date agreed with you or deletion on request. IP addresses are not stored in statistics; a hashed form is used for a few minutes only to limit abuse. Your browser keeps the access key of the open gallery for the session, and your photo selection (local storage) until you clear it.</li>
 <li><b>Photo selections</b> sent from a gallery, with your name, email and message if you give them.</li>
-<li><b>Face search</b>, only if switched on for a gallery: see section 4.</li>
 <li><b>Visit statistics</b>, if switched on: daily page counts and device type, no cookies, no identifiers, no IP address stored, kept 13 months; nothing is counted when your browser sends Global Privacy Control or Do Not Track.</li>
 </ul>
 <h2>3. Consent</h2>
 <p>The booking form is only sent if you tick the consent box. You may withdraw consent at any time by writing to me. The forms are not meant for children under 14 without a parent’s or guardian’s agreement.</p>
-<h2>4. Face search</h2>
-<p>This feature is <b>off by default</b> and will only be offered after the steps required by law (in Québec, express consent and a declaration to the Commission d’accès à l’information at least 60 days before a biometric database goes live, plus a privacy impact assessment; in Senegal, the formalities of Law 2008-12 with the CDP). When it is on for a gallery: you use it only if you explicitly agree and can always browse without it; your selfie is compared with that gallery only and then forgotten; face templates are computed by Amazon Rekognition (AWS, Canada Central) and deleted automatically on the date set (30 days by default); “Erase my face” removes your face from the index; a match is a suggestion, never proof of identity, and never shows a photo you could not already see.</p>
-<h2>5. People in the photos</h2>
+<h2>4. People in the photos</h2>
 <p>If you appear in a published photo and want it removed, write to <a href="mailto:baeypro@gmail.com">baeypro@gmail.com</a> with the page or photo number. It will be removed as soon as possible.</p>
-<h2>6. Service providers and transfers outside Québec</h2>
-<p>GitHub (USA, hosting), Cloudflare (global network, client area and requests), Google (USA, Gmail), Resend (USA, notifications, if on), Amazon Web Services (Canada Central, face search if on), and a payment provider such as Stripe only if online payment is ever set up. A privacy impact assessment is carried out before personal information is communicated outside Québec.</p>
-<h2>7. Security</h2>
+<h2>5. Service providers and transfers outside Québec</h2>
+<p>GitHub (USA, hosting), Cloudflare (global network, client area and requests), Google (USA, Gmail) and Resend (USA, notifications, if on). A privacy impact assessment is carried out before personal information is communicated outside Québec.</p>
+<h2>6. Security</h2>
 <p>HTTPS, secret gallery links and time-limited signed file links, hashed passwords, a protected admin area with rate limits, and no secret keys in public pages. Any confidentiality incident with a risk of serious injury will be reported to the people concerned and to the authority.</p>
-<h2>8. Your rights</h2>
+<h2>7. Your rights</h2>
 <p>You may ask to access, correct, delete or receive your information, or withdraw consent: write to <a href="mailto:baeypro@gmail.com">baeypro@gmail.com</a> (answer within 30 days). You may also contact the <a href="https://www.cai.gouv.qc.ca/" rel="noopener noreferrer" target="_blank">Commission d’accès à l’information du Québec</a>, the <a href="https://www.priv.gc.ca/" rel="noopener noreferrer" target="_blank">Office of the Privacy Commissioner of Canada</a> or Senegal’s <a href="https://www.cdp.sn/" rel="noopener noreferrer" target="_blank">CDP</a>.</p>
-<h2>9. Changes</h2>
+<h2>8. Changes</h2>
 <p>This policy may change, for example when a new service is switched on. The date at the top shows the latest version.</p>
 </div>
 </article>
