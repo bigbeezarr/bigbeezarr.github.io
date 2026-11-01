@@ -62,7 +62,10 @@ api_origin = re.match(r'https://[^/]+', api).group(0) if re.match(r'https://[^/]
 # Adresse du serveur fixée dans les réglages : seule cette origine est permise ; sinon, n'importe quel sous-domaine workers.dev
 # (l'adresse exacte n'est connue qu'après le premier déploiement du serveur, dans galerie/config.js).
 connect = f"'self' {api_origin}" if api_origin else "'self' https://*.workers.dev"
-csp = ("default-src 'none'; script-src " + " ".join(hashes) + "; style-src 'self' 'unsafe-inline'; "
+# Turnstile (anti-robot du formulaire de réservation) : son script et son cadre ne sont permis que si sa clé publique est fixée.
+ts = bool(re.fullmatch(r'[0-9A-Za-z_-]{10,100}', SITE.get('turnstile') or ''))
+csp = ("default-src 'none'; script-src " + " ".join(hashes) + (" https://challenges.cloudflare.com" if ts else "") + "; style-src 'self' 'unsafe-inline'; "
+       + ("frame-src https://challenges.cloudflare.com; " if ts else "") +
        f"font-src 'self'; img-src 'self' data: blob:; connect-src {connect}; manifest-src 'self'; "
        "base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests")
 html = html.replace('__CSP__', f'<meta http-equiv="Content-Security-Policy" content="{csp}">')

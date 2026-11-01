@@ -23,6 +23,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important} /* l’attribut hidden l’emporte toujours sur les display des composants */
 /* no global smooth scrolling: a smooth scroll across the page would play every chapter on the way (links jump instead, see jumpTo) */
 html{-webkit-text-size-adjust:100%;scrollbar-color:var(--ink-3) var(--ground)}
 /* "reduced animations" chosen on the site (menu or footer) behaves like the system setting */
@@ -276,7 +277,8 @@ a.c-val{text-decoration:underline;text-decoration-thickness:1.5px;text-underline
 .lb-cap{margin:0;min-width:0}
 .lb-title{font-family:var(--font-d);font-weight:700}
 .lb-meta{color:rgba(243,241,236,.68);margin-left:.6em}
-.lb-count{font-variant-numeric:tabular-nums;white-space:nowrap;padding:3px 8px;border-radius:3px;background:var(--accent);color:#fff;font-family:var(--font-d);font-weight:700;font-size:.8rem;letter-spacing:.06em}
+.lb-count{font-variant-numeric:tabular-nums;white-space:nowrap;padding:3px 10px 4px;border-radius:4px;background:var(--accent);color:#fff;font-family:var(--font-d);font-weight:700;font-size:.8rem;letter-spacing:.06em;line-height:1.1}
+.lb-count b{font-size:2em;font-weight:850;font-stretch:115%;letter-spacing:-.01em;vertical-align:-.12em;margin-right:.1em} /* le numéro de la photo, en grand */
 .lb-img::after{content:"";position:absolute;inset:12px;pointer-events:none;opacity:.8;--vc:#fff;--vl:16px;--vt:2px;background:linear-gradient(var(--vc),var(--vc)) 0 0/var(--vl) var(--vt),linear-gradient(var(--vc),var(--vc)) 0 0/var(--vt) var(--vl),linear-gradient(var(--vc),var(--vc)) 100% 0/var(--vl) var(--vt),linear-gradient(var(--vc),var(--vc)) 100% 0/var(--vt) var(--vl),linear-gradient(var(--vc),var(--vc)) 0 100%/var(--vl) var(--vt),linear-gradient(var(--vc),var(--vc)) 0 100%/var(--vt) var(--vl),linear-gradient(var(--vc),var(--vc)) 100% 100%/var(--vl) var(--vt),linear-gradient(var(--vc),var(--vc)) 100% 100%/var(--vt) var(--vl);background-repeat:no-repeat}
 .lb.vf .lb-img::after{animation:vfIn .5s var(--ease-out) .12s both}
 @keyframes vfIn{from{opacity:0;transform:scale(1.06)}}
@@ -693,6 +695,7 @@ h1.vh:focus,section:focus,article:focus,[tabindex="-1"]:focus{outline:none}
 .bk-bg{position:absolute;inset:0;background:rgba(0,0,0,.82)}
 .bk-in{position:relative;width:min(780px,100%);max-height:100%;overflow-y:auto;overscroll-behavior:contain;background:var(--ground);border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:16px;padding:clamp(18px,3vw,36px)}
 .bk-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.bk-top .bk-x{position:static;flex:none} /* le bouton reprend la forme des boutons de la visionneuse, pas leur positionnement */
 .bk-k{margin:0 0 8px;font-family:var(--font-d);font-weight:800;font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-text)}
 .bk-h{margin:0;font-family:var(--font-d);font-weight:850;font-stretch:115%;font-size:clamp(1.55rem,3.6vw,2.5rem);line-height:.95;text-transform:uppercase;letter-spacing:-.01em}
 .bk-p{margin:.8em 0 0;color:var(--ink-2);font-size:.96rem;max-width:62ch}
@@ -708,6 +711,7 @@ h1.vh:focus,section:focus,article:focus,[tabindex="-1"]:focus{outline:none}
 .bk-c a{font-size:.86rem;color:var(--ink-2);padding-left:34px}
 .bk-busy{margin:2px 0 0;font-size:.84rem;color:var(--accent-text)}
 .bk-hp{position:absolute!important;left:-10000px;top:auto;width:1px;height:1px;overflow:hidden}
+.bk-ts{min-height:65px;margin-top:12px}
 .bk-err{margin:14px 0 0;min-height:1.2em;color:var(--accent-text);font-size:.9rem}
 .bk-act{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px}
 .bk-note{margin:14px 0 0;font-size:.84rem;color:var(--ink-3)}
@@ -901,6 +905,7 @@ h1.vh:focus,section:focus,article:focus,[tabindex="-1"]:focus{outline:none}
         <div class="bk-hp" aria-hidden="true"><label for="bkWeb">Site web</label><input id="bkWeb" name="website" tabindex="-1" autocomplete="off"></div>
         <div class="bk-f w bk-c"><label class="bk-check"><input type="checkbox" name="consent" id="bkConsent" required><span data-t="book.consent"></span></label><a href="confidentialite/" target="_blank" rel="noopener" data-t="book.privacy"></a></div>
       </div>
+      <div class="bk-f w bk-ts" id="bkTs" hidden></div>
       <p class="bk-err" id="bkErr" role="alert"></p>
       <div class="bk-act"><button class="btn primary" id="bkSend" type="submit"><span data-t="book.send"></span></button><button class="btn" id="bkCopy" type="button" hidden data-t="book.copy"></button></div>
       <p class="bk-note" id="bkNote"></p>
@@ -1009,6 +1014,8 @@ const T = {
     "book.err.email": "Cette adresse courriel ne semble pas valide.", "book.err.consent": "Cochez la case d’acceptation pour envoyer la demande.",
     "book.err.date": "Choisissez une date à venir.", "book.err.rate": "Trop de demandes en peu de temps. Réessayez dans un moment ou écrivez à baeypro@gmail.com.",
     "book.err.net": "L’envoi n’a pas abouti. Réessayez, ou utilisez « Écrire un courriel ».", "book.copied": "Demande copiée",
+    "book.err.short": "Décrivez votre projet en quelques mots (10 caractères au moins).", "book.err.phone": "Ce numéro de téléphone ne semble pas valide.",
+    "book.err.captcha": "La vérification anti-robot n’a pas abouti. Réessayez dans un instant.", "book.err.wait": "Un instant : la vérification anti-robot se termine.",
     "book.types": { soiree: "Soirée ou événement", concert: "Concert ou scène", sport: "Sport ou équipe", marque: "Marque ou shooting mode", portrait: "Portrait ou artiste", exposition: "Exposition ou projet artistique", autre: "Autre" },
     "book.subject": (ty, d) => `Demande de prestation : ${ty}${d ? " le " + d : ""}`,
     "book.fields": { first_name: "Prénom", last_name: "Nom", email: "Courriel", phone: "Téléphone", type: "Prestation", date: "Date souhaitée", city: "Ville", place: "Lieu", duration: "Durée estimée", people: "Participants", budget: "Budget indicatif", description: "Projet" },
@@ -1071,6 +1078,8 @@ const T = {
     "book.err.email": "This email address does not look valid.", "book.err.consent": "Tick the consent box to send the request.",
     "book.err.date": "Choose a date in the future.", "book.err.rate": "Too many requests in a short time. Try again later or write to baeypro@gmail.com.",
     "book.err.net": "The request could not be sent. Try again, or use “Send an email”.", "book.copied": "Request copied",
+    "book.err.short": "Describe your project in a few words (at least 10 characters).", "book.err.phone": "This phone number does not look valid.",
+    "book.err.captcha": "The anti-robot check failed. Please try again in a moment.", "book.err.wait": "One moment: the anti-robot check is finishing.",
     "book.types": { soiree: "Party or event", concert: "Concert or stage", sport: "Sport or team", marque: "Brand or fashion shoot", portrait: "Portrait or artist", exposition: "Exhibition or art project", autre: "Other" },
     "book.subject": (ty, d) => `Booking request: ${ty}${d ? " on " + d : ""}`,
     "book.fields": { first_name: "First name", last_name: "Last name", email: "Email", phone: "Phone", type: "Shoot", date: "Preferred date", city: "City", place: "Venue", duration: "Estimated length", people: "People", budget: "Budget", description: "Project" },
@@ -1775,7 +1784,7 @@ const LB = {
     const c = ctxOf[this.i];
     $("#lbTitle").textContent = ctxTitle(c);
     $("#lbMeta").textContent = ctxMeta(c);
-    $("#lbCount").textContent = `${pad(this.pos + 1)} / ${pad(SEQ.length)}`;
+    { const c = $("#lbCount"); c.textContent = ""; mk("b", "", c).textContent = pad(this.pos + 1); c.appendChild(document.createTextNode(` / ${pad(SEQ.length)}`)); }
     const d = DATA.alt && DATA.alt[this.i];
     lbFull.alt = d ? `${L(d)} · ${ctxTitle(c)}` : t("alt")(ctxTitle(c), c.n, c.k);
   },
@@ -2660,6 +2669,16 @@ onLang(paintMotion);
   const bk = $("#bk"), form = $("#bkForm"), err = $("#bkErr"), note = $("#bkNote"), ok = $("#bkOk"), copyB = $("#bkCopy"), busyP = $("#bkBusy");
   const F = form.elements, sel = F.type, TYPES = (DATA.site.booking && DATA.site.booking.types) || ["autre"];
   let last = null, openedAt = 0, busy = new Set(), mailText = "";
+  // Vérification anti-robot Cloudflare Turnstile, seulement si sa clé publique est fixée dans les réglages du site.
+  const TS = /^[0-9A-Za-z_-]{10,100}$/.test(DATA.site.turnstile || "") ? DATA.site.turnstile : "";
+  let tsToken = "", tsId = null, tsLoading = false;
+  function loadTs() {
+    const box = $("#bkTs"); box.hidden = false;
+    const draw = () => { if (tsId === null && window.turnstile) tsId = window.turnstile.render(box, { sitekey: TS, language: lang, theme: "dark", callback: k => { tsToken = k; }, "expired-callback": () => { tsToken = ""; }, "error-callback": () => { tsToken = ""; } }); };
+    if (window.turnstile) return draw();
+    if (tsLoading) return; tsLoading = true;
+    const sc = document.createElement("script"); sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"; sc.async = true; sc.onload = draw; document.head.appendChild(sc);
+  }
   const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
   const fillTypes = () => { const v = sel.value; sel.innerHTML = ""; const o0 = mk("option", "", sel); o0.value = ""; o0.textContent = t("book.pick"); TYPES.forEach(k => { const o = mk("option", "", sel); o.value = k; o.textContent = (t("book.types") || {})[k] || k; }); sel.value = v; };
   onLang(() => { fillTypes(); note.textContent = t(API ? "book.note.api" : "book.note.mail"); });
@@ -2671,6 +2690,7 @@ onLang(paintMotion);
     root.style.overflow = "hidden"; openedAt = Date.now(); F.date.min = today();
     note.textContent = t(API ? "book.note.api" : "book.note.mail");
     setTimeout(() => F.first_name.focus(), 30);
+    if (API && TS) loadTs();
     if (API) fetch(API + "/api/availability", { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(j => { if (j && Array.isArray(j.busy)) { busy = new Set(j.busy); checkDate(); } }).catch(() => {});
   }
   function close() { if (bk.hidden) return; bk.hidden = true; root.style.overflow = ""; if (last && last.focus) last.focus({ preventScroll: true }); }
@@ -2684,6 +2704,8 @@ onLang(paintMotion);
     if (!d.type) bad.push(sel);
     if (bad.length) { bad.forEach(el => el.setAttribute("aria-invalid", "true")); bad[0].focus(); return t("book.err.req"); }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(d.email)) { F.email.setAttribute("aria-invalid", "true"); F.email.focus(); return t("book.err.email"); }
+    if (d.phone && !/^[+()\d\s.-]{6,40}$/.test(d.phone)) { F.phone.setAttribute("aria-invalid", "true"); F.phone.focus(); return t("book.err.phone"); }
+    if (d.description.length < 10) { F.description.setAttribute("aria-invalid", "true"); F.description.focus(); return t("book.err.short"); }
     if (d.date && d.date < today()) { F.date.setAttribute("aria-invalid", "true"); F.date.focus(); return t("book.err.date"); }
     if (!F.consent.checked) { F.consent.focus(); return t("book.err.consent"); }
     return "";
@@ -2704,10 +2726,17 @@ onLang(paintMotion);
       const url = `mailto:${DATA.site.email || "baeypro@gmail.com"}?subject=${encodeURIComponent(t("book.subject")(ty, d.date))}&body=${encodeURIComponent(mailText)}`;
       copyB.hidden = false; location.href = url; done(t("book.ok.mail")); return;
     }
+    if (TS && !tsToken) { err.textContent = t("book.err.wait"); return; }
     const btn = $("#bkSend"); btn.disabled = true;
     try {
-      const r = await fetch(API + "/api/booking", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...d, consent: true, elapsed: Date.now() - openedAt, website: "" }) });
+      const r = await fetch(API + "/api/booking", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...d, consent: true, elapsed: Date.now() - openedAt, website: "", turnstile: tsToken || undefined }) });
+      if (TS && window.turnstile && tsId !== null) { window.turnstile.reset(tsId); tsToken = ""; }
       if (r.status === 429) { err.textContent = t("book.err.rate"); return; }
+      if (r.status === 400) { /* refus expliqué par le serveur : message précis, pas « réseau » */
+        const code = ((await r.json().catch(() => ({}))) || {}).error;
+        const key = { bad_email: "book.err.email", bad_date: "book.err.date", description_too_short: "book.err.short", bad_phone: "book.err.phone", captcha_failed: "book.err.captcha", consent_required: "book.err.consent", missing_fields: "book.err.req" }[code];
+        if (key) { err.textContent = t(key); return; }
+      }
       if (!r.ok) throw new Error("http " + r.status);
       hit("@book-sent"); done(t("book.ok.api"));
     } catch (x) { err.textContent = t("book.err.net"); copyB.hidden = false; }

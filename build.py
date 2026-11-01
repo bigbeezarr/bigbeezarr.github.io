@@ -136,7 +136,7 @@ DATA = {
   "hero": HERO, "heroLab": HERO_LAB, "about": ABOUT, "wall": WALL, "me": ME, "cap": CAP, "chapters": CHAPTERS,
   "featured": FEATURED, "pages": bool(SITE.get("projectPages", True)),
   "alt": PORT.get("alt", {}),
-  "site": {k: SITE.get(k) for k in ("email", "phone", "phoneHref", "instagram", "api", "booking", "legalOk")},
+  "site": {k: SITE.get(k) for k in ("email", "phone", "phoneHref", "instagram", "api", "booking", "legalOk", "turnstile")},
   "img": {str(i): [meta[i]["w"], meta[i]["h"], meta[i]["q"], colors[str(i)][3]] for i in meta},
   "total": len(shown),
 }
