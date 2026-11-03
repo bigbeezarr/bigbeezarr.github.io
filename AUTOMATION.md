@@ -35,8 +35,11 @@ cd "$HOME/mnt/Lightroom Saved Photos/.bigbeezarr-site/tools" && python3 scan_new
 
 It compares every exported photo with `state/known.json` and writes `state/new.json`
 (`new`: photos grouped by folder, `skipped`: private folders such as friends and family,
-weddings, graduations, birthdays, souvenirs, graphics). If there are 0 new photos, stop:
-no commit, report « Rien de nouveau ».
+weddings, graduations, birthdays, souvenirs, graphics). If there are 0 new photos: no commit,
+« Rien de nouveau » for the photos, then go straight to step 6 (the audit runs on every run).
+Paths are compared as strings: if Mamadou copies or reorganises a whole library (as with « Lightroom version finale »
+in November 2026), first map each new path to the same relative path under the other roots and by file name,
+and treat only the files not found there as new.
 
 ## 2. Decide where each folder goes
 
@@ -183,3 +186,32 @@ Claude-Session: <this run's session link>
 - Do not update the claude.ai preview artifact: it is over its 511-file limit. GitHub Pages is the site.
 - Report in French, short: projects and years updated with the number of photos, new projects,
   folders skipped and why, and the link https://bigbeezarr.com. The workflow plus GitHub Pages take about three minutes.
+
+## 6. Audit (every run, after step 5 or after « Rien de nouveau »)
+
+Mamadou asked for an audit of the site on every run: security, code, speed and animations. It is **read-only**:
+never fix, commit or push anything because of it; the fixes are his decision.
+
+- The audits live **on the Mac only**, never in this public repository (they describe weaknesses):
+  `~/mnt/Lightroom Saved Photos/.bigbeezarr-site/audits/AUDIT-YYYY-MM-DD.md`. The first one is
+  `.bigbeezarr-site/AUDIT-2026-11-03.md`: move it into `audits/` on the next run. Read the latest audit first.
+- Delegate the audit to one subagent (it takes about 15 minutes) while you finish the photos, with a self-contained brief:
+  clone `main` and `source` from GitHub into the scratchpad (never work in `../site` or `../src`), passive checks only
+  (no form sent, no account created, no fuzzing or brute force of `api.bigbeezarr.com`).
+  1. Cybersécurité: secrets in the whole git history (mask values), admin auth, client gallery access (`galerie/`),
+     `worker/` (validation, CORS, rate limiting, Turnstile checked server-side, e-mail injection), GitHub Actions
+     (permissions, actions pinned by SHA, lockfiles, `${{ }}` injection), branch protection, headers really served
+     (CSP, HSTS, nosniff, Referrer-Policy, Permissions-Policy, frame-ancestors; GitHub Pages ignores `_headers`).
+  2. Code: console errors and failed requests on the home page and a few project pages (Playwright),
+     dead code, accessibility and SEO basics.
+  3. Vitesse: Playwright on the home page, phone (390×844, CPU 4×, Fast 3G through CDP) and desktop:
+     FCP, LCP, CLS, TTFB, bytes and requests, largest files, render-blocking resources, image sizes, caching.
+  4. Animations: transitions, keyframes, scroll handlers, loading screen; transform/opacity only,
+     `prefers-reduced-motion`, long tasks and frame rate while scrolling under CPU 4×.
+  Each finding: severity (critique / élevé / moyen / faible), evidence (file:line or URL), concrete fix.
+  If the live site cannot be reached from the container, measure `main` served locally and say so.
+- Compare with the previous audit and write the new one, in French, with a first section
+  « Changements depuis le dernier audit »: new findings, worse, fixed, unchanged (one line each for unchanged ones).
+  Write it to the scratchpad, send it with SendUserFile, then device_commit_files it into `audits/`.
+- Notification: only when there is a **new or worse** finding of severity moyen or above, or a fix to confirm.
+  Otherwise one line in the report (« Audit : rien de nouveau »). The audit never blocks or delays the photo update.
