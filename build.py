@@ -49,6 +49,15 @@ for c in CHAPTERS:
     for p in c["projects"]:
         assert re.fullmatch(r'[a-z0-9-]+', p["id"]) and p["id"] not in ids_seen, p["id"]
         ids_seen.add(p["id"])
+# cartes de l'ouverture (heroLab) : nom ou sigle (40 caractères), légende fr/en (80), seulement pour des photos de l'ouverture
+assert HERO, "l'accueil a besoin d'au moins une photo d'ouverture"
+assert isinstance(HERO_LAB, dict), "heroLab"
+for k, v in HERO_LAB.items():
+    assert re.fullmatch(r'\d{1,5}', k) and int(k) in HERO, f"heroLab : la photo {k} n'est pas dans l'ouverture"
+    assert isinstance(v, dict) and set(v) <= {"name", "meta"}, f"heroLab {k}"
+    assert isinstance(v.get("name", ""), str) and len(v.get("name", "")) <= 40, f"heroLab {k} : nom de 40 caractères au plus"
+    m = v.get("meta", {"fr": "", "en": ""})
+    assert isinstance(m, dict) and all(isinstance(m.get(l, ""), str) and len(m.get(l, "")) <= 80 for l in ("fr", "en")), f"heroLab {k} : légende de 80 caractères au plus"
 UNPUB = PORT.get("unpublished", [])  # photos retirées du site : gardées au catalogue, jamais affichées
 assert isinstance(UNPUB, list) and all(isinstance(i, int) for i in UNPUB), "unpublished"
 used = list(UNPUB)
@@ -75,6 +84,18 @@ for c in CHAPTERS:
         if s is None: continue
         assert isinstance(s, list) and len(s) <= 8 and len(set(s)) == len(s), f"sélection de {p['id']} : 8 photos au plus, sans doublon"
         assert all(isinstance(i, int) and i in POOL for i in s), f"sélection de {p['id']} : photo inconnue du portfolio"
+# ---- projets à la une : 5 au plus, rangs distincts, jamais un projet masqué ; carte (photo, cadrage, titre, sous-titre) ----
+def _t_ok(v, n): return (isinstance(v, str) and len(v) <= n) or (isinstance(v, dict) and set(v) <= {"fr", "en"} and all(isinstance(x, str) and len(x) <= n for x in v.values()))
+_ranks = [p["featured"] for c in CHAPTERS for p in c["projects"] if p.get("featured")]
+assert len(_ranks) <= 5 and len(set(_ranks)) == len(_ranks), "à la une : 5 projets au plus, rangs distincts"
+for c in CHAPTERS:
+    for p in c["projects"]:
+        assert not (p.get("featured") and p.get("hidden")), f"{p['id']} : un projet masqué ne peut pas être à la une"
+        if "featuredCover" in p: assert isinstance(p["featuredCover"], int) and p["featuredCover"] in POOL, f"carte à la une de {p['id']} : photo inconnue du portfolio"
+        if "featuredFocus" in p:
+            f = p["featuredFocus"]; assert isinstance(f, dict) and set(f) <= {"x", "y"} and all(isinstance(v, (int, float)) and 0 <= v <= 100 for v in f.values()), f"cadrage de la carte à la une de {p['id']}"
+        if "featuredTitle" in p: assert _t_ok(p["featuredTitle"], 60), f"titre de la carte à la une de {p['id']} : 60 caractères au plus"
+        if "featuredSub" in p: assert _t_ok(p["featuredSub"], 140), f"sous-titre de la carte à la une de {p['id']} : 140 caractères au plus"
 SHAPE = PORT.get("shape") or {}
 assert isinstance(SHAPE, dict), "shape"
 for k, v in SHAPE.items():

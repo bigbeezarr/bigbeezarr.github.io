@@ -1144,7 +1144,7 @@ DATA.chapters.forEach((c, ci) => c.projects.forEach((p, pi) => (p.lead ? [{ lead
 DATA.wall.forEach((i, n) => addSeq(i, { kind: "wall", n: n + 1, k: DATA.wall.length }));
 addSeq(DATA.me, { kind: "me", n: 1, k: 1 });
 function ctxTitle(c) {
-  if (c.kind === "sel") return t("sel") + (heroLab(c.i) ? " · " + heroLab(c.i).name : "");
+  if (c.kind === "sel") return t("sel") + (heroLab(c.i) && heroLab(c.i).name ? " · " + heroLab(c.i).name : "");
   if (c.kind === "about") return t("about");
   if (c.kind === "wall") return t("favs");
   if (c.kind === "me") return t("me");
@@ -1152,7 +1152,7 @@ function ctxTitle(c) {
   return edTitle(p, edsOf(p)[c.ei]);
 }
 function ctxMeta(c) {
-  if (c.kind === "sel") return heroLab(c.i) ? L(heroLab(c.i).meta) : "";
+  if (c.kind === "sel") return heroLab(c.i) && heroLab(c.i).meta ? L(heroLab(c.i).meta) : "";
   if (c.kind !== "p") return "";
   const p = DATA.chapters[c.ci].projects[c.pi], e = edsOf(p)[c.ei];
   if (!e) return [p.place, p.year].filter(Boolean).join(" · ");
@@ -1345,7 +1345,7 @@ if (DATA.links && DATA.links.length) { // liens du site (réglages) : sous les c
 }
 
 const rail = $("#rail");
-DATA.hero.forEach((i, n) => { const f = tile(i, n), im = f.querySelector("img"); if (n < 4) im.loading = "eager"; if (n < 2) im.fetchPriority = "high"; if (heroLab(i)) { const tg = mk("span", "card-tag", f); tg.setAttribute("aria-hidden", "true"); tg.textContent = heroLab(i).name; } rail.appendChild(f); });
+DATA.hero.forEach((i, n) => { const f = tile(i, n), im = f.querySelector("img"); if (n < 4) im.loading = "eager"; if (n < 2) im.fetchPriority = "high"; if (heroLab(i) && heroLab(i).name) { const tg = mk("span", "card-tag", f); tg.setAttribute("aria-hidden", "true"); tg.textContent = heroLab(i).name; } rail.appendChild(f); });
 const ag = $("#aboutGallery");
 mosaic(ag, DATA.about);
 /* featured: 3 to 5 projects chosen in the admin, each card opens its project page */
@@ -1356,17 +1356,18 @@ if (DATA.featured && DATA.featured.length) {
   DATA.featured.forEach(pid => {
     const o = byId[pid]; if (!o) return;
     const { p, c, ci } = o, e0 = edsOf(p)[0];
-    const cov = p.cover != null ? p.cover : p.lead ? p.lead.img : (e0.feature ? e0.feature.img : e0.imgs[0]);
+    const cov = p.featuredCover != null && DATA.img[p.featuredCover] ? p.featuredCover : p.cover != null ? p.cover : p.lead ? p.lead.img : (e0.feature ? e0.feature.img : e0.imgs[0]);
     const a = mk("a", "fcard", fr); a.href = DATA.pages ? `projets/${encodeURIComponent(p.id)}/` : `#p-${p.id}`;
     const [w, h, q, col] = DATA.img[cov];
     a.style.backgroundColor = col; a.style.backgroundImage = `url(data:image/webp;base64,${q})`;
     const im = mk("img", "", a); im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.width = w; im.height = h;
     im.sizes = "(max-width:620px) 92vw, (max-width:1100px) 46vw, 24vw"; im.srcset = srcsetOf(cov); im.src = `img/m/${pad(cov)}.webp`;
     im.addEventListener("error", () => { im.removeAttribute("srcset"); im.src = `img/f/${pad(cov)}.webp`; }, { once: true });
+    if (p.featuredFocus) { const fx = p.featuredFocus.x ?? 50, fy = p.featuredFocus.y ?? 50; im.style.objectPosition = `${fx}% ${fy}%`; a.style.backgroundPosition = `${fx}% ${fy}%`; }
     const tx = mk("span", "fc-txt", a);
     bindText(mk("span", "fc-n", tx), () => `${String(ci + 1).padStart(2, "0")} · ${L(c.short || c.name)}`);
-    bindText(mk("span", "fc-t", tx), () => L(p.title));
-    const m = mk("span", "fc-m", tx); onLang(() => m.innerHTML = seriesLine(p) || escH([whereOf(p), yearSpan(p), t("photos")(projCount(p))].filter(Boolean).join(" · ")));
+    bindText(mk("span", "fc-t", tx), () => L(p.featuredTitle && L(p.featuredTitle) ? p.featuredTitle : p.title));
+    const m = mk("span", "fc-m", tx); onLang(() => p.featuredSub && L(p.featuredSub) ? (m.textContent = L(p.featuredSub)) : m.innerHTML = seriesLine(p) || escH([whereOf(p), yearSpan(p), t("photos")(projCount(p))].filter(Boolean).join(" · ")));
     bindText(mk("span", "fc-go", tx), () => t("feat.go"));
   });
   $("#alaune").hidden = !fr.children.length;
