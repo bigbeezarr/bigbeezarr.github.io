@@ -60,6 +60,37 @@ for c in CHAPTERS:
             if "feature" in e: used.append(e["feature"]["img"])
         if "lead" in p: used.append(p["lead"]["img"])
 dups = sorted({i for i in used if used.count(i) > 1})
+# ---- sélection (8 au plus, sans doublon) : toute photo du portfolio, même d'un autre projet ou des photos retirées ;
+# forme imposée sur la mosaïque de l'accueil (« shape ») ; liens des projets et du site ----
+POOL = set(UNPUB)
+for c in CHAPTERS:
+    for p in c["projects"]:
+        for e in p.get("eds", [p]):
+            POOL.update(e["imgs"])
+            if "feature" in e: POOL.add(e["feature"]["img"])
+        if "lead" in p: POOL.add(p["lead"]["img"])
+for c in CHAPTERS:
+    for p in c["projects"]:
+        s = p.get("selection")
+        if s is None: continue
+        assert isinstance(s, list) and len(s) <= 8 and len(set(s)) == len(s), f"sélection de {p['id']} : 8 photos au plus, sans doublon"
+        assert all(isinstance(i, int) and i in POOL for i in s), f"sélection de {p['id']} : photo inconnue du portfolio"
+SHAPE = PORT.get("shape") or {}
+assert isinstance(SHAPE, dict), "shape"
+for k, v in SHAPE.items():
+    assert re.fullmatch(r'\d{1,5}', k) and int(k) in meta, f"forme : photo {k} inconnue"
+    assert isinstance(v, dict) and v.get("r") in ("v", "h") and all(isinstance(v.get(x, 50), (int, float)) and 0 <= v.get(x, 50) <= 100 for x in ("x", "y")), f"forme de la photo {k}"
+LINK_KINDS = ("site", "instagram", "tiktok", "youtube", "facebook", "x", "autre")
+def links_ok(l, where):
+    assert isinstance(l, list) and len(l) <= 6, f"liens de {where} : 6 au plus"
+    for x in l:
+        assert isinstance(x, dict) and isinstance(x.get("label"), str) and 0 < len(x["label"].strip()) <= 40, f"lien de {where} : libellé de 1 à 40 caractères"
+        assert isinstance(x.get("url"), str) and re.fullmatch(r'https://[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:[/?#][^\s"\'<>`]*)?', x["url"]) and len(x["url"]) <= 300, f"lien de {where} : adresse https:// invalide"
+        assert x.get("kind", "autre") in LINK_KINDS, f"lien de {where} : type inconnu"
+for c in CHAPTERS:
+    for p in c["projects"]:
+        if p.get("links") is not None: links_ok(p["links"], p["id"])
+if SITE.get("links") is not None: links_ok(SITE["links"], "site")
 missing = sorted(set(meta) - set(used))
 extra = sorted(set(used) - set(meta))
 assert not dups and not missing and not extra, (dups, missing, extra)
@@ -208,6 +239,8 @@ DATA = {
   "featured": FEATURED, "pages": bool(SITE.get("projectPages", True)),
   "alt": PORT.get("alt", {}),
   "site": {k: SITE.get(k) for k in ("email", "phone", "phoneHref", "instagram", "api", "booking", "legalOk", "turnstile")},
+  **({"shape": {k: v for k, v in SHAPE.items() if int(k) in shown}} if any(int(k) in shown for k in SHAPE) else {}),
+  **({"links": SITE["links"]} if SITE.get("links") else {}),
   "img": {str(i): [meta[i]["w"], meta[i]["h"], meta[i]["q"], colors[str(i)][3]] for i in meta},
   "total": len(shown),
 }

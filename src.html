@@ -999,7 +999,7 @@ const T = {
     "motion.reduce": "Réduire les animations", "motion.full": "Rétablir les animations",
     "motion.now.reduce": "Animations réduites : pas de flash, pas de mouvement de défilement", "motion.now.full": "Animations complètes rétablies",
     "feat.h": "À la une", "feat.sub": "Les projets que je suis depuis le plus longtemps, un par chapitre.", "feat.go": "Voir le projet",
-    "proj.page": "Page du projet", "ig.aria": h => `Instagram de ${h}`,
+    "proj.page": "Page du projet", "links": "Liens", "ig.aria": h => `Instagram de ${h}`,
     "home.of": (a, b) => `${a} photos sur ${b}`, "home.more": (n, y) => `Voir les ${n} photos${y ? " de " + y : ""} sur la page du projet →`,
     "book.cta": "Demander une date", "book.mail": "Écrire un courriel", "book.k": "Prestation", "book.h": "Demande de réservation",
     "book.close": "Fermer le formulaire",
@@ -1064,7 +1064,7 @@ const T = {
     "motion.reduce": "Reduce animations", "motion.full": "Restore animations",
     "motion.now.reduce": "Reduced animations: no flashes, no scroll motion", "motion.now.full": "Full animations restored",
     "feat.h": "Featured", "feat.sub": "The projects I have followed the longest, one per chapter.", "feat.go": "See the project",
-    "proj.page": "Project page", "ig.aria": h => `${h} on Instagram`,
+    "proj.page": "Project page", "links": "Links", "ig.aria": h => `${h} on Instagram`,
     "home.of": (a, b) => `${a} of ${b} photos`, "home.more": (n, y) => `See all ${n}${y ? " " + y : ""} photos on the project page →`,
     "book.cta": "Request a date", "book.mail": "Send an email", "book.k": "Booking", "book.h": "Booking request",
     "book.close": "Close the form",
@@ -1097,6 +1097,8 @@ const t = k => { const v = T[lang][k]; return typeof v === "function" ? (...a) =
 const L = v => frTypo(v == null ? "" : typeof v === "string" ? v : (v[lang] ?? v.fr));
 const pad = n => String(n).padStart(3, "0");
 const escH = v => String(v == null ? "" : v).replace(/[&<>"']/g, ch => "&#" + ch.charCodeAt(0) + ";");
+/* liens choisis dans l'administration (site web, réseaux) : https seulement, ouverts dans un nouvel onglet */
+const linksHtml = (l, cls = "") => (l || []).filter(x => x && /^https:\/\/[^\s"'<>`]+$/.test(x.url || "")).map(x => `<a${cls ? ` class="${cls}"` : ""} href="${escH(x.url)}" target="_blank" rel="noopener noreferrer">${escH(x.label)}</a>`).join("");
 const slug = s => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase();
 
 /* ---------- model helpers ---------- */
@@ -1180,11 +1182,14 @@ const imgRO = "ResizeObserver" in window ? new ResizeObserver(es => es.forEach(e
   const sz = Math.ceil(need / 40) * 40;
   if (!img._sz || sz > img._sz) { img._sz = sz; img.sizes = sz + "px"; if (!img.srcset) img.srcset = srcsetOf(+img.dataset.i); }
 })) : null;
-function tile(i, k) {
+/* forme imposée dans l'administration pour la mosaïque (vertical 2:3, horizontal 3:2, cadrage x/y) ; la visionneuse garde la photo entière */
+const SHAPE = DATA.shape || {};
+const arOf = (i, shaped) => { const s = shaped && SHAPE[i]; return s ? (s.r === "v" ? 2 / 3 : 3 / 2) : DATA.img[i][0] / DATA.img[i][1]; };
+function tile(i, k, shaped) {
   const [w, h, q, col] = DATA.img[i];
   const fig = document.createElement("figure");
   fig.className = "ph";
-  fig.style.setProperty("--ar", (w / h).toFixed(4));
+  fig.style.setProperty("--ar", arOf(i, shaped).toFixed(4));
   fig.style.backgroundColor = col;
   fig.style.backgroundImage = `url(data:image/webp;base64,${q})`;
   if (k != null) fig.style.setProperty("--k", k);
@@ -1197,6 +1202,7 @@ function tile(i, k) {
   if (imgRO) imgRO.observe(img); else img.src = `img/f/${pad(i)}.webp`;
   img.loading = "lazy"; img.decoding = "async"; img.draggable = false;
   img.addEventListener("load", () => img.classList.remove("loading"), { once: true });
+  if (shaped && SHAPE[i]) img.style.objectPosition = `${SHAPE[i].x ?? 50}% ${SHAPE[i].y ?? 50}%`;
   const pi = document.createElement("span"); pi.className = "pi"; pi.appendChild(img);
   b.appendChild(pi); fig.appendChild(b);
   return fig;
@@ -1288,7 +1294,7 @@ const tileHooks = [];
 function buildMosaic(m) {
   if (m.built) return; m.built = true;
   const frag = document.createDocumentFragment(), made = [];
-  m.tiles.forEach(t => { t.f = tile(t.i); frag.appendChild(t.f); made.push(t.f); });
+  m.tiles.forEach(t => { t.f = tile(t.i, null, true); frag.appendChild(t.f); made.push(t.f); });
   m.gal.appendChild(frag); placeTiles(m);
   tileHooks.forEach(fn => fn(made));
 }
@@ -1299,7 +1305,7 @@ const buildIO = "IntersectionObserver" in window ? new IntersectionObserver(es =
 const buildAll = () => mosaics.forEach(buildMosaic);
 const mosaicRO = "ResizeObserver" in window ? new ResizeObserver(es => es.forEach(e => { const m = mosaics.find(x => x.gal === e.target); if (m) layoutMosaic(m, e.contentRect.width); })) : null;
 function mosaic(gal, ids) {
-  const m = { gal, w: 0, built: false, tiles: ids.map(i => ({ i, f: null, a: DATA.img[i][0] / DATA.img[i][1] })) };
+  const m = { gal, w: 0, built: false, tiles: ids.map(i => ({ i, f: null, a: arOf(i, true) })) };
   mosaics.push(m);
   if (buildIO) buildIO.observe(gal); else buildMosaic(m);
   if (mosaicRO) mosaicRO.observe(gal); /* the observer reports the first size itself: no forced layout per gallery */
@@ -1333,6 +1339,10 @@ const textNodes = [];
 const bindText = (el, fn) => { textNodes.push([el, fn]); el.textContent = fn(); return el; };
 const onLang = fn => { textNodes.push([null, fn]); fn(); };
 const mk = (tag, cls, parent) => { const e = document.createElement(tag); if (cls) e.className = cls; if (parent) parent.appendChild(e); return e; };
+if (DATA.links && DATA.links.length) { // liens du site (réglages) : sous les coordonnées de la section Contact
+  const cl = document.querySelector("#contact .c-list");
+  if (cl) { const d = mk("div", "", cl), dt = mk("dt", "", d), dd = mk("dd", "ig", d); onLang(() => dt.textContent = t("links")); dd.innerHTML = linksHtml(DATA.links, "c-val"); }
+}
 
 const rail = $("#rail");
 DATA.hero.forEach((i, n) => { const f = tile(i, n), im = f.querySelector("img"); if (n < 4) im.loading = "eager"; if (n < 2) im.fetchPriority = "high"; if (heroLab(i)) { const tg = mk("span", "card-tag", f); tg.setAttribute("aria-hidden", "true"); tg.textContent = heroLab(i).name; } rail.appendChild(f); });
@@ -1401,10 +1411,10 @@ DATA.chapters.forEach((c, ci) => {
     bindText(mk("span", "", meta), () => [whereOf(p), p.eds ? yearSpan(p) : p.year, t("photos")(projCount(p))].filter(Boolean).join(" · "));
     bindText(mk("p", "p-sub", ph), () => L(p.sub));
     const ser = mk("p", "p-series", ph); onLang(() => { ser.innerHTML = seriesLine(p); ser.hidden = !ser.innerHTML; });
-    if (DATA.pages || (p.ig && p.ig.length)) {
+    if (DATA.pages || (p.ig && p.ig.length) || (p.links && p.links.length)) {
       const pl = mk("p", "p-links", ph);
       onLang(() => pl.innerHTML = (DATA.pages ? `<a href="projets/${encodeURIComponent(p.id)}/">${escH(t("proj.page"))} →</a>` : "") +
-        (p.ig || []).map(h => `<a href="https://www.instagram.com/${encodeURIComponent(h)}/" target="_blank" rel="noopener noreferrer" aria-label="${escH(t("ig.aria")("@" + h))}">Instagram @${escH(h)}</a>`).join(""));
+        (p.ig || []).map(h => `<a href="https://www.instagram.com/${encodeURIComponent(h)}/" target="_blank" rel="noopener noreferrer" aria-label="${escH(t("ig.aria")("@" + h))}">Instagram @${escH(h)}</a>`).join("") + linksHtml(p.links));
     }
     const eds = edsOf(p);
     let yrs = null;

@@ -97,8 +97,10 @@ def bar(up, back_href, back_fr, back_en):
     return f'''<a class="skip" href="#contenu"><span data-l="fr">Aller au contenu</span><span data-l="en" lang="en">Skip to content</span></a>
 <header class="bar"><div class="wrap bar-in"><a class="logo" href="{up}" aria-label="BIGBEEZARR, accueil">{LOGO}<span>BIGBEEZARR</span></a>
 <div class="bar-act"><a class="back" href="{back_href}">← <span>{bi(back_fr, back_en)}</span></a><button class="lang" id="lang" type="button">EN</button></div></div></header>'''
+SITE_LINKS = []  # liens du site (content/site.json « links ») : pied de page
 def foot(up, email):
-    return f'''<footer class="wrap foot"><span>© 2026 BIGBEEZARR · Mamadou Beye</span><nav aria-label="Pied de page"><a href="{up}">{bi("Accueil", "Home")}</a><a href="{up}projets/">{bi("Tous les projets", "All projects")}</a><a href="mailto:{E(email)}">{E(email)}</a><a href="{up}confidentialite/">{bi("Confidentialité", "Privacy")}</a><a href="{up}conditions/">{bi("Conditions d’utilisation", "Terms of use")}</a></nav></footer>'''
+    ext = "".join(f'<a href="{E(x["url"])}" rel="noopener noreferrer" target="_blank">{E(x["label"])}</a>' for x in SITE_LINKS)
+    return f'''<footer class="wrap foot"><span>© 2026 BIGBEEZARR · Mamadou Beye</span><nav aria-label="Pied de page"><a href="{up}">{bi("Accueil", "Home")}</a><a href="{up}projets/">{bi("Tous les projets", "All projects")}</a><a href="mailto:{E(email)}">{E(email)}</a>{ext}<a href="{up}confidentialite/">{bi("Confidentialité", "Privacy")}</a><a href="{up}conditions/">{bi("Conditions d’utilisation", "Terms of use")}</a></nav></footer>'''
 LIGHTBOX = '''<div class="lb" id="lb" role="dialog" aria-modal="true" aria-label="Visionneuse / Viewer" hidden>
 <div class="lb-stage" id="lbStage"><div class="lb-img" id="lbImg"><img class="lb-full" id="lbFull" alt="" draggable="false"></div></div>
 <button class="lb-btn lb-close" id="lbClose" type="button" aria-label="Fermer / Close"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5 5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
@@ -169,7 +171,14 @@ def project_page(site, D, c, ci, p, NCH, all_projects, SITE):
         else:
             sel = ed_imgs(eds[0])[:8]
     mine = set(i for e in eds for i in ed_imgs(e)) | ({p["lead"]["img"]} if p.get("lead") else set())
-    sel = [i for i in dict.fromkeys(sel) if str(i) in D["img"] and i in mine][:8]
+    # une photo d'un autre projet ou des photos retirées peut y figurer (choix du photographe, contrôlé par build.py)
+    sel = [i for i in dict.fromkeys(sel) if str(i) in D["img"]][:8]
+    for i in sel:
+        if i in mine: continue
+        # la visionneuse l'ouvre avec la légende de son édition si elle est publiée ailleurs, sinon avec le titre de ce
+        # projet (rien d'une édition ou d'un projet non publié n'apparaît : ils ne sont plus dans data.json)
+        t = next((ed_title(op, oe) for oc in D["chapters"] for op in oc["projects"] if op["id"] != pid for oe in eds_of(op) if i in ed_imgs(oe)), None)
+        pd_eds.append({"t": t or {"fr": title_fr, "en": title_en}, "imgs": [i]})
     # 8 vignettes verticales (2:3) ; une photo horizontale y est recadrée autour de son sujet (« selFocus », 0 à 100 %
     # de la largeur), la visionneuse l'ouvre entière.
     focus = p.get("selFocus") or {}
@@ -200,6 +209,8 @@ def project_page(site, D, c, ci, p, NCH, all_projects, SITE):
             facts.append(f'<div><dt>{both(r["k"])}</dt><dd>{" ".join(f"<a href=\"https://www.instagram.com/{E(h)}/\" rel=\"noopener noreferrer\" target=\"_blank\">@{E(h)}</a>" for h in r["v"])}{(" · " + both(r["extra"])) if r.get("extra") else ""}</dd></div>')
     if p.get("ig"):
         facts.append(f'<div><dt>Instagram</dt><dd>{" ".join(f"<a href=\"https://www.instagram.com/{E(h)}/\" rel=\"noopener noreferrer\" target=\"_blank\">@{E(h)}</a>" for h in p["ig"])}</dd></div>')
+    if p.get("links"):
+        facts.append(f'<div><dt>{bi("Liens", "Links")}</dt><dd class="links">{"".join(f"<a href=\"{E(x['url'])}\" rel=\"noopener noreferrer\" target=\"_blank\">{E(x['label'])}</a>" for x in p["links"])}</dd></div>')
     cov_fr, cov_en = coverage(p, "fr"), coverage(p, "en")
     cov_html = (f'<p class="p-cov"><span data-l="fr">{cov_fr}</span><span data-l="en" lang="en">{cov_en}</span></p>' if cov_fr else "")
     w, h = D["img"][str(cov)][:2]
@@ -303,6 +314,8 @@ def build(site, base):
     SITE_DIR = site
     D = json.load(open(os.path.join(base, "build", "data.json"), encoding="utf-8"))
     SITE = json.load(open(os.path.join(base, "content", "site.json"), encoding="utf-8"))
+    global SITE_LINKS
+    SITE_LINKS = [x for x in (SITE.get("links") or []) if re.match(r"https://", x.get("url", ""))]
     global CSP  # même règle que la page d'accueil : seule l'adresse du serveur fixée dans les réglages, sinon workers.dev
     m = re.match(r"https://[^/\s\"']+", (SITE.get("api") or "").strip())
     CSP = CSP_TPL.replace("__API__", m.group(0) if m else "https://*.workers.dev")
