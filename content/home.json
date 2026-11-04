@@ -1,23 +1,23 @@
 {
  "hero": [
-  349,
-  647,
+  1050,
+  3,
   564,
-  976,
+  565,
+  465,
+  649,
+  656,
+  1047,
+  1051,
   566,
   706,
-  3,
   652,
+  976,
   655,
-  975,
-  351,
   977,
-  649,
-  565,
+  975,
   974,
-  465,
   663,
-  656,
   973,
   567,
   978,
@@ -29,22 +29,29 @@
   571
  ],
  "heroLab": {
-  "349": {
-   "name": "SDM",
+  "3": {
+   "name": "Uncle Waffles",
    "meta": {
-    "fr": "Concert à Montréal, 2025",
-    "en": "Concert in Montréal, 2025"
+    "fr": "",
+    "en": ""
    }
   },
-  "647": {
-   "name": "Wally Seck",
+  "465": {
+   "name": "Diariatou Sow",
    "meta": {
-    "fr": "BAL × Wave, Dakar 2026",
-    "en": "BAL × Wave, Dakar 2026"
+    "fr": "Coulisses du shooting Cenabou, Dakar 2025",
+    "en": "Behind the scenes, Cenabou shoot, Dakar 2025"
    }
   },
   "564": {
    "name": "Tiakola",
+   "meta": {
+    "fr": "MAD Festival, Montréal 2025",
+    "en": "MAD Festival, Montréal 2025"
+   }
+  },
+  "565": {
+   "name": "Zepeck",
    "meta": {
     "fr": "MAD Festival, Montréal 2025",
     "en": "MAD Festival, Montréal 2025"
@@ -57,39 +64,46 @@
     "en": "Maggu VJ concert, Dakar 2026"
    }
   },
-  "706": {
-   "name": "Alphizi",
+  "567": {
+   "name": "Ada Boy",
    "meta": {
-    "fr": "Créateur des soirées Jelani, Dakar 2026",
-    "en": "Creator of the Jelani parties, Dakar 2026"
+    "fr": "BAL × Wave, Dakar 2026",
+    "en": "BAL × Wave, Dakar 2026"
    }
   },
-  "3": {
-   "name": "Uncle Waffles",
+  "568": {
+   "name": "Ndakhte",
    "meta": {
-    "fr": "",
-    "en": ""
+    "fr": "BAL × Wave, Dakar 2026",
+    "en": "BAL × Wave, Dakar 2026"
    }
   },
-  "652": {
-   "name": "Massamba Amadeus",
+  "569": {
+   "name": "Abba No Stress",
    "meta": {
-    "fr": "Festival DLB, Dakar 2025",
-    "en": "DLB festival, Dakar 2025"
+    "fr": "BAL × Wave, Dakar 2026",
+    "en": "BAL × Wave, Dakar 2026"
    }
   },
-  "975": {
-   "name": "Astar",
+  "570": {
+   "name": "Pape Djibril Ndiaye",
    "meta": {
-    "fr": "Concert Canabasse & Astar, Montréal 2026",
-    "en": "Concert Canabasse & Astar, Montréal 2026"
+    "fr": "Coulisses du shooting Cenabou, Dakar 2025",
+    "en": "Behind the scenes, Cenabou shoot, Dakar 2025"
    }
   },
-  "351": {
-   "name": "Youssef Swatts",
+  "571": {
+   "name": "Jean Jacques Boissy",
    "meta": {
-    "fr": "Concert à Montréal, 2025",
-    "en": "Concert in Montréal, 2025"
+    "fr": "OC Runs, Dakar 2025",
+    "en": "OC Runs, Dakar 2025"
+   }
+  },
+  "572": {
+   "name": "Babacar Ossoko",
+   "meta": {
+    "fr": "OC Runs, Dakar 2026",
+    "en": "OC Runs, Dakar 2026"
    }
   },
   "649": {
@@ -99,18 +113,32 @@
     "en": "Jelani party, Dakar 2025"
    }
   },
-  "565": {
-   "name": "Zepeck",
+  "650": {
+   "name": "VJ",
    "meta": {
-    "fr": "MAD Festival, Montréal 2025",
-    "en": "MAD Festival, Montréal 2025"
+    "fr": "Concert de Maggu VJ, Dakar 2026",
+    "en": "Maggu VJ concert, Dakar 2026"
    }
   },
-  "465": {
-   "name": "Diariatou Sow",
+  "652": {
+   "name": "Massamba Amadeus",
    "meta": {
-    "fr": "Coulisses du shooting Cenabou, Dakar 2025",
-    "en": "Behind the scenes, Cenabou shoot, Dakar 2025"
+    "fr": "Festival DLB, Dakar 2025",
+    "en": "DLB festival, Dakar 2025"
+   }
+  },
+  "655": {
+   "name": "Jeeba",
+   "meta": {
+    "fr": "Jelani La Croisette, Dakar 2025",
+    "en": "Jelani La Croisette, Dakar 2025"
+   }
+  },
+  "656": {
+   "name": "Dip Doundou Guiss",
+   "meta": {
+    "fr": "Jelani La Croisette, Dakar 2025",
+    "en": "Jelani La Croisette, Dakar 2025"
    }
   },
   "663": {
@@ -118,6 +146,13 @@
    "meta": {
     "fr": "Jelani La Croisette, Dakar 2025",
     "en": "Jelani La Croisette, Dakar 2025"
+   }
+  },
+  "706": {
+   "name": "Alphizi",
+   "meta": {
+    "fr": "Créateur des soirées Jelani, Dakar 2026",
+    "en": "Creator of the Jelani parties, Dakar 2026"
    }
   },
   "973": {
@@ -134,60 +169,11 @@
     "en": "Maggu VJ concert, Dakar 2026"
    }
   },
-  "978": {
-   "name": "El Hadj Diallo",
+  "975": {
+   "name": "Astar",
    "meta": {
-    "fr": "OC Runs, Dakar 2025",
-    "en": "OC Runs, Dakar 2025"
-   }
-  },
-  "567": {
-   "name": "Ada Boy",
-   "meta": {
-    "fr": "BAL × Wave, Dakar 2026",
-    "en": "BAL × Wave, Dakar 2026"
-   }
-  },
-  "572": {
-   "name": "Babacar Ossoko",
-   "meta": {
-    "fr": "OC Runs, Dakar 2026",
-    "en": "OC Runs, Dakar 2026"
-   }
-  },
-  "650": {
-   "name": "VJ",
-   "meta": {
-    "fr": "Concert de Maggu VJ, Dakar 2026",
-    "en": "Maggu VJ concert, Dakar 2026"
-   }
-  },
-  "568": {
-   "name": "Ndakhte",
-   "meta": {
-    "fr": "BAL × Wave, Dakar 2026",
-    "en": "BAL × Wave, Dakar 2026"
-   }
-  },
-  "570": {
-   "name": "Pape Djibril Ndiaye",
-   "meta": {
-    "fr": "Coulisses du shooting Cenabou, Dakar 2025",
-    "en": "Behind the scenes, Cenabou shoot, Dakar 2025"
-   }
-  },
-  "569": {
-   "name": "Abba No Stress",
-   "meta": {
-    "fr": "BAL × Wave, Dakar 2026",
-    "en": "BAL × Wave, Dakar 2026"
-   }
-  },
-  "571": {
-   "name": "Jean Jacques Boissy",
-   "meta": {
-    "fr": "OC Runs, Dakar 2025",
-    "en": "OC Runs, Dakar 2025"
+    "fr": "Concert Canabasse & Astar, Montréal 2026",
+    "en": "Concert Canabasse & Astar, Montréal 2026"
    }
   },
   "976": {
@@ -197,13 +183,6 @@
     "en": "Jelani Caribbean Edition, Dakar 2024"
    }
   },
-  "655": {
-   "name": "Jeeba",
-   "meta": {
-    "fr": "Jelani La Croisette, Dakar 2025",
-    "en": "Jelani La Croisette, Dakar 2025"
-   }
-  },
   "977": {
    "name": "Ashs the Best",
    "meta": {
@@ -211,11 +190,32 @@
     "en": "Jelani Coachella Edition, Saly 2026"
    }
   },
-  "656": {
-   "name": "Dip Doundou Guiss",
+  "978": {
+   "name": "El Hadj Diallo",
    "meta": {
-    "fr": "Jelani La Croisette, Dakar 2025",
-    "en": "Jelani La Croisette, Dakar 2025"
+    "fr": "OC Runs, Dakar 2025",
+    "en": "OC Runs, Dakar 2025"
+   }
+  },
+  "1047": {
+   "name": "Youssef Swatts",
+   "meta": {
+    "fr": "Concert à Montréal, 2025",
+    "en": "Concert in Montréal, 2025"
+   }
+  },
+  "1050": {
+   "name": "SDM",
+   "meta": {
+    "fr": "Concert à Montréal, 2025",
+    "en": "Concert in Montréal, 2025"
+   }
+  },
+  "1051": {
+   "name": "Wally Seck",
+   "meta": {
+    "fr": "BAL × Wave, Dakar 2026",
+    "en": "BAL × Wave, Dakar 2026"
    }
   }
  },
@@ -291,8 +291,8 @@
   500,
   501,
   502,
-  503,
   987,
+  503,
   505,
   506,
   507,
