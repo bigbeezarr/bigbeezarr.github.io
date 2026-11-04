@@ -36,7 +36,9 @@ def merge(port, add):
                 if k in p: first[k] = p.pop(k)
             p["eds"] = [first]
         ed = next((e for e in p["eds"] if str(e.get("year", "")) == str(ad["year"]) and e.get("label") == ad.get("label")), None)
-        if ed: ed["imgs"] = ed["imgs"] + list(ad["imgs"])
+        if ed:  # une édition non publiée (« hidden ») le reste : les photos ajoutées y restent hors ligne
+            ed["imgs"] = ed["imgs"] + list(ad["imgs"])
+            if ed.get("hidden"): print(f"note : {p['id']} {ad['year']} {ad.get('label') or ''} est une édition non publiée, les photos ajoutées restent hors ligne")
         else:
             ed = {k: v for k, v in ad.items() if k in ("year", "label", "sub", "place", "city", "order", "brand")}
             ed["imgs"] = list(ad["imgs"]); p["eds"].append(ed)
@@ -46,11 +48,14 @@ def merge(port, add):
     if os.path.exists(hp):  # les photos de l'accueil comptent aussi : une photo n'est publiée qu'une fois
         h = json.load(open(hp, encoding="utf-8"))
         for i in h.get("hero", []) + h.get("about", []) + h.get("wall", []) + ([h["me"]] if "me" in h else []): seen.add(i)
+    for i in port.get("unpublished", []):  # photos retirées du site par Mamadou : comptées, jamais republiées
+        (dup if i in seen else seen).add(i)
     for c in chapters:
         for p in c["projects"]:
             for e in p.get("eds", [p]):
-                for i in e["imgs"]:
+                for i in e["imgs"] + ([e["feature"]["img"]] if e.get("feature") else []):
                     (dup if i in seen else seen).add(i)
+            if p.get("lead"): (dup if p["lead"]["img"] in seen else seen).add(p["lead"]["img"])
     if dup: raise SystemExit(f"photos en double après l'ajout : {sorted(dup)}")
     return port
 

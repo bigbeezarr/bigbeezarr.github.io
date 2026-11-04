@@ -49,7 +49,9 @@ for c in CHAPTERS:
     for p in c["projects"]:
         assert re.fullmatch(r'[a-z0-9-]+', p["id"]) and p["id"] not in ids_seen, p["id"]
         ids_seen.add(p["id"])
-used = []
+UNPUB = PORT.get("unpublished", [])  # photos retirées du site : gardées au catalogue, jamais affichées
+assert isinstance(UNPUB, list) and all(isinstance(i, int) for i in UNPUB), "unpublished"
+used = list(UNPUB)
 used += HERO + ABOUT + WALL + [ME]
 for c in CHAPTERS:
     for p in c["projects"]:
@@ -61,6 +63,23 @@ dups = sorted({i for i in used if used.count(i) > 1})
 missing = sorted(set(meta) - set(used))
 extra = sorted(set(used) - set(meta))
 assert not dups and not missing and not extra, (dups, missing, extra)
+
+# ---- photos envoyées en JPEG depuis l'administration (navigateur sans encodeur WebP) : img/new/NNN.jpg → img/f/NNN.webp ;
+# aperçu flou (q) vide dans meta.json : calculé ici à partir de la pleine taille (comme tools/add_photos.py) ----
+import base64, io
+NEW = os.path.join(os.path.dirname(os.path.abspath(IMG)), 'new')
+def _webp(im, q):
+    b = io.BytesIO(); im.save(b, 'WEBP', quality=q, method=6); return b.getvalue()
+for i in meta:
+    f, j = os.path.join(IMG, f'{i:03d}.webp'), os.path.join(NEW, f'{i:03d}.jpg')
+    if not os.path.exists(f) and os.path.exists(j):
+        from PIL import Image as _I
+        im = _I.open(j).convert('RGB'); im.thumbnail((1800, 1800), _I.LANCZOS)
+        open(f, 'wb').write(_webp(im, 82)); os.remove(j)
+    if not meta[i].get('q'):
+        from PIL import Image as _I
+        t = _I.open(f).convert('RGB'); t.thumbnail((16, 16), _I.LANCZOS)
+        meta[i]['q'] = base64.b64encode(_webp(t, 50)).decode()
 
 # ---- couleur : chaque rubrique est rangée en dégradé (monochromes du clair au sombre, puis un tour de teinte) ----
 import colorsys
@@ -124,6 +143,21 @@ featured = sorted([p for c in CHAPTERS for p in c["projects"] if p.get("featured
 FEATURED = [p["id"] for p in featured][:5]
 for c in CHAPTERS:
     c["projects"] = [p for p in c["projects"] if not p.get("hidden")]
+# ---- éditions non publiées (« hidden ») : retirées partout (accueil, pages, comptes, plan du site, visionneuse) ;
+# un projet dont toutes les éditions sont masquées disparaît, une couverture prise dans une édition masquée est oubliée ----
+def _vis(p):
+    v = set(i for e in p.get("eds", [p]) for i in e["imgs"] + ([e["feature"]["img"]] if e.get("feature") else []))
+    return v | ({p["lead"]["img"]} if p.get("lead") else set())
+for c in CHAPTERS:
+    keep = []
+    for p in c["projects"]:
+        if p.get("eds") is not None and any(e.get("hidden") for e in p["eds"]):
+            p["eds"] = [e for e in p["eds"] if not e.get("hidden")]
+            if not p["eds"]: continue
+        if p.get("cover") is not None and p["cover"] not in _vis(p): p.pop("cover")
+        keep.append(p)
+    c["projects"] = keep
+FEATURED = [i for i in FEATURED if any(p["id"] == i for c in CHAPTERS for p in c["projects"])]
 # ---- projets à la une : l'accueil n'en montre que 10 photos par année, la page du projet les garde toutes ----
 # Le choix vient de « homePicks » ({année: [photos]}) ; une photo retirée du projet est ignorée et une année sans choix
 # (nouvelle année ajoutée par la tâche planifiée) prend ses premières photos. Chaque photo garde son édition d'origine

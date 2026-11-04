@@ -63,7 +63,8 @@ jobs:
           # Jusqu'à 3 essais : si la branche cible a bougé pendant la construction (tâche planifiée, autre publication),
           # on repart de sa dernière version.
           for essai in 1 2 3; do
-            ( cd src && python3 build.py && python3 gh_build.py --site ../site )
+            # BBZ_IMG : les couleurs des nouvelles photos se calculent sur les pleines tailles de la branche cible
+            ( cd src && BBZ_IMG=../site/img/f python3 build.py && python3 gh_build.py --site ../site )
             # Contrôle : chaque photo du catalogue existe en pleine taille sur la branche cible.
             python3 - <<'PY'
           import json, os, sys

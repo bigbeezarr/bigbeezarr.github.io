@@ -73,6 +73,14 @@ Existing projects (match the folder name, case-insensitive):
 | Projets d'exposition/bourrasque… | `bourrasque` (projets) |
 | Projets d'exposition/mécanique… | `meca` (projets) |
 
+Respect Mamadou's choices made in the admin page:
+- `content/portfolio.json` → `unpublished` lists photos he removed from the site: never put them back, never re-add
+  the same pictures (`add_photos.py` rejects near-duplicates of them, and `merge_auto.py` refuses any photo used twice).
+- A project with `"hidden": true` or an edition with `"hidden": true` is unpublished on purpose: do not unhide it.
+  Photos added to an unpublished edition stay offline (`merge_auto.py` prints a note: mention it in the report).
+  Prefer an existing published rubric or a new one; never create a rubric with the same year and label as a hidden one.
+- Projects and editions he creates in the admin page start unpublished; leave them as they are.
+
 Never add to `naf` (the Jelani New Africa Fashion lookbook is curated look by look).
 Never add Goût d'Afrique or Abyma (removed at Mamadou's request). For Cenabou, only the `Behind The Scenes`
 photos are his: never add its DETAILS or REEL photos.
