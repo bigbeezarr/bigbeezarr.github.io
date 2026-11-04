@@ -225,7 +225,7 @@ function paintTree() {
   const tree = $("#pTree");
   const extra = (key, label, hint) => { const b = document.createElement("button"); b.type = "button"; b.dataset.p = key; b.innerHTML = `${esc(label)}<br><span class="hint">${esc(hint)}</span>`; b.setAttribute("aria-current", String(cur === key)); b.addEventListener("click", () => open(key)); tree.appendChild(b); };
   tree.insertAdjacentHTML("beforeend", `<p class="ch">Site</p>`);
-  extra("@home", "Accueil", `${C.home.data.hero.length} en ouverture · ${C.home.data.wall.length} coups de cœur`);
+  extra("@home", "Accueil", `${C.home.data.hero.length} en ouverture · ${featList().length} à la une · ${C.home.data.wall.length} coups de cœur`);
   extra("@site", "Réglages du site", "coordonnées, liens, réservations");
   extra("@unpub", "Photos retirées", `${unpub().length} photo${unpub().length > 1 ? "s" : ""} hors du site`);
   C.portfolio.data.chapters.forEach(c => {
@@ -330,7 +330,7 @@ function readProject(p) {
   if (wasF !== !!p.featured) setTimeout(() => paintGrid(p));
   const cv = v("cover"); if (cv !== "" && !isNaN(+cv)) p.cover = +cv; else delete p.cover;
   if (v("page")) delete p.page; else p.page = false;
-  if (v("published")) delete p.hidden; else p.hidden = true;
+  if (v("published")) delete p.hidden; else p.hidden = true; if (p.hidden && p.featured) { delete p.featured; renumber(featList()); }
   $("[data-badge]", ed).innerHTML = badge(!p.hidden);
   const known = parseInt(v("known"), 10), unit = v("unit"), missed = v("missed").split("\n").map(x => x.trim()).filter(Boolean);
   const s = {}; if (known > 0) s.known = known; if (unit) s.unit = unit; if (v("min")) s.min = true; if (v("verify")) s.verify = true;
@@ -471,6 +471,8 @@ function poolOf() { const s = new Set(unpub()); C.portfolio.data.chapters.forEac
 function prune() {
   const shp = C.portfolio.data.shape;
   if (shp) { const H = C.home.data, used = poolOf(); [...H.hero, ...H.about, ...H.wall, H.me].forEach(i => used.add(i)); for (const k of Object.keys(shp)) if (!used.has(+k)) delete shp[k]; if (!Object.keys(shp).length) delete C.portfolio.data.shape; }
+  const HL = C.home.data.heroLab; if (HL) for (const k of Object.keys(HL)) if (!C.home.data.hero.includes(+k)) delete HL[k];
+  { const pool = poolOf(); for (const c of C.portfolio.data.chapters) for (const p of c.projects) { if (p.featuredCover != null && !pool.has(p.featuredCover)) delete p.featuredCover; if (p.hidden && p.featured) delete p.featured; } }
   for (const c of C.portfolio.data.chapters) for (const p of c.projects) {
     const mine = photosOf(p);
     if (p.cover != null && !mine.has(p.cover)) delete p.cover;
@@ -742,45 +744,217 @@ function editUnpub() {
   $("#uGal").addEventListener("click", () => fromGallery(null));
 }
 
-// ---------- accueil : ouverture (hero) et coups de cœur (wall) ----------
+// ---------- accueil : cartes de l'ouverture (hero + heroLab), à la une, coups de cœur (wall) ----------
+const onHome = i => { const H = C.home.data; return H.hero.includes(i) || H.wall.includes(i) || H.about.includes(i) || H.me === i; };
+// sources d'une photo : « Photos retirées » puis chaque édition (photo vedette comprise)
+function photoSources(firstProject) {
+  const out = [{ label: "Photos retirées (hors du site)", ids: () => unpub().slice() }], mine = [];
+  C.portfolio.data.chapters.forEach(c => c.projects.forEach(q => edsOf(q).forEach(e => {
+    const t = { label: `${firstProject === q.id ? "Ce projet" : T2(q.title, "fr")}${q.eds ? " · " + [e.brand, e.look ? "Look " + e.look : "", e.year, T2(e.label, "fr")].filter(Boolean).join(" ") : ""}${q.hidden || e.hidden ? " (non publié)" : ""}`, ids: () => (e.feature ? [e.feature.img] : []).concat(q.lead && edsOf(q)[0] === e ? [q.lead.img] : [], e.imgs) };
+    (firstProject === q.id ? mine : out).push(t);
+  })));
+  return mine.concat(out);
+}
+// choix d'une photo (une seule) : renvoie un numéro, { files } (depuis l'ordinateur) ou null
+function pickPhoto({ title, hint, project, why }) {
+  return new Promise(resolve => {
+    const d = $("#phDlg"), src = $("#phSrc"), grid = $("#phGrid"), list = photoSources(project);
+    $("#phT").textContent = title; $("#phHint").textContent = hint;
+    src.innerHTML = list.map((t, k) => `<option value="${k}">${esc(t.label)}</option>`).join("");
+    let res = null;
+    const paint = () => {
+      grid.textContent = "";
+      const ids = list[+src.value].ids();
+      ids.forEach(i => {
+        const t = document.createElement("button"); t.type = "button"; t.className = "th"; const no = why(i);
+        t.setAttribute("aria-label", `Photo ${i}${no ? " (" + no + ")" : ""}`); if (no) { t.disabled = true; t.classList.add("dim"); t.title = no; }
+        t.appendChild(thumbImg(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}${no ? " · " + esc(no) : ""}</span>`);
+        t.addEventListener("click", () => { res = i; d.close(); });
+        grid.appendChild(t);
+      });
+      if (!ids.length) grid.innerHTML = '<p class="hint" style="margin:0">Aucune photo ici.</p>';
+    };
+    src.onchange = paint; paint();
+    const f = $("#phFile"); f.value = ""; f.onchange = () => { res = { files: [...f.files] }; f.value = ""; d.close(); };
+    d.addEventListener("close", () => resolve(res), { once: true });
+    d.showModal();
+  });
+}
+// photo envoyée depuis l'ordinateur : elle arrive dans « Photos retirées » (les modifications en cours sont gardées)
+async function uploadOne(files) {
+  const ids = await addFiles(files.slice(0, 1).map(f => ({ blob: f, name: f.name })), null, "ordinateur", true);
+  return ids && ids.length ? ids[0] : null;
+}
 function editHome() {
-  const ed = $("#pEd"), H = C.home.data;
-  ed.innerHTML = `<div class="stack"><div class="edbox" id="hHero"></div><div class="edbox" id="hWall"></div></div>`;
-  const paint = (box, key, title, hint) => {
-    const list = H[key];
-    box.innerHTML = `<h2 class="s" style="margin:0">${title} <span class="hint">(${list.length})</span></h2><p class="hint" style="margin:0">${hint}</p><div class="thumbs"></div>
-      <div class="ptbar"><button class="btn small" type="button" data-a="l">← Avant</button><button class="btn small" type="button" data-a="r">Après →</button><button class="btn small danger" type="button" data-a="out">Retirer du site</button></div>
-      <div class="row"><label class="field" style="min-width:150px;flex:0 1 180px"><span>Ajouter par numéro</span><input class="input" type="number" min="0" inputmode="numeric" data-a="id"></label><button class="btn small" type="button" data-a="add">Ajouter</button></div>`;
-    const g = box.querySelector(".thumbs"), mine = () => [...sel].filter(i => list.includes(i));
-    list.forEach((i, k) => {
-      const t = document.createElement("div"); t.className = "th" + (sel.has(i) ? " on" : ""); t.dataset.i = i; t.draggable = true; t.tabIndex = 0; t.setAttribute("role", "button"); t.setAttribute("aria-label", `Photo ${i}, position ${k + 1}`);
-      t.appendChild(thumbImg(i)); t.appendChild(zoomBtn(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${k + 1} · ${n3(i)}</span>`);
-      const toggle = () => { sel.has(i) ? sel.delete(i) : sel.add(i); t.classList.toggle("on", sel.has(i)); upd(); };
-      t.addEventListener("click", toggle); t.addEventListener("keydown", ev => { if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); toggle(); } });
-      t.addEventListener("dragstart", ev => ev.dataTransfer.setData("text/plain", String(k)));
-      t.addEventListener("dragover", ev => { ev.preventDefault(); t.classList.add("over"); });
-      t.addEventListener("dragleave", () => t.classList.remove("over"));
-      t.addEventListener("drop", ev => { ev.preventDefault(); const from = +ev.dataTransfer.getData("text/plain"); if (isNaN(from) || from === k) return; const [m] = list.splice(from, 1); list.splice(k, 0, m); mark("home"); paint(box, key, title, hint); });
-      g.appendChild(t);
+  const ed = $("#pEd");
+  ed.innerHTML = `<div class="stack"><div class="edbox" id="hHero"></div><div class="edbox" id="hFeat"></div><div class="edbox" id="hWall"></div></div>`;
+  paintHero(); paintFeat();
+  paintList($("#hWall"), "wall", "Coups de cœur", "Le mur de photos de l'accueil (rangé automatiquement par couleur). Une photo retirée va dans « Photos retirées ».");
+}
+function paintList(box, key, title, hint) {
+  const H = C.home.data, list = H[key];
+  box.innerHTML = `<h2 class="s" style="margin:0">${title} <span class="hint">(${list.length})</span></h2><p class="hint" style="margin:0">${hint}</p><div class="thumbs"></div>
+    <div class="ptbar"><button class="btn small" type="button" data-a="l">← Avant</button><button class="btn small" type="button" data-a="r">Après →</button><button class="btn small danger" type="button" data-a="out">Retirer du site</button></div>
+    <div class="row"><label class="field" style="min-width:150px;flex:0 1 180px"><span>Ajouter par numéro</span><input class="input" type="number" min="0" inputmode="numeric" data-a="id"></label><button class="btn small" type="button" data-a="add">Ajouter</button></div>`;
+  const g = box.querySelector(".thumbs"), mine = () => [...sel].filter(i => list.includes(i)), again = () => paintList(box, key, title, hint);
+  list.forEach((i, k) => {
+    const t = document.createElement("div"); t.className = "th" + (sel.has(i) ? " on" : ""); t.dataset.i = i; t.draggable = true; t.tabIndex = 0; t.setAttribute("role", "button"); t.setAttribute("aria-label", `Photo ${i}, position ${k + 1}`);
+    t.appendChild(thumbImg(i)); t.appendChild(zoomBtn(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${k + 1} · ${n3(i)}</span>`);
+    const toggle = () => { sel.has(i) ? sel.delete(i) : sel.add(i); t.classList.toggle("on", sel.has(i)); upd(); };
+    t.addEventListener("click", toggle); t.addEventListener("keydown", ev => { if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); toggle(); } });
+    t.addEventListener("dragstart", ev => ev.dataTransfer.setData("text/plain", String(k)));
+    t.addEventListener("dragover", ev => { ev.preventDefault(); t.classList.add("over"); });
+    t.addEventListener("dragleave", () => t.classList.remove("over"));
+    t.addEventListener("drop", ev => { ev.preventDefault(); const from = +ev.dataTransfer.getData("text/plain"); if (isNaN(from) || from === k) return; const [m] = list.splice(from, 1); list.splice(k, 0, m); mark("home"); again(); });
+    g.appendChild(t);
+  });
+  const upd = () => box.querySelectorAll(".ptbar button").forEach(b => { b.disabled = !mine().length; });
+  upd();
+  const shift = d => { const ids = new Set(mine()); const order = d < 0 ? list.map((_, k) => k) : list.map((_, k) => list.length - 1 - k); for (const k of order) { const j = k + d; if (ids.has(list[k]) && j >= 0 && j < list.length && !ids.has(list[j])) [list[k], list[j]] = [list[j], list[k]]; } mark("home"); again(); };
+  box.querySelector("[data-a=l]").addEventListener("click", () => shift(-1));
+  box.querySelector("[data-a=r]").addEventListener("click", () => shift(1));
+  box.querySelector("[data-a=out]").addEventListener("click", () => { const ids = mine(); H[key] = list.filter(i => !ids.includes(i)); unpub().push(...ids); ids.forEach(i => sel.delete(i)); mark("home"); mark(); editHome(); refreshUnpubCount(); A().toast("Retirées de l'accueil (dans « Photos retirées »)."); });
+  box.querySelector("[data-a=add]").addEventListener("click", () => {
+    const i = parseInt(box.querySelector("[data-a=id]").value, 10);
+    if (!takeForHome(i)) return;
+    H[key].push(i); prune(); mark("home"); mark(); editHome(); refreshUnpubCount();
+  });
+}
+// une photo qui rejoint l'accueil quitte son édition ou « Photos retirées » (chaque photo sert une seule fois)
+const homeWhy = i => onHome(i) ? "déjà sur l'accueil" : isFixedSpot(i) ? "photo vedette" : "";
+function takeForHome(i, ask = true) {
+  if (isNaN(i) || (C.meta && !C.meta[i])) { A().toast("Numéro inconnu : la photo n'est pas dans le catalogue du site.", true); return false; }
+  if (onHome(i)) { A().toast(`La photo ${i} est déjà sur l'accueil.`, true); return false; }
+  if (isFixedSpot(i)) { A().toast(`La photo ${i} est une photo vedette d'un projet : choisissez-en une autre.`, true); return false; }
+  const where = targets(false).find(t => t.e.imgs.includes(i));
+  if (ask && where && !confirm(`La photo ${i} est dans « ${where.label} ». La déplacer sur l'accueil ?`)) return false;
+  detach([i]); return true;
+}
+async function heroPhoto(title) {
+  const r = await pickPhoto({ title, hint: "La photo quitte son édition ou « Photos retirées » : sur l'accueil, chaque photo n'apparaît qu'une fois. Les photos vedettes des projets ne peuvent pas être prises.", why: homeWhy });
+  if (r == null) return null;
+  if (typeof r === "object") { const id = await uploadOne(r.files); if (id == null) return null; detach([id]); return id; }
+  return takeForHome(r, false) ? r : null;
+}
+const LAB_MAX = { name: 40, meta: 80 };
+function paintHero() {
+  const box = $("#hHero"), H = C.home.data, list = H.hero, lab = (H.heroLab ||= {});
+  box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 class="s" style="margin:0">Ouverture de l'accueil <span class="hint">(${list.length} cartes)</span></h2><button class="btn small primary" type="button" data-a="add">Ajouter une carte…</button></div>
+    <p class="hint" style="margin:0">Les cartes d'artistes en tête de l'accueil, telles qu'elles s'affichent sur le site, dans l'ordre : glissez une photo, ou utilisez ← et →. Le nom (ou sigle) s'inscrit sur la carte ; la légende apparaît dans la visionneuse. Une carte sans nom reste possible (aucune étiquette). La première carte sert aussi d'image de partage. Une photo remplacée ou retirée va dans « Photos retirées ».</p>
+    <div class="hcards"></div>`;
+  const g = $(".hcards", box), again = () => { paintHero(); refreshUnpubCount(); };
+  const setLab = (i, name, fr, en) => { if (name || fr || en) lab[i] = { name, meta: { fr, en } }; else delete lab[i]; mark("home"); };
+  list.forEach((i, k) => {
+    const L0 = lab[i] || {}, m = (L0.meta || {}), wh = C.meta && C.meta[i];
+    const c = document.createElement("div"); c.className = "hc"; c.dataset.k = k;
+    c.innerHTML = `<div class="hcfig" draggable="true" style="aspect-ratio:${wh ? wh[0] + " / " + wh[1] : "2 / 3"}" aria-label="Carte ${k + 1}, photo ${i}"><span class="no">${k + 1} · ${n3(i)}</span><span class="card-tag"${L0.name ? "" : " hidden"}></span></div>
+      <label class="field"><span>Nom ou sigle <span class="hint" data-c="name"></span></span><input class="input" data-f="name" maxlength="${LAB_MAX.name}" value="${esc(L0.name || "")}" placeholder="Aucune étiquette"></label>
+      <label class="field"><span>Légende (FR)</span><input class="input" data-f="fr" maxlength="${LAB_MAX.meta}" value="${esc(m.fr || "")}" placeholder="Concert à Montréal, 2025"></label>
+      <label class="field"><span>Légende (EN)</span><input class="input" data-f="en" maxlength="${LAB_MAX.meta}" value="${esc(m.en || "")}" placeholder="Concert in Montréal, 2025"></label>
+      <div class="row hcbar"><button class="btn small" type="button" data-a="l" aria-label="Carte ${k + 1} avant"${k ? "" : " disabled"}>←</button><button class="btn small" type="button" data-a="r" aria-label="Carte ${k + 1} après"${k < list.length - 1 ? "" : " disabled"}>→</button><button class="btn small" type="button" data-a="rep">Remplacer…</button><button class="btn small danger" type="button" data-a="rm"${list.length > 1 ? "" : ' disabled title="Il faut au moins une carte"'}>Retirer</button></div>`;
+    const fig = $(".hcfig", c); fig.prepend(thumbImg(i)); fig.appendChild(zoomBtn(i)); $(".hcfig img", c).src = LOCAL[i] || `../img/m/${n3(i)}.webp`;
+    $(".hcfig img", c).addEventListener("error", function () { if (!this.dataset.f) { this.dataset.f = 1; this.src = `../img/f/${n3(i)}.webp`; } }, { once: true });
+    const tag = $(".card-tag", c); tag.textContent = L0.name || "";
+    const ins = $$("[data-f]", c), val = f => $(`[data-f=${f}]`, c).value.trim();
+    const cnt = () => { $("[data-c=name]", c).textContent = `${[...$("[data-f=name]", c).value].length}/${LAB_MAX.name}`; };
+    cnt();
+    ins.forEach(x => x.addEventListener("input", () => { setLab(i, val("name"), val("fr"), val("en")); tag.textContent = val("name"); tag.hidden = !val("name"); cnt(); }));
+    fig.addEventListener("dragstart", ev => { ev.dataTransfer.setData("text/plain", "hero:" + k); c.classList.add("drag"); });
+    fig.addEventListener("dragend", () => c.classList.remove("drag"));
+    c.addEventListener("dragover", ev => { ev.preventDefault(); c.classList.add("over"); });
+    c.addEventListener("dragleave", () => c.classList.remove("over"));
+    c.addEventListener("drop", ev => { ev.preventDefault(); c.classList.remove("over"); const s0 = ev.dataTransfer.getData("text/plain"); if (!s0.startsWith("hero:")) return; const from = +s0.slice(5); if (isNaN(from) || from === k) return; const [x] = list.splice(from, 1); list.splice(k, 0, x); mark("home"); setTimeout(again); }); // repeint après la fin du glisser (dragend)
+    const move = d => { const j = k + d; if (j < 0 || j >= list.length) return; [list[k], list[j]] = [list[j], list[k]]; mark("home"); again(); requestAnimationFrame(() => { const b = $(`.hc[data-k="${j}"] [data-a=${d < 0 ? "l" : "r"}]`, box); (b && !b.disabled ? b : $(`.hc[data-k="${j}"] [data-a=rep]`, box)).focus(); }); };
+    $("[data-a=l]", c).addEventListener("click", () => move(-1));
+    $("[data-a=r]", c).addEventListener("click", () => move(1));
+    $("[data-a=rm]", c).addEventListener("click", () => {
+      if (list.length <= 1) return;
+      if (!confirm(`Retirer la carte ${k + 1}${L0.name ? " (" + L0.name + ")" : ""} ? La photo ${i} va dans « Photos retirées ».`)) return;
+      list.splice(k, 1); delete lab[i]; unpub().push(i); sel.delete(i); mark("home"); mark(); again(); A().toast(`Carte retirée : photo ${i} dans « Photos retirées ».`);
     });
-    const upd = () => box.querySelectorAll(".ptbar button").forEach(b => { b.disabled = !mine().length || (key === "hero" && b.dataset.a === "out" && mine().length >= list.length); });
-    upd();
-    const shift = d => { const ids = new Set(mine()); const order = d < 0 ? list.map((_, k) => k) : list.map((_, k) => list.length - 1 - k); for (const k of order) { const j = k + d; if (ids.has(list[k]) && j >= 0 && j < list.length && !ids.has(list[j])) [list[k], list[j]] = [list[j], list[k]]; } mark("home"); paint(box, key, title, hint); };
-    box.querySelector("[data-a=l]").addEventListener("click", () => shift(-1));
-    box.querySelector("[data-a=r]").addEventListener("click", () => shift(1));
-    box.querySelector("[data-a=out]").addEventListener("click", () => { const ids = mine(); H[key] = list.filter(i => !ids.includes(i)); unpub().push(...ids); ids.forEach(i => sel.delete(i)); mark("home"); mark(); editHome(); refreshUnpubCount(); A().toast("Retirées de l'accueil (dans « Photos retirées »)."); });
-    box.querySelector("[data-a=add]").addEventListener("click", () => {
-      const i = parseInt(box.querySelector("[data-a=id]").value, 10);
-      if (isNaN(i) || (C.meta && !C.meta[i])) { A().toast("Numéro inconnu : la photo n'est pas dans le catalogue du site.", true); return; }
-      if (H.hero.includes(i) || H.wall.includes(i) || H.about.includes(i) || H.me === i) { A().toast(`La photo ${i} est déjà sur l'accueil.`, true); return; }
-      if (isFixedSpot(i)) { A().toast(`La photo ${i} est une photo vedette d'un projet : choisissez-en une autre.`, true); return; }
-      const where = targets(false).find(t => t.e.imgs.includes(i));
-      if (where && !confirm(`La photo ${i} est dans « ${where.label} ». La déplacer sur l'accueil ?`)) return;
-      detach([i]); H[key].push(i); prune(); mark("home"); mark(); editHome(); refreshUnpubCount();
+    $("[data-a=rep]", c).addEventListener("click", async () => {
+      const j = await heroPhoto(`Remplacer la photo de la carte ${k + 1}${L0.name ? " · " + L0.name : ""}`); if (j == null) return;
+      const at = list.indexOf(i); if (at < 0) return;
+      list[at] = j; if (lab[i]) { lab[j] = lab[i]; delete lab[i]; } unpub().push(i); prune(); mark("home"); mark(); again();
+      A().toast(`Photo remplacée (nom et légende gardés). L'ancienne photo ${i} est dans « Photos retirées ».`);
     });
-  };
-  paint($("#hHero"), "hero", "Ouverture de l'accueil", "Les grandes photos d'artistes en tête de l'accueil, dans l'ordre. La première sert aussi d'image de partage.");
-  paint($("#hWall"), "wall", "Coups de cœur", "Le mur de photos de l'accueil (rangé automatiquement par couleur). Une photo retirée va dans « Photos retirées ».");
+    g.appendChild(c);
+  });
+  $("[data-a=add]", box).addEventListener("click", async () => {
+    const j = await heroPhoto("Ajouter une carte à l'ouverture"); if (j == null) return;
+    list.push(j); prune(); mark("home"); mark(); again();
+    requestAnimationFrame(() => { const n = $(`.hc[data-k="${list.length - 1}"] [data-f=name]`, box); if (n) { n.scrollIntoView({ block: "center" }); n.focus(); } });
+    A().toast("Carte ajoutée en dernière position : donnez-lui un nom.");
+  });
+}
+// ---------- à la une : 5 projets au plus (rang « featured »), carte 4:5 comme sur le site ----------
+const featList = () => C.portfolio.data.chapters.flatMap(c => c.projects).filter(p => p.featured).sort((a, b) => a.featured - b.featured);
+const renumber = l => l.forEach((p, k) => { p.featured = k + 1; });
+const defCover = p => { const e0 = edsOf(p).find(e => !e.hidden) || edsOf(p)[0]; return p.cover != null ? p.cover : p.lead ? p.lead.img : e0.feature ? e0.feature.img : e0.imgs[0]; };
+const cardCover = p => p.featuredCover != null ? p.featuredCover : defCover(p);
+const FT_MAX = { title: 60, sub: 140 };
+function defSub(p) {
+  const ys = [...new Set(edsOf(p).filter(e => !e.hidden).map(e => String(e.year || p.year || "")).filter(Boolean))].sort();
+  const n = edsOf(p).filter(e => !e.hidden).reduce((s, e) => s + e.imgs.length + (e.feature ? 1 : 0), 0);
+  return [p.place, ys.length > 1 ? `${ys[0]}–${ys[ys.length - 1]}` : ys[0], `${n} photos`].filter(Boolean).join(" · ");
+}
+function paintFeat() {
+  const box = $("#hFeat"), d = C.portfolio.data, list = featList(); renumber(list);
+  const free = d.chapters.flatMap(c => c.projects).filter(p => !p.featured && !p.hidden);
+  box.innerHTML = `<h2 class="s" style="margin:0">À la une <span class="hint">(${list.length}/5)</span></h2>
+    <p class="hint" style="margin:0">Les cartes « À la une » de l'accueil, telles qu'elles s'affichent sur le site, dans l'ordre : glissez une carte, ou utilisez ← et →. Pour chaque carte : la photo (celle du projet par défaut, ou n'importe quelle photo du portfolio, des « Photos retirées » ou de votre ordinateur), son cadrage, et au besoin un autre titre ou sous-titre (vide = titre du projet et ligne automatique). Un projet non publié ne peut pas être à la une.</p>
+    <div class="row"><label class="field" style="flex:1 1 240px;max-width:420px"><span>Projet à mettre à la une</span><select class="input" data-a="pick">${free.map(p => `<option value="${esc(p.id)}">${esc(T2(p.title, "fr"))}</option>`).join("")}</select></label><button class="btn small primary" type="button" data-a="add"${list.length >= 5 || !free.length ? " disabled" : ""}>Mettre à la une</button>${list.length >= 5 ? '<span class="hint">5 projets au plus : retirez-en un d\'abord.</span>' : ""}</div>
+    <div class="fcards"></div>`;
+  const g = $(".fcards", box), again = () => { paintFeat(); refreshTree(); };
+  if (!list.length) g.innerHTML = '<p class="hint" style="margin:0">Aucun projet à la une : la section est masquée sur le site.</p>';
+  list.forEach((p, k) => {
+    const ci = d.chapters.findIndex(c => c.projects.includes(p)), ch = d.chapters[ci], f = p.featuredFocus || {}, i = cardCover(p);
+    const c = document.createElement("div"); c.className = "fc"; c.dataset.k = k;
+    c.innerHTML = `<div class="fcard" draggable="true" aria-label="Carte ${k + 1} : ${esc(T2(p.title, "fr"))}"><img alt=""><span class="fc-txt"><span class="fc-n">${String(ci + 1).padStart(2, "0")} · ${esc(T2(ch.short || ch.name, "fr"))}</span><span class="fc-t"></span><span class="fc-m"></span><span class="fc-go">Voir le projet</span></span></div>
+      <div class="row hcbar"><button class="btn small" type="button" data-a="l" aria-label="Carte ${k + 1} avant"${k ? "" : " disabled"}>←</button><button class="btn small" type="button" data-a="r" aria-label="Carte ${k + 1} après"${k < list.length - 1 ? "" : " disabled"}>→</button><button class="btn small" type="button" data-a="ph">Changer la photo…</button>${p.featuredCover != null ? '<button class="btn small" type="button" data-a="def">Photo du projet</button>' : ""}<button class="btn small danger" type="button" data-a="rm">Retirer</button></div>
+      <p class="hint" style="margin:0">Photo ${n3(i)}${p.featuredCover != null ? " (choisie pour la carte)" : " (couverture du projet)"}</p>
+      <label class="field"><span>Cadrage horizontal : <b data-o="x">${f.x ?? 50}</b> %</span><input type="range" min="0" max="100" step="1" data-a="x" value="${f.x ?? 50}"></label>
+      <label class="field"><span>Cadrage vertical : <b data-o="y">${f.y ?? 50}</b> %</span><input type="range" min="0" max="100" step="1" data-a="y" value="${f.y ?? 50}"></label>
+      <label class="field"><span>Titre de la carte (FR)</span><input class="input" data-f="title_fr" maxlength="${FT_MAX.title}" value="${esc(T2(p.featuredTitle, "fr"))}" placeholder="${esc(T2(p.title, "fr"))}"></label>
+      <label class="field"><span>Titre de la carte (EN)</span><input class="input" data-f="title_en" maxlength="${FT_MAX.title}" value="${esc(p.featuredTitle && typeof p.featuredTitle === "object" ? p.featuredTitle.en || "" : "")}" placeholder="${esc(T2(p.title, "en"))}"></label>
+      <label class="field"><span>Sous-titre (FR)</span><input class="input" data-f="sub_fr" maxlength="${FT_MAX.sub}" value="${esc(T2(p.featuredSub, "fr"))}" placeholder="Automatique : ${esc(defSub(p))}"></label>
+      <label class="field"><span>Sous-titre (EN)</span><input class="input" data-f="sub_en" maxlength="${FT_MAX.sub}" value="${esc(p.featuredSub && typeof p.featuredSub === "object" ? p.featuredSub.en || "" : "")}" placeholder="Automatic"></label>`;
+    const card = $(".fcard", c), im = $("img", card);
+    im.src = LOCAL[i] || `../img/m/${n3(i)}.webp`; im.addEventListener("error", () => { if (!im.dataset.f) { im.dataset.f = 1; im.src = `../img/f/${n3(i)}.webp`; } });
+    const pos = () => { const q = p.featuredFocus || {}; im.style.objectPosition = `${q.x ?? 50}% ${q.y ?? 50}%`; };
+    const txt = () => { $(".fc-t", card).textContent = T2(p.featuredTitle, "fr") || T2(p.title, "fr"); $(".fc-m", card).textContent = T2(p.featuredSub, "fr") || defSub(p); };
+    pos(); txt();
+    $$("input[type=range]", c).forEach(el => el.addEventListener("input", () => {
+      const q = (p.featuredFocus ||= {}), a = el.dataset.a, v = +el.value; if (v === 50) delete q[a]; else q[a] = v;
+      if (!Object.keys(q).length) delete p.featuredFocus; $(`[data-o=${a}]`, c).textContent = v; pos(); mark();
+    }));
+    const val = k2 => $(`[data-f=${k2}]`, c).value.trim();
+    $$("[data-f]", c).forEach(x => x.addEventListener("input", () => { setT(p, "featuredTitle", val("title_fr"), val("title_en")); setT(p, "featuredSub", val("sub_fr"), val("sub_en")); txt(); mark(); }));
+    card.addEventListener("dragstart", ev => { ev.dataTransfer.setData("text/plain", "feat:" + k); c.classList.add("drag"); });
+    card.addEventListener("dragend", () => c.classList.remove("drag"));
+    card.addEventListener("click", ev => ev.preventDefault());
+    c.addEventListener("dragover", ev => { ev.preventDefault(); c.classList.add("over"); });
+    c.addEventListener("dragleave", () => c.classList.remove("over"));
+    c.addEventListener("drop", ev => { ev.preventDefault(); c.classList.remove("over"); const s0 = ev.dataTransfer.getData("text/plain"); if (!s0.startsWith("feat:")) return; const from = +s0.slice(5); if (isNaN(from) || from === k) return; const l2 = list.slice(); const [x] = l2.splice(from, 1); l2.splice(k, 0, x); renumber(l2); mark(); setTimeout(again); });
+    const move = dd => { const j = k + dd; if (j < 0 || j >= list.length) return; const l2 = list.slice(); [l2[k], l2[j]] = [l2[j], l2[k]]; renumber(l2); mark(); again(); requestAnimationFrame(() => { const b = $(`.fc[data-k="${j}"] [data-a=${dd < 0 ? "l" : "r"}]`, box); (b && !b.disabled ? b : $(`.fc[data-k="${j}"] [data-a=ph]`, box)).focus(); }); };
+    $("[data-a=l]", c).addEventListener("click", () => move(-1));
+    $("[data-a=r]", c).addEventListener("click", () => move(1));
+    $("[data-a=rm]", c).addEventListener("click", () => { for (const x of ["featured", "featuredCover", "featuredFocus", "featuredTitle", "featuredSub"]) delete p[x]; renumber(featList()); mark(); again(); A().toast(`« ${T2(p.title, "fr")} » n'est plus à la une.`); });
+    const def = $("[data-a=def]", c); if (def) def.addEventListener("click", () => { delete p.featuredCover; mark(); again(); });
+    $("[data-a=ph]", c).addEventListener("click", async () => {
+      const pool = poolOf();
+      const r = await pickPhoto({ title: `Photo de la carte « ${T2(p.title, "fr")} »`, hint: "La photo reste où elle est (projet, édition ou « Photos retirées ») : elle est seulement montrée sur la carte. Les photos de l'ouverture et des coups de cœur ne peuvent pas être prises.", project: p.id, why: j => pool.has(j) ? "" : "sur l'accueil" });
+      if (r == null) return;
+      const j = typeof r === "object" ? await uploadOne(r.files) : r; if (j == null) return;
+      if (j === defCover(p)) delete p.featuredCover; else p.featuredCover = j;
+      delete p.featuredFocus; mark(); again(); A().toast(`Photo ${j} sur la carte (cadrage remis au centre).`);
+    });
+    g.appendChild(c);
+  });
+  $("[data-a=add]", box).addEventListener("click", () => {
+    const id = $("[data-a=pick]", box).value, o = id && projOf(id); if (!o || featList().length >= 5) return;
+    o.p.featured = 99; renumber(featList()); mark(); again(); A().toast(`« ${T2(o.p.title, "fr")} » est à la une (dernière position).`);
+  });
 }
 
 // ---------- ajout de photos au site : redimensionnement dans le navigateur, envoi au serveur ----------
@@ -900,6 +1074,8 @@ function check() {
   d.chapters.forEach(c => c.projects.forEach(p => { if (!p.hidden && edsOf(p).some(e => !e.hidden) && !edsOf(p).some(e => !e.hidden && (e.imgs.length || e.feature))) probs.push(`« ${T2(p.title, "fr")} » est publié sans aucune photo publiée`); }));
   const feat = d.chapters.flatMap(c => c.projects).filter(p => p.featured && !p.hidden);
   if (feat.length > 5) probs.push("plus de 5 projets à la une");
+  const ranks = d.chapters.flatMap(c => c.projects).filter(p => p.featured).map(p => p.featured); if (new Set(ranks).size !== ranks.length) probs.push("deux projets ont le même rang « à la une »");
+  for (const [k, v] of Object.entries(H.heroLab || {})) { if ([...(v.name || "")].length > 40) probs.push(`carte ${k} : nom de 40 caractères au plus`); if (["fr", "en"].some(l => [...((v.meta || {})[l] || "")].length > 80)) probs.push(`carte ${k} : légende de 80 caractères au plus`); }
   return probs;
 }
 async function save() {

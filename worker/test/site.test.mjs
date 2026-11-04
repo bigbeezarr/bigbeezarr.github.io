@@ -172,6 +172,19 @@ await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "site", label: ""
 await refuse(d => { d.chapters[0].projects[0].links = Array.from({ length: 7 }, (_, k) => ({ label: "L" + k, url: "https://exemple.com/" + k })); }, "plus de 6 liens refusés", /6 au plus/);
 await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "myspace", label: "M", url: "https://exemple.com" }]; }, "type de lien inconnu refusé", /type/);
 await refuse(d => { d.chapters[0].projects[0].ig = ["bon", "mau vais"]; }, "compte Instagram invalide refusé", /Instagram/);
+// à la une : projet masqué refusé, carte (photo d'ailleurs, cadrage, titre, sous-titre)
+await refuse(d => { d.chapters[0].projects[0].hidden = true; d.chapters[0].projects[0].featured = 1; }, "projet masqué à la une refusé", /masqué/);
+await refuse(d => { const q = d.chapters[0].projects[0]; q.hidden = false; q.eds[1].hidden = false; q.featured = 1; q.featuredCover = 4; }, "carte à la une avec une photo de l'accueil refusée", /carte à la une/);
+await refuse(d => { const q = d.chapters[0].projects[0]; q.hidden = false; q.eds[1].hidden = false; q.featured = 1; q.featuredFocus = { x: 140 }; }, "cadrage de carte hors de 0 à 100 refusé", /cadrage de la carte/);
+await refuse(d => { const q = d.chapters[0].projects[0]; q.hidden = false; q.eds[1].hidden = false; q.featured = 1; q.featuredTitle = { fr: "x".repeat(61) }; }, "titre de carte de plus de 60 caractères refusé", /60 caractères/);
+await refuse(d => { const q = d.chapters[0].projects[0]; q.hidden = false; q.eds[1].hidden = false; q.featured = 1; q.featuredSub = "x".repeat(141); }, "sous-titre de carte de plus de 140 caractères refusé", /140 caractères/);
+{ const d = P(), q = d.chapters[0].projects[0]; q.hidden = false; q.eds[1].hidden = false; q.featured = 1; q.featuredCover = 3; q.featuredFocus = { x: 40, y: 20 }; q.featuredTitle = { fr: "Bashment", en: "Bashment" }; q.featuredSub = { fr: "Soirées dancehall", en: "Dancehall nights" };
+  r = await putF([{ file: "portfolio", data: d, sha: C.portfolio.sha }], "Test : à la une");
+  check(r.status === 200 && (await fileOf("content/portfolio.json")).chapters[0].projects[0].featuredCover === 3, "carte à la une acceptée (photo retirée, cadrage, titre, sous-titre)", r.data);
+  C = (await call("GET", "/api/admin/content", { token: A })).data;
+  const d2 = P(), q2 = d2.chapters[0].projects[0]; q2.hidden = true; q2.eds[1].hidden = true; for (const k of ["featured", "featuredCover", "featuredFocus", "featuredTitle", "featuredSub"]) delete q2[k];
+  r = await putF([{ file: "portfolio", data: d2, sha: C.portfolio.sha }], "Test : à la une remise"); check(r.status === 200, "à la une retirée", r.data);
+  C = (await call("GET", "/api/admin/content", { token: A })).data; }
 // sélection prise ailleurs (photo retirée), réordonnée ; forme imposée sur l'accueil ; liens du projet
 { const d = P(), q = d.chapters[0].projects[0]; q.selection = [3, 1, 2]; q.selFocus = { 3: 30 };
   d.shape = { 1: { r: "h", x: 50, y: 20 }, 3: { r: "v" } };
@@ -213,8 +226,23 @@ h2 = H(); h2.hero = [];
 check((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.error === "invalid_content", "ouverture vide refusée");
 h2 = H(); h2.hero = [4, 4];
 check((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.error === "invalid_content", "doublon dans l'ouverture refusé");
+// cartes de l'ouverture (heroLab) : nom, légende, seulement pour une photo de l'ouverture
+h2 = H(); h2.heroLab = { 4: { name: "x".repeat(41), meta: { fr: "", en: "" } } };
+check(/40 caractères/.test((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.detail || ""), "carte : nom de plus de 40 caractères refusé");
+h2 = H(); h2.heroLab = { 4: { name: "SDM", meta: { fr: "é".repeat(81), en: "" } } };
+check(/80 caractères/.test((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.detail || ""), "carte : légende de plus de 80 caractères refusée");
+h2 = H(); h2.heroLab = { 6: { name: "Pas là", meta: { fr: "", en: "" } } };
+check(/n'est pas dans l'ouverture/.test((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.detail || ""), "carte d'une photo hors de l'ouverture refusée");
+h2 = H(); h2.heroLab = { 4: { name: "SDM", meta: { fr: "x", en: "y" }, html: "<b>" } };
+check((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.error === "invalid_content", "carte : champ inconnu refusé");
+h2 = H(); delete h2.heroLab;
+check((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.error === "invalid_content", "accueil sans heroLab refusé (build.py en a besoin)");
 check((await putF([{ file: "home", data: H(), sha: "vieux" }])).data.error === "content_changed", "conflit : accueil modifié entre-temps");
 const s2 = await st0(); check(s2.branches.source === s1.branches.source, "un enregistrement refusé n'écrit rien");
+h2 = H(); h2.heroLab = { 4: { name: "SDM", meta: { fr: "Concert à Montréal, 2025", en: "Concert in Montréal, 2025" } } };
+r = await putF([{ file: "home", data: h2, sha: C.home.sha }], "Test : carte");
+check(r.status === 200 && (await fileOf("content/home.json")).heroLab[4].name === "SDM", "carte de l'ouverture enregistrée (nom, légende)", r.data);
+C = (await call("GET", "/api/admin/content", { token: A })).data;
 
 console.log("Portfolio : ajout de photos au site");
 const [fWebp, fJpg, fBig, fQ] = process.argv.slice(2).map(f => fs.readFileSync(f));

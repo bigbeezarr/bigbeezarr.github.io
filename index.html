@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" href="favicon.ico" sizes="32x32"><link rel="icon" href="favicon.svg" type="image/svg+xml"><link rel="apple-touch-icon" href="apple-touch-icon.png"><link rel="manifest" href="site.webmanifest"><link rel="canonical" href="https://bigbeezarr.com/"><meta name="theme-color" content="#0A0A0A"><meta property="og:type" content="website"><meta property="og:site_name" content="BIGBEEZARR"><meta property="og:locale" content="fr_CA"><meta property="og:locale:alternate" content="en_CA"><meta property="og:url" content="https://bigbeezarr.com/"><meta property="og:title" content="BIGBEEZARR · Mamadou Beye, photographe à Dakar et Montréal"><meta property="og:description" content="BIGBEEZARR, Mamadou Beye : photographe entre Dakar et Montréal. Soirées, concerts, sport, mode, marques et projets d'exposition."><meta property="og:image" content="https://bigbeezarr.com/og.jpg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="BIGBEEZARR, photographe entre Dakar et Montréal"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="BIGBEEZARR · Mamadou Beye, photographe à Dakar et Montréal"><meta name="twitter:description" content="BIGBEEZARR, Mamadou Beye : photographe entre Dakar et Montréal. Soirées, concerts, sport, mode, marques et projets d'exposition."><meta name="twitter:image" content="https://bigbeezarr.com/og.jpg"><meta name="referrer" content="strict-origin-when-cross-origin"><link rel="preload" as="image" href="img/f/349.webp" fetchpriority="high" media="(min-resolution:1.5dppx)"><link rel="preload" as="image" href="img/s/349.webp" fetchpriority="high" media="(max-resolution:1.49dppx)">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-hiJTgiT7XMOIK4FzvG4l85KgRqZUVPRz4R47S44So4g=' 'sha256-u9mgqqn57g1K9a2ogNrMVwo4RpmKWo8lNYshO8KTH6s=' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; frame-src https://challenges.cloudflare.com; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.bigbeezarr.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-r/q3NoxwPiN4jUXg5MV+ddJJEzhBids92vWdX1cQfOs=' 'sha256-u9mgqqn57g1K9a2ogNrMVwo4RpmKWo8lNYshO8KTH6s=' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; frame-src https://challenges.cloudflare.com; font-src 'self'; img-src 'self' data: blob:; connect-src 'self' https://api.bigbeezarr.com; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; upgrade-insecure-requests">
 <title>BIGBEEZARR · Mamadou Beye, photographe à Dakar et Montréal</title>
 <meta name="description" content="BIGBEEZARR, Mamadou Beye : photographe entre Dakar et Montréal. Soirées, concerts, sport, mode, marques et projets d'exposition.">
 <link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
@@ -1152,7 +1152,7 @@ DATA.chapters.forEach((c, ci) => c.projects.forEach((p, pi) => (p.lead ? [{ lead
 DATA.wall.forEach((i, n) => addSeq(i, { kind: "wall", n: n + 1, k: DATA.wall.length }));
 addSeq(DATA.me, { kind: "me", n: 1, k: 1 });
 function ctxTitle(c) {
-  if (c.kind === "sel") return t("sel") + (heroLab(c.i) ? " · " + heroLab(c.i).name : "");
+  if (c.kind === "sel") return t("sel") + (heroLab(c.i) && heroLab(c.i).name ? " · " + heroLab(c.i).name : "");
   if (c.kind === "about") return t("about");
   if (c.kind === "wall") return t("favs");
   if (c.kind === "me") return t("me");
@@ -1160,7 +1160,7 @@ function ctxTitle(c) {
   return edTitle(p, edsOf(p)[c.ei]);
 }
 function ctxMeta(c) {
-  if (c.kind === "sel") return heroLab(c.i) ? L(heroLab(c.i).meta) : "";
+  if (c.kind === "sel") return heroLab(c.i) && heroLab(c.i).meta ? L(heroLab(c.i).meta) : "";
   if (c.kind !== "p") return "";
   const p = DATA.chapters[c.ci].projects[c.pi], e = edsOf(p)[c.ei];
   if (!e) return [p.place, p.year].filter(Boolean).join(" · ");
@@ -1353,7 +1353,7 @@ if (DATA.links && DATA.links.length) { // liens du site (réglages) : sous les c
 }
 
 const rail = $("#rail");
-DATA.hero.forEach((i, n) => { const f = tile(i, n), im = f.querySelector("img"); if (n < 4) im.loading = "eager"; if (n < 2) im.fetchPriority = "high"; if (heroLab(i)) { const tg = mk("span", "card-tag", f); tg.setAttribute("aria-hidden", "true"); tg.textContent = heroLab(i).name; } rail.appendChild(f); });
+DATA.hero.forEach((i, n) => { const f = tile(i, n), im = f.querySelector("img"); if (n < 4) im.loading = "eager"; if (n < 2) im.fetchPriority = "high"; if (heroLab(i) && heroLab(i).name) { const tg = mk("span", "card-tag", f); tg.setAttribute("aria-hidden", "true"); tg.textContent = heroLab(i).name; } rail.appendChild(f); });
 const ag = $("#aboutGallery");
 mosaic(ag, DATA.about);
 /* featured: 3 to 5 projects chosen in the admin, each card opens its project page */
@@ -1364,17 +1364,18 @@ if (DATA.featured && DATA.featured.length) {
   DATA.featured.forEach(pid => {
     const o = byId[pid]; if (!o) return;
     const { p, c, ci } = o, e0 = edsOf(p)[0];
-    const cov = p.cover != null ? p.cover : p.lead ? p.lead.img : (e0.feature ? e0.feature.img : e0.imgs[0]);
+    const cov = p.featuredCover != null && DATA.img[p.featuredCover] ? p.featuredCover : p.cover != null ? p.cover : p.lead ? p.lead.img : (e0.feature ? e0.feature.img : e0.imgs[0]);
     const a = mk("a", "fcard", fr); a.href = DATA.pages ? `projets/${encodeURIComponent(p.id)}/` : `#p-${p.id}`;
     const [w, h, q, col] = DATA.img[cov];
     a.style.backgroundColor = col; a.style.backgroundImage = `url(data:image/webp;base64,${q})`;
     const im = mk("img", "", a); im.alt = ""; im.loading = "lazy"; im.decoding = "async"; im.width = w; im.height = h;
     im.sizes = "(max-width:620px) 92vw, (max-width:1100px) 46vw, 24vw"; im.srcset = srcsetOf(cov); im.src = `img/m/${pad(cov)}.webp`;
     im.addEventListener("error", () => { im.removeAttribute("srcset"); im.src = `img/f/${pad(cov)}.webp`; }, { once: true });
+    if (p.featuredFocus) { const fx = p.featuredFocus.x ?? 50, fy = p.featuredFocus.y ?? 50; im.style.objectPosition = `${fx}% ${fy}%`; a.style.backgroundPosition = `${fx}% ${fy}%`; }
     const tx = mk("span", "fc-txt", a);
     bindText(mk("span", "fc-n", tx), () => `${String(ci + 1).padStart(2, "0")} · ${L(c.short || c.name)}`);
-    bindText(mk("span", "fc-t", tx), () => L(p.title));
-    const m = mk("span", "fc-m", tx); onLang(() => m.innerHTML = seriesLine(p) || escH([whereOf(p), yearSpan(p), t("photos")(projCount(p))].filter(Boolean).join(" · ")));
+    bindText(mk("span", "fc-t", tx), () => L(p.featuredTitle && L(p.featuredTitle) ? p.featuredTitle : p.title));
+    const m = mk("span", "fc-m", tx); onLang(() => p.featuredSub && L(p.featuredSub) ? (m.textContent = L(p.featuredSub)) : m.innerHTML = seriesLine(p) || escH([whereOf(p), yearSpan(p), t("photos")(projCount(p))].filter(Boolean).join(" · ")));
     bindText(mk("span", "fc-go", tx), () => t("feat.go"));
   });
   $("#alaune").hidden = !fr.children.length;

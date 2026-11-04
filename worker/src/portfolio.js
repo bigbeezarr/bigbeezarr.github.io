@@ -158,6 +158,18 @@ export function validateContent(file, d) {
       const out = (p.selection || []).find(i => !ids.has(i));
       if (out != null) err(`sélection du projet ${p.id} : la photo ${out} n'est ni dans un projet ni dans « Photos retirées »`);
     }
+    // à la une (mêmes contrôles que build.py) : 5 au plus, rangs distincts, pas de projet masqué ; carte facultative
+    const feats = d.chapters.flatMap(c => c.projects).filter(p => p.featured != null);
+    if (feats.length > 5) err("5 projets à la une au plus");
+    if (new Set(feats.map(p => p.featured)).size !== feats.length) err("deux projets ont le même rang « à la une »");
+    const tOk = (v, n) => (typeof v === "string" && [...v].length <= n) || (v && typeof v === "object" && !Array.isArray(v) && Object.keys(v).every(l => ["fr", "en"].includes(l)) && Object.values(v).every(x => typeof x === "string" && [...x].length <= n));
+    for (const c of d.chapters) for (const p of c.projects) {
+      if (p.featured != null && p.hidden) err(`le projet ${p.id} est masqué : il ne peut pas être à la une`);
+      if (p.featuredCover != null && (!isId(p.featuredCover) || !ids.has(p.featuredCover))) err(`carte à la une de ${p.id} : la photo ${oneLine(p.featuredCover, 12)} n'est ni dans un projet ni dans « Photos retirées »`);
+      if (p.featuredFocus != null) { const f = p.featuredFocus; if (!f || typeof f !== "object" || Array.isArray(f) || Object.keys(f).some(a => !["x", "y"].includes(a)) || Object.values(f).some(v => !(typeof v === "number" && v >= 0 && v <= 100))) err(`cadrage de la carte à la une de ${p.id} : x et y de 0 à 100`); }
+      if (p.featuredTitle != null && !tOk(p.featuredTitle, 60)) err(`titre de la carte à la une de ${p.id} : 60 caractères au plus`);
+      if (p.featuredSub != null && !tOk(p.featuredSub, 140)) err(`sous-titre de la carte à la une de ${p.id} : 140 caractères au plus`);
+    }
     if (d.shape != null) {
       if (typeof d.shape !== "object" || Array.isArray(d.shape) || Object.keys(d.shape).length > 5000) err("formes de la mosaïque illisibles");
       for (const [k, v] of Object.entries(d.shape)) {
@@ -173,7 +185,15 @@ export function validateContent(file, d) {
     imgList(d.hero, "accueil (photos d'ouverture)"); imgList(d.about, "accueil (à propos)"); imgList(d.wall, "coups de cœur");
     if (!d.hero.length) err("l'accueil a besoin d'au moins une photo d'ouverture");
     if (!isId(d.me)) err("portrait (me)"); imgList([d.me], "portrait");
-    if (d.heroLab != null && (typeof d.heroLab !== "object" || Array.isArray(d.heroLab))) err("légendes des photos d'ouverture");
+    if (d.heroLab == null || typeof d.heroLab !== "object" || Array.isArray(d.heroLab)) err("légendes des photos d'ouverture");
+    // mêmes contrôles que build.py : une carte n'existe que pour une photo de l'ouverture ; nom 40, légende 80
+    for (const [k, v] of Object.entries(d.heroLab)) {
+      if (!/^\d{1,5}$/.test(k) || !d.hero.includes(+k)) err(`carte de l'ouverture : la photo ${oneLine(k, 12)} n'est pas dans l'ouverture`);
+      if (!v || typeof v !== "object" || Array.isArray(v) || Object.keys(v).some(a => !["name", "meta"].includes(a))) err(`carte de la photo ${k} illisible`);
+      if (v.name != null && (typeof v.name !== "string" || [...v.name].length > 40)) err(`carte de la photo ${k} : nom ou sigle de 40 caractères au plus`);
+      const m = v.meta;
+      if (m != null && (typeof m !== "object" || Array.isArray(m) || Object.keys(m).some(l => !["fr", "en"].includes(l)) || ["fr", "en"].some(l => m[l] != null && (typeof m[l] !== "string" || [...m[l]].length > 80)))) err(`carte de la photo ${k} : légende de 80 caractères au plus (fr, en)`);
+    }
     if ([...JSON.stringify(d)].length > 300000) err("contenu trop volumineux");
   } else if (file === "site") {
     if (d.email && !EMAIL.test(d.email)) err("courriel du site");
