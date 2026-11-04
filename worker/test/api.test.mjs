@@ -139,6 +139,37 @@ check((await call("GET", a1.o.replace(`/${r1.id}?`, `/${r2.id}?`))).status === 4
 const rz = await call("POST", `/api/g/${R.slug}/zip`, { token: VG, body: { all: true } });
 check(rz.data.parts[0].count === 1, "le ZIP ne contient que les photos autorisées");
 
+console.log("Dossiers d'une galerie");
+const fc = n => call("POST", `/api/admin/galleries/${R.id}/folders`, { token: A, body: { name: n } });
+const F1 = (await fc("Cérémonie")).data.folder, F2 = (await fc("Soirée")).data.folder;
+check(F1 && F2 && F2.sort > F1.sort, "deux dossiers créés, dans l'ordre", F1);
+check((await fc("cérémonie")).data.error === "folder_exists", "nom de dossier en double refusé");
+check((await fc("   ")).data.error === "folder_name_required", "nom de dossier vide refusé");
+check((await fc("x".repeat(61))).data.error === "folder_name_too_long", "nom de dossier trop long refusé");
+check((await call("POST", `/api/admin/galleries/${R.id}/folders`, { body: { name: "Pirate" } })).status === 401, "dossiers fermés sans jeton admin");
+check((await call("PUT", `/api/admin/galleries/${R.id}/folder-photos`, { token: A, body: { folder: F1.id, ids: [r1.id, "inconnu"] } })).data.moved === 1, "photo rangée dans un dossier (identifiant étranger ignoré)");
+check((await call("PUT", `/api/admin/galleries/${R.id}/folder-photos`, { token: A, body: { folder: F2.id, ids: [r2.id] } })).data.moved === 1, "deuxième photo dans l'autre dossier");
+check((await call("PUT", `/api/admin/galleries/${G.id}/folder-photos`, { token: A, body: { folder: F1.id, ids: [up[0].id] } })).data.error === "bad_folder", "dossier d'une autre galerie refusé");
+check((await call("PATCH", `/api/admin/folders/${F2.id}`, { token: A, body: { name: "Soirée dansante" } })).data.folder.name === "Soirée dansante", "dossier renommé");
+await call("POST", `/api/admin/galleries/${R.id}/folders/order`, { token: A, body: { ids: [F2.id, F1.id] } });
+const fd = (await call("GET", `/api/admin/galleries/${R.id}`, { token: A })).data;
+check(fd.folders.map(f => f.id).join() === [F2.id, F1.id].join() && fd.photos.find(x => x.id === r1.id).folder === F1.id, "ordre des dossiers et rangement visibles dans l'administration");
+let vf = (await call("GET", `/api/g/${R.slug}/photos`, { token: VG })).data;
+check(vf.folders.length === 2 && vf.folders[0].name === "Soirée dansante" && vf.photos.find(x => x.id === r1.id).f === F1.id, "le client voit les dossiers, leur ordre et le dossier de chaque photo", vf.folders);
+await call("PATCH", `/api/admin/galleries/${R.id}`, { token: A, body: { guest_view_all: 0 } });
+vf = (await call("GET", `/api/g/${R.slug}/photos`, { token: VG })).data;
+check(vf.photos.length === 1 && vf.folders.length === 1 && vf.folders[0].id === F1.id && vf.folders[0].n === 1, "invité limité à ses photos : il ne voit que le dossier qui les contient", vf.folders);
+const zf = await call("POST", `/api/g/${R.slug}/zip`, { token: VG, body: { ids: vf.photos.filter(x => x.f === F1.id).map(x => x.id) } });
+check(zf.data.parts && zf.data.parts[0].count === 1, "ZIP d'un dossier");
+check((await call("DELETE", `/api/admin/folders/${F1.id}`, { token: A })).data.ok, "dossier supprimé");
+const fd2 = (await call("GET", `/api/admin/galleries/${R.id}`, { token: A })).data;
+check(fd2.photos.length === 2 && fd2.photos.find(x => x.id === r1.id).folder == null && fd2.folders.length === 1, "supprimer un dossier garde ses photos (« Sans dossier »)");
+await call("PUT", `/api/admin/galleries/${R.id}/folder-photos`, { token: A, body: { folder: null, ids: [r2.id] } });
+check((await call("GET", `/api/admin/galleries/${R.id}`, { token: A })).data.photos.every(x => x.folder == null), "photo remise dans « Sans dossier »");
+const cp = await call("POST", `/api/admin/galleries/${R.id}/photos`, { token: A, body: { name: "x.jpg", size: 10, crc32: 1, folder: "faux" } });
+check(cp.data.error === "bad_folder", "import dans un dossier inconnu refusé");
+await call("PATCH", `/api/admin/galleries/${R.id}`, { token: A, body: { guest_view_all: 1 } });
+
 console.log("Expiration et nettoyage");
 await call("PATCH", `/api/admin/galleries/${G.id}`, { token: A, body: { expires_at: Math.floor(Date.now() / 1000) - 10 } });
 check((await call("GET", `/api/g/${G.slug}`)).status === 410, "galerie expirée : page fermée");

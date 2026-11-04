@@ -121,6 +121,18 @@ async function route(req, env, ctx) {
       if (is("POST", "api", "admin", "galleries", "*", "photos")) return createPhoto(req, env, g);
       if (is("POST", "api", "admin", "galleries", "*", "order")) return reorder(req, env, g);
       if (is("POST", "api", "admin", "galleries", "*", "guests")) return createGuest(req, env, g);
+      if (is("POST", "api", "admin", "galleries", "*", "folders")) return createFolder(req, env, g);
+      if (is("POST", "api", "admin", "galleries", "*", "folders", "order")) return orderFolders(req, env, g);
+      if (is("PUT", "api", "admin", "galleries", "*", "folder-photos")) return moveToFolder(req, env, g);
+    }
+    if (p[2] === "folders" && p[3]) {
+      const f = await env.DB.prepare("SELECT * FROM folders WHERE id = ?").bind(p[3]).first();
+      if (!f) fail(404, "folder_not_found");
+      if (is("PATCH", "api", "admin", "folders", "*")) return renameFolder(req, env, f);
+      if (is("DELETE", "api", "admin", "folders", "*")) {
+        await env.DB.batch([env.DB.prepare("DELETE FROM photo_folder WHERE folder_id = ?").bind(f.id), env.DB.prepare("DELETE FROM folders WHERE id = ?").bind(f.id)]);
+        return json({ ok: true });
+      }
     }
     if (p[2] === "guests" && p[3]) {
       const guest = await env.DB.prepare("SELECT * FROM guests WHERE id = ?").bind(p[3]).first();
@@ -249,7 +261,7 @@ async function publicList(env, url) {
 
 async function visibleSet(env, g, v) {
   const { results } = await env.DB.prepare(
-    "SELECT id, name, mime, size, w, h, version, has_preview, allow_all FROM photos WHERE gallery_id = ? AND status = 'ready' ORDER BY sort, created_at"
+    "SELECT p.id, p.name, p.mime, p.size, p.w, p.h, p.version, p.has_preview, p.allow_all, pf.folder_id folder FROM photos p LEFT JOIN photo_folder pf ON pf.photo_id = p.id WHERE p.gallery_id = ? AND p.status = 'ready' ORDER BY p.sort, p.created_at"
   ).bind(g.id).all();
   let mine = new Set();
   if (v.guest) {
@@ -264,6 +276,9 @@ async function visibleSet(env, g, v) {
 
 async function visitorPhotos(env, url, g, v, gx = {}) {
   const { photos, canDl, mine } = await visibleSet(env, g, v);
+  // dossiers : seulement ceux qui contiennent une photo visible pour ce visiteur (un invité ne voit pas les autres)
+  const fl = (await env.DB.prepare("SELECT id, name FROM folders WHERE gallery_id = ? ORDER BY sort, created_at").bind(g.id).all()).results;
+  const count = {}; for (const ph of photos) if (ph.folder) count[ph.folder] = (count[ph.folder] || 0) + 1;
   const sig = await mediaSig(env, g.id, MEDIA_TTL, g.expires_at);
   const u = v.guest ? v.guest.id : "-";
   const oe = Math.min(now() + MEDIA_TTL, g.expires_at || Infinity);
@@ -271,8 +286,9 @@ async function visitorPhotos(env, url, g, v, gx = {}) {
   return json({
     gallery: { title: g.title, client: g.client, date: g.event_date, kind: g.kind, allowDownload: !!g.allow_download, expiresAt: g.expires_at, selections: gx.selections_open !== 0 },
     guest: v.guest ? v.guest.name : null,
+    folders: fl.filter(f => count[f.id]).map(f => ({ id: f.id, name: f.name, n: count[f.id] })),
     photos: photos.map(ph => ({
-      id: ph.id, name: ph.name, size: ph.size, w: ph.w, h: ph.h, mine: mine.has(ph.id),
+      id: ph.id, name: ph.name, size: ph.size, w: ph.w, h: ph.h, mine: mine.has(ph.id), f: count[ph.folder] ? ph.folder : null,
       t: ph.has_preview ? mediaUrl(url.origin, g, ph, "t", sig) : null,
       p: ph.has_preview ? mediaUrl(url.origin, g, ph, "p", sig) : null,
       o: canDl(ph) ? `${url.origin}/o/${g.id}/${ph.id}?u=${u}&e=${oe}&s=${os}` : null,
@@ -447,7 +463,8 @@ async function relink(env, g) {
 }
 
 async function galleryDetail(env, url, g) {
-  const { results: photos } = await env.DB.prepare("SELECT * FROM photos WHERE gallery_id = ? ORDER BY sort, created_at").bind(g.id).all();
+  const { results: photos } = await env.DB.prepare("SELECT p.*, pf.folder_id folder FROM photos p LEFT JOIN photo_folder pf ON pf.photo_id = p.id WHERE p.gallery_id = ? ORDER BY p.sort, p.created_at").bind(g.id).all();
+  const { results: folders } = await env.DB.prepare("SELECT id, name, sort FROM folders WHERE gallery_id = ? ORDER BY sort, created_at").bind(g.id).all();
   const { results: guests } = await env.DB.prepare("SELECT * FROM guests WHERE gallery_id = ? ORDER BY created_at").bind(g.id).all();
   const { results: assign } = await env.DB.prepare("SELECT gp.guest_id, gp.photo_id FROM guest_photos gp JOIN guests g ON g.id = gp.guest_id WHERE g.gallery_id = ?").bind(g.id).all();
   const { results: events } = await env.DB.prepare("SELECT kind, n, at FROM events WHERE gallery_id = ? ORDER BY at DESC LIMIT 40").bind(g.id).all();
@@ -456,9 +473,9 @@ async function galleryDetail(env, url, g) {
   for (const a of assign) (byGuest[a.guest_id] ||= []).push(a.photo_id);
   return json({
     gallery: galleryOut(env, g, await site.extraOf(env, g.id)),
-    photos: photos.map(ph => ({ ...ph, t: ph.has_preview ? mediaUrl(url.origin, g, ph, "t", sig) : null })),
+    photos: photos.map(ph => ({ ...ph, t: ph.has_preview ? mediaUrl(url.origin, g, ph, "t", sig) : null, p: ph.has_preview ? mediaUrl(url.origin, g, ph, "p", sig) : null })),
     guests: guests.map(x => ({ ...x, link: galleryLink(env, g, x.code), photos: byGuest[x.id] || [] })),
-    events,
+    folders, events,
   });
 }
 
@@ -472,6 +489,8 @@ async function deleteGallery(env, gid) {
   await env.DB.batch([
     env.DB.prepare("DELETE FROM guest_photos WHERE guest_id IN (SELECT id FROM guests WHERE gallery_id = ?)").bind(gid),
     env.DB.prepare("DELETE FROM guests WHERE gallery_id = ?").bind(gid),
+    env.DB.prepare("DELETE FROM photo_folder WHERE folder_id IN (SELECT id FROM folders WHERE gallery_id = ?)").bind(gid),
+    env.DB.prepare("DELETE FROM folders WHERE gallery_id = ?").bind(gid),
     env.DB.prepare("DELETE FROM photos WHERE gallery_id = ?").bind(gid),
     env.DB.prepare("DELETE FROM zip_tickets WHERE gallery_id = ?").bind(gid),
     env.DB.prepare("DELETE FROM events WHERE gallery_id = ?").bind(gid),
@@ -494,12 +513,14 @@ function photoMeta(body) {
 const uploadPlan = (env, size) => size <= singleMax(env) ? { mode: "single" } : { mode: "multipart", partSize: partSize(env), parts: Math.ceil(size / partSize(env)) };
 
 async function createPhoto(req, env, g) {
-  const m = photoMeta(await readJson(req));
+  const body = await readJson(req), m = photoMeta(body);
+  const folder = body.folder ? await folderOf(env, g, body.folder) : null;
   const t = now();
   const max = await env.DB.prepare("SELECT COALESCE(MAX(sort), 0) s FROM photos WHERE gallery_id = ?").bind(g.id).first();
   const id = randomId(14);
   await env.DB.prepare("INSERT INTO photos (id, gallery_id, name, mime, size, crc32, w, h, mtime, sort, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'uploading', ?, ?)")
     .bind(id, g.id, m.name, m.mime, m.size, m.crc32, m.w, m.h, m.mtime, max.s + 1, t, t).run();
+  if (folder) await env.DB.prepare("INSERT OR REPLACE INTO photo_folder (photo_id, folder_id) VALUES (?, ?)").bind(id, folder.id).run();
   return json({ id, ...uploadPlan(env, m.size) }, 201);
 }
 
@@ -568,6 +589,7 @@ async function deletePhoto(env, ph) {
   await env.BUCKET.delete([okey(ph.gallery_id, ph.id), pkey(ph.gallery_id, ph.id), tkey(ph.gallery_id, ph.id)]);
   await env.DB.batch([
     env.DB.prepare("DELETE FROM guest_photos WHERE photo_id = ?").bind(ph.id),
+    env.DB.prepare("DELETE FROM photo_folder WHERE photo_id = ?").bind(ph.id),
     env.DB.prepare("DELETE FROM photos WHERE id = ?").bind(ph.id),
   ]);
 }
@@ -596,6 +618,56 @@ async function assignGuest(req, env, guest) {
   for (const id of new Set(ids.map(String))) if (valid.has(id)) stmts.push(env.DB.prepare("INSERT INTO guest_photos (guest_id, photo_id) VALUES (?, ?)").bind(guest.id, id));
   for (let i = 0; i < stmts.length; i += 200) await env.DB.batch(stmts.slice(i, i + 200));
   return json({ ok: true, count: stmts.length - 1 });
+}
+
+// ================= dossiers d'une galerie =================
+const FOLDER_MAX = 60;
+function folderName(v) {
+  const n = String(v ?? "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim();
+  if (!n) fail(400, "folder_name_required");
+  if ([...n].length > 60) fail(400, "folder_name_too_long");
+  return n;
+}
+async function folderOf(env, g, id) {
+  const f = await env.DB.prepare("SELECT * FROM folders WHERE id = ? AND gallery_id = ?").bind(String(id), g.id).first();
+  if (!f) fail(400, "bad_folder");
+  return f;
+}
+async function sameName(env, gid, name, except = "") {
+  const r = await env.DB.prepare("SELECT id FROM folders WHERE gallery_id = ? AND lower(name) = lower(?) AND id != ?").bind(gid, name, except).first();
+  if (r) fail(409, "folder_exists");
+}
+async function createFolder(req, env, g) {
+  const name = folderName((await readJson(req)).name);
+  const n = await env.DB.prepare("SELECT COUNT(*) n, COALESCE(MAX(sort), 0) s FROM folders WHERE gallery_id = ?").bind(g.id).first();
+  if (n.n >= FOLDER_MAX) fail(400, "too_many_folders");
+  await sameName(env, g.id, name);
+  const f = { id: randomId(12), gallery_id: g.id, name, sort: n.s + 1, created_at: now() };
+  await env.DB.prepare("INSERT INTO folders (id, gallery_id, name, sort, created_at) VALUES (?, ?, ?, ?, ?)").bind(f.id, f.gallery_id, f.name, f.sort, f.created_at).run();
+  return json({ folder: { id: f.id, name: f.name, sort: f.sort } }, 201);
+}
+async function renameFolder(req, env, f) {
+  const name = folderName((await readJson(req)).name);
+  await sameName(env, f.gallery_id, name, f.id);
+  await env.DB.prepare("UPDATE folders SET name = ? WHERE id = ?").bind(name, f.id).run();
+  return json({ folder: { id: f.id, name, sort: f.sort } });
+}
+async function orderFolders(req, env, g) {
+  const { ids } = await readJson(req);
+  if (!Array.isArray(ids) || ids.length > FOLDER_MAX) fail(400, "bad_ids");
+  await env.DB.batch(ids.map((id, i) => env.DB.prepare("UPDATE folders SET sort = ? WHERE id = ? AND gallery_id = ?").bind(i + 1, String(id), g.id)));
+  return json({ ok: true });
+}
+// { folder: id | null, ids: [...] } : null = « Sans dossier » ; seules les photos de cette galerie bougent
+async function moveToFolder(req, env, g) {
+  const { folder, ids } = await readJson(req, 1024 * 1024);
+  if (!Array.isArray(ids) || !ids.length || ids.length > 5000) fail(400, "bad_ids");
+  const f = folder ? await folderOf(env, g, folder) : null;
+  const own = new Set((await env.DB.prepare("SELECT id FROM photos WHERE gallery_id = ?").bind(g.id).all()).results.map(r => r.id));
+  const list = [...new Set(ids.map(String))].filter(id => own.has(id));
+  const stmts = list.map(id => f ? env.DB.prepare("INSERT OR REPLACE INTO photo_folder (photo_id, folder_id) VALUES (?, ?)").bind(id, f.id) : env.DB.prepare("DELETE FROM photo_folder WHERE photo_id = ?").bind(id));
+  for (let i = 0; i < stmts.length; i += 200) await env.DB.batch(stmts.slice(i, i + 200));
+  return json({ ok: true, moved: list.length });
 }
 
 // ================= tâche quotidienne =================

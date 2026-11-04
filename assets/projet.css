@@ -46,6 +46,7 @@ html[lang="fr"] [data-l="fr"],html[lang="en"] [data-l="en"]{display:revert}
 .facts{margin:0;display:grid;gap:14px;border-top:2px solid var(--accent);padding-top:14px}
 .facts dt{font-family:var(--font-d);font-weight:650;font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
 .facts dd{margin:3px 0 0;font-family:var(--font-d);font-weight:650}
+.facts dd.links{display:flex;flex-wrap:wrap;gap:4px 16px}
 .facts dd a{text-decoration:underline;text-decoration-color:var(--accent);text-underline-offset:4px}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips span{font-size:.86rem;padding:3px 10px;border-radius:999px;border:1px solid var(--line)}

@@ -38,7 +38,7 @@ const T = {
     "e.gone.k": "Galerie expirée", "e.gone.h": "Cette galerie n'est plus disponible", "e.gone.p": "Le délai de téléchargement est passé. Écrivez-moi si vous avez encore besoin de vos photos : baeypro@gmail.com.",
     "e.nf.k": "Lien introuvable", "e.nf.h": "Je ne trouve pas cette galerie", "e.nf.p": "Vérifiez le lien reçu, ou demandez-moi un nouveau lien.",
     "e.net": "Connexion impossible pour le moment. Vérifiez votre réseau et réessayez.",
-    "dl.all": "Tout télécharger", "select": "Sélectionner", "select.done": "Terminer",
+    "dl.all": "Tout télécharger", "dl.folder": "Télécharger ce dossier", "folders": "Dossiers", "f.all": "Toutes", "select": "Sélectionner", "select.done": "Terminer",
     "tab.all": "Toutes", "tab.mine": "Mes photos",
     "count": (n, s) => `${n} photo${n > 1 ? "s" : ""}${s ? " · " + s : ""}`,
     "until": d => `Disponible jusqu'au ${d}`, "event": "Galerie d'événement", "private": "Galerie privée", "restricted": "Galerie personnelle",
@@ -51,7 +51,7 @@ const T = {
     "send.go": "Envoyer", "send.ok": "Sélection envoyée. Elle reste enregistrée dans ce navigateur.", "send.saved": "Votre sélection est gardée dans ce navigateur.",
     "e.selections_closed": "L'envoi de sélections n'est pas ouvert pour cette galerie.", "e.nothing_selected": "Sélectionnez au moins une photo.",
     "e.archived.k": "Galerie archivée", "e.archived.h": "Cette galerie est archivée", "e.archived.p": "Elle n'est plus consultable en ligne. Écrivez-moi si vous avez besoin de vos photos : baeypro@gmail.com.",
-    "lb.dl": "Télécharger l'original", "lb.nodl": "Le téléchargement de cette photo n'est pas ouvert.", "lb.close": "Fermer", "lb.prev": "Photo précédente", "lb.next": "Photo suivante", "lb.sel": "Sélectionner cette photo",
+    "lb.dl": "Télécharger l'original", "lb.nodl": "Le téléchargement de cette photo n'est pas ouvert.", "lb.close": "Fermer", "lb.prev": "Photo précédente", "lb.next": "Photo suivante", "lb.sel": "Sélectionner cette photo", "lb.zoom": "Zoom (+ / −)", "lb.fs": "Plein écran (F)",
     "zip.h": "Téléchargement en plusieurs parties", "zip.p": "Votre sélection est volumineuse : elle est découpée en archives ZIP. Téléchargez chaque partie.",
     "zip.part": (k, n, c, s) => `Partie ${k} sur ${n} · ${c} photos · ${s}`, "zip.prep": "Préparation de l'archive…", "zip.go": "Le téléchargement commence.",
     "dl.start": "Le téléchargement commence.",
@@ -78,7 +78,7 @@ const T = {
     "e.gone.k": "Gallery expired", "e.gone.h": "This gallery is no longer available", "e.gone.p": "The download window has closed. Email me if you still need your photos: baeypro@gmail.com.",
     "e.nf.k": "Link not found", "e.nf.h": "I can't find this gallery", "e.nf.p": "Check the link you received, or ask me for a new one.",
     "e.net": "Can't connect right now. Check your network and try again.",
-    "dl.all": "Download all", "select": "Select", "select.done": "Done",
+    "dl.all": "Download all", "dl.folder": "Download this folder", "folders": "Folders", "f.all": "All", "select": "Select", "select.done": "Done",
     "tab.all": "All", "tab.mine": "My photos",
     "count": (n, s) => `${n} photo${n > 1 ? "s" : ""}${s ? " · " + s : ""}`,
     "until": d => `Available until ${d}`, "event": "Event gallery", "private": "Private gallery", "restricted": "Personal gallery",
@@ -91,7 +91,7 @@ const T = {
     "send.go": "Send", "send.ok": "Selection sent. It stays saved in this browser.", "send.saved": "Your selection is kept in this browser.",
     "e.selections_closed": "Sending selections is not open for this gallery.", "e.nothing_selected": "Select at least one photo.",
     "e.archived.k": "Gallery archived", "e.archived.h": "This gallery is archived", "e.archived.p": "It can no longer be viewed online. Email me if you need your photos: baeypro@gmail.com.",
-    "lb.dl": "Download original", "lb.nodl": "Downloads aren't open for this photo.", "lb.close": "Close", "lb.prev": "Previous photo", "lb.next": "Next photo", "lb.sel": "Select this photo",
+    "lb.dl": "Download original", "lb.nodl": "Downloads aren't open for this photo.", "lb.close": "Close", "lb.prev": "Previous photo", "lb.next": "Next photo", "lb.sel": "Select this photo", "lb.zoom": "Zoom (+ / −)", "lb.fs": "Full screen (F)",
     "zip.h": "Download in several parts", "zip.p": "Your selection is large, so it's split into ZIP archives. Download each part.",
     "zip.part": (k, n, c, s) => `Part ${k} of ${n} · ${c} photos · ${s}`, "zip.prep": "Preparing the archive…", "zip.go": "Your download is starting.",
     "dl.start": "Your download is starting.",
@@ -138,7 +138,7 @@ async function api(path, { method = "GET", body, raw, headers = {}, auth = true 
 }
 
 // ---------------- état ----------------
-const S = { slug: null, code: null, token: null, meta: null, gallery: null, guest: null, photos: [], byId: new Map(), view: "all", sel: new Set(), selecting: false, list: [], shown: 0 };
+const S = { slug: null, code: null, token: null, meta: null, gallery: null, guest: null, photos: [], byId: new Map(), view: "all", folder: "", folders: [], sel: new Set(), selecting: false, list: [], shown: 0 };
 const show = id => ["vLand", "vLock", "vMsg", "vGal"].forEach(v => $("#" + v).hidden = v !== id);
 
 function parseInput(v) {
@@ -227,7 +227,8 @@ function saveSel() { try { localStorage.setItem(selKey(), JSON.stringify([...S.s
 function loadSel() { try { (JSON.parse(localStorage.getItem(selKey()) || "[]") || []).forEach(id => { if (S.byId.has(id)) S.sel.add(id); }); } catch {} }
 async function loadPhotos() {
   const r = await api(`/api/g/${S.slug}/photos`);
-  S.gallery = r.gallery; S.guest = r.guest; S.photos = r.photos; S.byId = new Map(r.photos.map(p => [p.id, p]));
+  S.gallery = r.gallery; S.guest = r.guest; S.photos = r.photos; S.folders = r.folders || [];
+  if (S.folder && !S.folders.some(f => f.id === S.folder)) S.folder = ""; S.byId = new Map(r.photos.map(p => [p.id, p]));
   loadSel();
   show("vGal");
   renderHead(); render();
@@ -244,7 +245,12 @@ function renderHead() {
   const meta = [g.date && fmtDate(g.date, true), g.client, t("count", S.photos.length, fmtBytes(size)), g.expiresAt && t("until", fmtDate(g.expiresAt, true))].filter(Boolean);
   $("#gMeta").innerHTML = meta.map((m, i) => `${i ? '<span class="dot" aria-hidden="true"></span>' : ""}<span></span>`).join("");
   [...$("#gMeta").querySelectorAll("span:not(.dot)")].forEach((el, i) => el.textContent = meta[i]);
-  $("#allBtn").hidden = !dl.length;
+  const fdl = S.folder ? dl.filter(p => p.f === S.folder) : dl;
+  $("#allBtn").hidden = !fdl.length; $("#allBtn span").textContent = t(S.folder ? "dl.folder" : "dl.all");
+  const fb = $("#fchips"); fb.hidden = !S.folders.length;
+  fb.innerHTML = [["", t("f.all"), S.photos.length], ...S.folders.map(f => [f.id, f.name, f.n])].map(([id, name, n]) => `<button type="button" class="fchip" data-f="${id.replace(/[^A-Za-z0-9]/g, "")}" aria-pressed="${S.folder === id}"><span></span> <small>${n}</small></button>`).join("");
+  [...fb.querySelectorAll(".fchip span")].forEach((el, k) => el.textContent = k ? S.folders[k - 1].name : t("f.all"));
+  fb.setAttribute("aria-label", t("folders"));
   $("#selBtn").hidden = !dl.length && !g.selections;
   $("#selBtn").textContent = S.selecting ? t("select.done") : t("select");
   const hasMine = S.photos.some(p => p.mine);
@@ -255,9 +261,10 @@ function renderHead() {
 }
 
 function currentList() {
-  if (S.view === "mine") return S.photos.filter(p => p.mine);
-  if (S.view === "picked") return S.photos.filter(p => S.sel.has(p.id));
-  return S.photos;
+  const all = S.folder ? S.photos.filter(p => p.f === S.folder) : S.photos;
+  if (S.view === "mine") return all.filter(p => p.mine);
+  if (S.view === "picked") return all.filter(p => S.sel.has(p.id));
+  return all;
 }
 
 const CHUNK = 90;
@@ -348,7 +355,8 @@ $("#sendForm").addEventListener("submit", async e => {
   } catch (er) { $("#sendErr").textContent = errText(er); }
   finally { btn.disabled = false; }
 });
-$("#allBtn").addEventListener("click", () => download(null));
+$("#allBtn").addEventListener("click", () => download(S.folder ? S.photos.filter(p => p.f === S.folder && p.o).map(p => p.id) : null));
+$("#fchips").addEventListener("click", e => { const b = e.target.closest(".fchip"); if (!b) return; S.folder = b.dataset.f; renderHead(); render(); window.scrollTo({ top: $("#tools").offsetTop - 60 }); });
 $$("#tabs button").forEach(b => b.addEventListener("click", () => { S.view = b.dataset.view; renderHead(); render(); window.scrollTo({ top: $("#tools").offsetTop - 60 }); }));
 
 function fire(url) { const a = document.createElement("a"); a.href = url; a.rel = "noopener"; document.body.appendChild(a); a.click(); a.remove(); }
@@ -378,12 +386,13 @@ function openLb(i) {
 }
 function closeLb() {
   const lb = $("#lb"); lb.classList.remove("open"); lb.setAttribute("aria-hidden", "true");
-  document.body.style.overflow = ""; $("#lbImg").removeAttribute("src"); lbI = -1;
+  document.body.style.overflow = ""; $("#lbImg").removeAttribute("src"); lbI = -1; Z.reset();
+  if (document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(() => {});
   if (lbLast) lbLast.focus();
 }
 function paintLb() {
   const p = S.list[lbI]; if (!p) return;
-  const img = $("#lbImg");
+  const img = $("#lbImg"); Z.reset();
   img.style.opacity = ".001"; img.onload = () => img.style.opacity = "1";
   img.src = p.p || p.t || ""; img.alt = p.name;
   $("#lbName").innerHTML = "<b></b><span></span>";
@@ -400,17 +409,39 @@ $("#lbPrev").addEventListener("click", () => step(-1));
 $("#lbNext").addEventListener("click", () => step(1));
 $("#lbSel").addEventListener("click", () => { toggle(S.list[lbI]); paintLb(); });
 $("#lbDl").addEventListener("click", () => toast(t("dl.start")));
+/* zoom : pincer, toucher deux fois, molette, + / − ; balayer pour changer de photo, vers le bas pour fermer */
+const lbImgEl = $("#lbImg"), lbSt = $("#lbStage");
+const Z = { z: 1, x: 0, y: 0,
+  apply() { lbImgEl.style.transform = this.z > 1 ? `translate(${this.x.toFixed(1)}px,${this.y.toFixed(1)}px) scale(${this.z.toFixed(3)})` : ""; $("#lb").classList.toggle("zoomed", this.z > 1); },
+  reset() { this.z = 1; this.x = this.y = 0; this.apply(); },
+  at(z, cx, cy) { const r = lbSt.getBoundingClientRect(), ox = cx - (r.left + r.width / 2), oy = cy - (r.top + r.height / 2), nz = Math.max(1, Math.min(5, z)), f = nz / this.z;
+    this.x = ox - (ox - this.x) * f; this.y = oy - (oy - this.y) * f; this.z = nz; if (nz <= 1.01) { this.reset(); return; }
+    const mx = r.width * (this.z - 1) / 2, my = r.height * (this.z - 1) / 2; this.x = Math.max(-mx, Math.min(mx, this.x)); this.y = Math.max(-my, Math.min(my, this.y)); this.apply(); } };
+const lbMid = () => { const r = lbSt.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+$("#lbZ").addEventListener("click", () => Z.z > 1 ? Z.reset() : Z.at(2.5, ...lbMid()));
+const lbFs = $("#lbFs"); lbFs.hidden = !(document.fullscreenEnabled && $("#lb").requestFullscreen);
+lbFs.addEventListener("click", () => document.fullscreenElement ? document.exitFullscreen().catch(() => {}) : $("#lb").requestFullscreen().catch(() => {}));
 document.addEventListener("keydown", e => {
   if (lbI < 0) return;
-  if (e.key === "Escape") closeLb(); else if (e.key === "ArrowRight") step(1); else if (e.key === "ArrowLeft") step(-1);
+  const K = { Escape: () => Z.z > 1 ? Z.reset() : closeLb(), ArrowRight: () => step(1), ArrowLeft: () => step(-1), "+": () => Z.at(Z.z * 1.5, ...lbMid()), "=": () => Z.at(Z.z * 1.5, ...lbMid()), "-": () => Z.at(Z.z / 1.5, ...lbMid()), "0": () => Z.reset(), f: () => lbFs.hidden || lbFs.click(), F: () => lbFs.hidden || lbFs.click() }[e.key];
+  if (K) { e.preventDefault(); K(); return; }
+  if (e.key === "Tab") { const f = [...$("#lb").querySelectorAll("button:not([hidden]):not([disabled]),a[href]:not([hidden])")].filter(x => x.offsetParent !== null); const k = f.indexOf(document.activeElement); if (e.shiftKey && k <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && k === f.length - 1) { e.preventDefault(); f[0].focus(); } }
 });
-let sx = null, sy = null;
-$("#lbStage").addEventListener("pointerdown", e => { sx = e.clientX; sy = e.clientY; });
-$("#lbStage").addEventListener("pointerup", e => {
-  if (sx == null) return; const dx = e.clientX - sx, dy = e.clientY - sy; sx = null;
-  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1);
-  else if (dy > 90) closeLb();
-});
+{ const pts = new Map(); let g = null, tap = 0;
+  lbSt.addEventListener("pointerdown", e => { if (e.target.closest(".lb-nav")) return; pts.set(e.pointerId, [e.clientX, e.clientY]); lbSt.setPointerCapture(e.pointerId);
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; g = { pinch: 1, d0: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, z0: Z.z, x0: Z.x, y0: Z.y, cx: (a[0] + b[0]) / 2, cy: (a[1] + b[1]) / 2 }; return; }
+    g = { sx: e.clientX, sy: e.clientY, px: Z.x, py: Z.y, moved: false }; });
+  lbSt.addEventListener("pointermove", e => { if (!pts.has(e.pointerId)) return; pts.set(e.pointerId, [e.clientX, e.clientY]); if (!g) return;
+    if (g.pinch) { if (pts.size < 2) return; const [a, b] = [...pts.values()]; Z.z = g.z0; Z.x = g.x0; Z.y = g.y0; Z.at(g.z0 * (Math.hypot(a[0] - b[0], a[1] - b[1]) || 1) / g.d0, g.cx, g.cy); return; }
+    const dx = e.clientX - g.sx, dy = e.clientY - g.sy; if (Math.hypot(dx, dy) > 8) g.moved = true;
+    if (Z.z > 1) { Z.x = g.px + dx; Z.y = g.py + dy; Z.apply(); } });
+  const end = e => { pts.delete(e.pointerId); if (!g) return; const d = g; g = null; if (d.pinch) { if (Z.z < 1.06) Z.reset(); return; }
+    const dx = e.clientX - d.sx, dy = e.clientY - d.sy, now = performance.now();
+    if (!d.moved) { if (now - tap < 350) { tap = 0; Z.z > 1 ? Z.reset() : Z.at(2.5, e.clientX, e.clientY); } else tap = now; return; }
+    if (Z.z > 1) return;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) step(dx < 0 ? 1 : -1); else if (dy > 90) closeLb(); };
+  lbSt.addEventListener("pointerup", end); lbSt.addEventListener("pointercancel", end);
+  lbSt.addEventListener("wheel", e => { if (lbI < 0) return; e.preventDefault(); Z.at(Z.z * Math.exp(-e.deltaY * (e.ctrlKey ? .012 : .0022)), e.clientX, e.clientY); }, { passive: false }); }
 
 // ---------------- fenêtres ----------------
 $$("dialog [data-close]").forEach(b => b.addEventListener("click", () => b.closest("dialog").close()));

@@ -23,6 +23,7 @@ const EV = { view: "Ouverture de la galerie", dl: "Téléchargement d'une photo"
 let toastT;
 function toast(msg, bad) { const el = $("#toast"); el.textContent = msg; el.classList.toggle("bad", !!bad); el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 3200); }
 const ERR = {
+  folder_name_required: "Donnez un nom au dossier.", folder_name_too_long: "Nom de dossier trop long (60 caractères au plus).", folder_exists: "Un dossier porte déjà ce nom dans cette galerie.", too_many_folders: "60 dossiers au plus par galerie.", bad_folder: "Dossier introuvable dans cette galerie.", folder_not_found: "Ce dossier n'existe plus.",
   bad_password: "Mot de passe incorrect.", too_many_attempts: "Trop d'essais. Patientez quelques minutes.", admin_required: "Session expirée, reconnectez-vous.",
   title_required: "Le titre est obligatoire.", size_mismatch: "Le fichier reçu n'a pas la bonne taille. Réessayez.", server_not_configured: "Serveur incomplet : la clé de signature manque.",
   admin_not_configured: "Serveur incomplet : le mot de passe administrateur manque.",
@@ -128,16 +129,44 @@ $("#newGo").addEventListener("click", async () => {
 
 // ---------------- galerie ----------------
 let G = null, P = [], GUESTS = [], picking = false, pickSel = new Set(), tab = "photos";
+// ---------------- dossiers (sous-albums) ----------------
+let FOLDERS = [], curFolder = ""; // "" = toutes, "-" = sans dossier, sinon l'identifiant du dossier
+const inFolder = p => curFolder === "" || (curFolder === "-" ? !p.folder : p.folder === curFolder);
+function paintFolders() {
+  const bar = $("#fbar"); if (!bar) return;
+  const n = id => P.filter(p => id === "" ? true : id === "-" ? !p.folder : p.folder === id).length;
+  const chips = [["", "Toutes"], ...(FOLDERS.length ? [["-", "Sans dossier"]] : []), ...FOLDERS.map(f => [f.id, f.name])];
+  const cur = FOLDERS.find(f => f.id === curFolder), k = FOLDERS.indexOf(cur);
+  bar.innerHTML = `<div class="chips" role="tablist" aria-label="Dossiers de la galerie">${chips.map(([id, name]) => `<button type="button" class="chip" role="tab" data-f="${esc(id)}" aria-selected="${curFolder === id}">${esc(name)} <span class="hint">${n(id)}</span></button>`).join("")}<button type="button" class="chip add" id="fNew">+ Dossier</button></div>`
+    + (cur ? `<div class="row fact"><span class="hint">Dossier « ${esc(cur.name)} » : les photos importées ici y vont directement.</span><button class="btn small" type="button" id="fRen">Renommer</button><button class="btn small" type="button" id="fL"${k ? "" : " disabled"} aria-label="Placer le dossier avant">←</button><button class="btn small" type="button" id="fR"${k < FOLDERS.length - 1 ? "" : " disabled"} aria-label="Placer le dossier après">→</button><button class="btn small danger" type="button" id="fDel">Supprimer le dossier</button></div>` : "");
+  $$(".chip[data-f]", bar).forEach(b => b.addEventListener("click", () => { curFolder = b.dataset.f; paintFolders(); paintPhotos(); }));
+  $("#fNew").addEventListener("click", async () => { const name = (prompt("Nom du nouveau dossier (par exemple « Cérémonie », « Soirée »)") || "").trim(); if (!name) return; try { const r = await api(`/api/admin/galleries/${G.id}/folders`, { method: "POST", body: { name } }); curFolder = r.folder.id; await refresh(); toast("Dossier créé."); } catch (e) { toast(errText(e), true); } });
+  if (!cur) return;
+  $("#fRen").addEventListener("click", async () => { const name = (prompt("Nouveau nom du dossier", cur.name) || "").trim(); if (!name || name === cur.name) return; try { await api(`/api/admin/folders/${cur.id}`, { method: "PATCH", body: { name } }); await refresh(); } catch (e) { toast(errText(e), true); } });
+  const mv = async d => { const ids = FOLDERS.map(f => f.id); [ids[k], ids[k + d]] = [ids[k + d], ids[k]]; try { await api(`/api/admin/galleries/${G.id}/folders/order`, { method: "POST", body: { ids } }); await refresh(); } catch (e) { toast(errText(e), true); } };
+  $("#fL").addEventListener("click", () => mv(-1)); $("#fR").addEventListener("click", () => mv(1));
+  $("#fDel").addEventListener("click", async () => { if (!confirm(`Supprimer le dossier « ${cur.name} » ? Ses ${n(cur.id)} photos ne sont pas supprimées : elles reviennent dans « Sans dossier ».`)) return; try { await api(`/api/admin/folders/${cur.id}`, { method: "DELETE" }); curFolder = ""; await refresh(); toast("Dossier supprimé, photos gardées."); } catch (e) { toast(errText(e), true); } });
+}
+async function folderByName(name) { // dossier importé depuis l'ordinateur : même nom, créé s'il n'existe pas
+  name = String(name).trim().slice(0, 60); if (!name) return null;
+  const f = FOLDERS.find(x => x.name.toLowerCase() === name.toLowerCase()); if (f) return f.id;
+  const r = await api(`/api/admin/galleries/${G.id}/folders`, { method: "POST", body: { name } }); FOLDERS.push(r.folder); return r.folder.id;
+}
+async function moveSelTo(folder) {
+  const ids = [...pickSel]; if (!ids.length) return;
+  try { await api(`/api/admin/galleries/${G.id}/folder-photos`, { method: "PUT", body: { folder: folder || null, ids } }); pickSel.clear(); await refresh(); toast(`${ids.length} photo${ids.length > 1 ? "s" : ""} déplacée${ids.length > 1 ? "s" : ""}.`); } catch (e) { toast(errText(e), true); }
+}
 async function openGallery(id, keepTab) {
   show("vGal");
-  if (!keepTab) { tab = "photos"; picking = false; pickSel.clear(); }
+  if (!keepTab) { tab = "photos"; picking = false; pickSel.clear(); curFolder = ""; }
   await refresh(id);
   selectTab(tab);
 }
 async function refresh(id = G && G.id) {
   let d; try { d = await api("/api/admin/galleries/" + id); } catch (e) { if (e.status === 404) location.hash = ""; else if (e.status !== 401) toast(errText(e), true); return; }
-  G = d.gallery; P = d.photos; GUESTS = d.guests; G.events = d.events;
-  paintHead(); paintPhotos(); paintSettings(); paintGuests(); paintStats();
+  G = d.gallery; P = d.photos; GUESTS = d.guests; G.events = d.events; FOLDERS = d.folders || [];
+  if (curFolder && curFolder !== "-" && !FOLDERS.some(f => f.id === curFolder)) curFolder = "";
+  paintHead(); paintFolders(); paintPhotos(); paintSettings(); paintGuests(); paintStats();
 }
 function paintHead() {
   $("#gTitle").textContent = G.title;
@@ -158,14 +187,16 @@ function selectTab(name) { tab = name; $$("#atabs button").forEach(b => b.setAtt
 
 // photos
 const TICK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.4 3 3 6-6.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const ZOOM = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.6" cy="8.6" r="5.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12.8 12.8 17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 function paintPhotos() {
   const grid = $("#pgrid"); grid.textContent = ""; grid.classList.toggle("picking", picking);
   const assigned = new Map(); GUESTS.forEach(g => g.photos.forEach(id => assigned.set(id, (assigned.get(id) || 0) + 1)));
   const frag = document.createDocumentFragment();
   for (const p of P) {
+    if (!inFolder(p)) continue;
     const el = document.createElement("div"); el.className = "pt" + (pickSel.has(p.id) ? " on" : ""); el.dataset.id = p.id; el.title = `${p.name} · ${fmtBytes(p.size)}`;
     const ext = (p.name.split(".").pop() || "").toUpperCase();
-    el.innerHTML = (p.t ? `<img alt="" loading="lazy" src="${esc(p.t)}">` : `<span class="raw"><b>${esc(ext.slice(0, 5))}</b>${esc(p.name)}</span>`) + `<span class="ck">${TICK}</span><span class="tags"></span>`;
+    el.innerHTML = (p.t ? `<img alt="" loading="lazy" src="${esc(p.t)}">` : `<span class="raw"><b>${esc(ext.slice(0, 5))}</b>${esc(p.name)}</span>`) + `<span class="ck">${TICK}</span><span class="tags"></span>` + (p.t ? `<button type="button" class="zoom" data-src="${esc(p.p || p.t)}" data-alt="${esc(p.t)}" data-t="${esc(p.name)}" data-sub="${esc(fmtBytes(p.size))}" aria-label="Voir ${esc(p.name)} en grand">${ZOOM}</button>` : "");
     const tags = [];
     if (p.status !== "ready") tags.push("Import inachevé");
     if (G.cover_photo === p.id) tags.push('<span class="cov">Couverture</span>');
@@ -182,7 +213,8 @@ function paintPhotos() {
   $("#pSelN").textContent = `${pickSel.size} sélectionnée${pickSel.size > 1 ? "s" : ""}`;
   $("#pOpenAll").hidden = $("#pAssign").hidden = G.kind !== "restricted";
   $("#pReplace").disabled = pickSel.size !== 1; $("#pCover").disabled = pickSel.size !== 1;
-  ["#pDel", "#pOpenAll", "#pAssign"].forEach(s => $(s).disabled = !pickSel.size);
+  ["#pDel", "#pOpenAll", "#pAssign", "#pMove"].forEach(s => $(s).disabled = !pickSel.size);
+  $("#pMove").innerHTML = `<option value="">Déplacer vers…</option><option value="-">Sans dossier</option>` + FOLDERS.map(f => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join("");
 }
 $("#pgrid").addEventListener("click", e => {
   const el = e.target.closest(".pt"); if (!el) return;
@@ -191,7 +223,8 @@ $("#pgrid").addEventListener("click", e => {
   paintPhotos();
 });
 $("#pPick").addEventListener("click", () => { picking = !picking; if (!picking) pickSel.clear(); paintPhotos(); });
-$("#pAll").addEventListener("click", () => { P.forEach(p => pickSel.add(p.id)); paintPhotos(); });
+$("#pAll").addEventListener("click", () => { P.filter(inFolder).forEach(p => pickSel.add(p.id)); paintPhotos(); });
+$("#pMove").addEventListener("change", e => { const v = e.target.value; e.target.value = ""; if (v) moveSelTo(v === "-" ? null : v); });
 $("#pDel").addEventListener("click", async () => {
   const ids = [...pickSel]; if (!ids.length || !confirm(`Supprimer définitivement ${ids.length} photo${ids.length > 1 ? "s" : ""} (originaux compris) ?`)) return;
   for (const id of ids) { try { await api("/api/admin/photos/" + id, { method: "DELETE" }); } catch (e) { toast(errText(e), true); break; } }
@@ -284,11 +317,16 @@ async function previews(file) {
 }
 
 const Q = { items: [], active: 0, max: 3, prep: Promise.resolve(), gid: null, refreshT: null };
-function enqueue(files, replaceId) {
-  const list = [...files].filter(accept);
+// dirs : nom du dossier de l'ordinateur pour chaque fichier (même ordre), qui devient un dossier de la galerie
+async function enqueue(files, replaceId, dirs) {
+  files = [...files];
+  const keep = files.map((f, k) => accept(f) ? k : -1).filter(k => k >= 0), list = keep.map(k => files[k]);
   const skipped = files.length - list.length;
   if (!list.length) { toast("Aucune photo reconnue dans cette sélection.", true); return; }
-  for (const file of list) Q.items.push({ file, gid: G.id, replaceId, state: "wait", sent: 0, msg: "En attente" });
+  const base = curFolder && curFolder !== "-" ? curFolder : null, fmap = {};
+  if (dirs && !replaceId) for (const d of new Set(keep.map(k => dirs[k]).filter(Boolean))) { try { fmap[d] = await folderByName(d); } catch (e) { toast(errText(e), true); } }
+  keep.forEach((k, j) => Q.items.push({ file: list[j], gid: G.id, replaceId, folder: (dirs && fmap[dirs[k]]) || base, state: "wait", sent: 0, msg: "En attente" }));
+  if (dirs) paintFolders();
   if (skipped) toast(`${skipped} fichier${skipped > 1 ? "s" : ""} ignoré${skipped > 1 ? "s" : ""} (pas des photos).`);
   paintQueue(); pump();
 }
@@ -313,7 +351,7 @@ async function upload(it) {
     meta = { name: f.name, size: f.size, mime: mimeOf(f), crc32: crc, w: pv ? pv.w : null, h: pv ? pv.h : null, mtime: f.lastModified };
   });
   Q.prep = prep.catch(() => {}); await prep;
-  const c = it.replaceId ? await retry(() => api(`/api/admin/photos/${it.replaceId}/replace`, { method: "POST", body: meta })) : await retry(() => api(`/api/admin/galleries/${it.gid}/photos`, { method: "POST", body: meta }));
+  const c = it.replaceId ? await retry(() => api(`/api/admin/photos/${it.replaceId}/replace`, { method: "POST", body: meta })) : await retry(() => api(`/api/admin/galleries/${it.gid}/photos`, { method: "POST", body: it.folder ? { ...meta, folder: it.folder } : meta }));
   const id = c.id;
   it.msg = "Envoi";
   if (c.mode === "single") {
@@ -353,7 +391,7 @@ window.addEventListener("beforeunload", e => { if (Q.items.some(x => x.state ===
 $("#pickFiles").addEventListener("click", () => $("#inFiles").click());
 $("#pickDir").addEventListener("click", () => $("#inDir").click());
 $("#inFiles").addEventListener("change", e => { enqueue(e.target.files); e.target.value = ""; });
-$("#inDir").addEventListener("change", e => { enqueue(e.target.files); e.target.value = ""; });
+$("#inDir").addEventListener("change", e => { const fs = [...e.target.files]; enqueue(fs, null, fs.map(f => (f.webkitRelativePath || "").split("/")[0] || "")); e.target.value = ""; });
 const drop = $("#drop");
 ["dragenter", "dragover"].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add("over"); }));
 ["dragleave", "drop"].forEach(t => drop.addEventListener(t, () => drop.classList.remove("over")));
@@ -361,16 +399,16 @@ drop.addEventListener("drop", async e => {
   e.preventDefault();
   const items = [...(e.dataTransfer.items || [])].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
   if (!items.length) { enqueue(e.dataTransfer.files); return; }
-  const files = [];
+  const files = [], dirs = []; let top = "";
   const walk = async entry => {
-    if (entry.isFile) files.push(await new Promise((res, rej) => entry.file(res, rej)));
+    if (entry.isFile) { files.push(await new Promise((res, rej) => entry.file(res, rej))); dirs.push(top); }
     else if (entry.isDirectory) {
       const r = entry.createReader();
       for (;;) { const batch = await new Promise((res, rej) => r.readEntries(res, rej)); if (!batch.length) break; for (const x of batch) await walk(x); }
     }
   };
-  for (const it of items) await walk(it);
-  enqueue(files);
+  for (const it of items) { top = it.isDirectory ? it.name : ""; await walk(it); }
+  enqueue(files, null, dirs.some(Boolean) ? dirs : null);
 });
 
 // ---------------- réglages ----------------

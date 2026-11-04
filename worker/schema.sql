@@ -140,3 +140,19 @@ CREATE TABLE IF NOT EXISTS hits (
   n INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (day, path, device)
 );
+
+-- Dossiers d'une galerie (sous-albums). Tables à part (et non ALTER TABLE) : le schéma reste rejouable sans erreur.
+-- Supprimer un dossier ne supprime aucune photo : elles reviennent dans « Sans dossier ».
+CREATE TABLE IF NOT EXISTS folders (
+  id TEXT PRIMARY KEY,
+  gallery_id TEXT NOT NULL,
+  name TEXT NOT NULL,
+  sort INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS folders_gallery ON folders(gallery_id, sort);
+CREATE TABLE IF NOT EXISTS photo_folder (
+  photo_id TEXT PRIMARY KEY,
+  folder_id TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS photo_folder_folder ON photo_folder(folder_id);

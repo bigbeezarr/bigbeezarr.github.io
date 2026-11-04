@@ -192,6 +192,14 @@ const isWide = i => { const m = C.meta && C.meta[i]; return !!m && m[0] > m[1]; 
 const photosOf = p => { const s = new Set(); edsOf(p).forEach(e => { e.imgs.forEach(i => s.add(i)); if (e.feature) s.add(e.feature.img); }); if (p.lead) s.add(p.lead.img); return s; };
 const unpub = () => (C.portfolio.data.unpublished ||= []);
 const badge = on => on ? "" : ' <span class="pill red">Non publié</span>';
+// loupe : ouvre la photo en grand (la vignette elle-même garde la sélection au toucher)
+const ZOOM_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.6" cy="8.6" r="5.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12.8 12.8 17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+function zoomBtn(i) {
+  const b = document.createElement("button"); b.type = "button"; b.className = "zoom"; b.draggable = false; b.innerHTML = ZOOM_SVG;
+  b.dataset.src = LOCAL[i] || `../img/f/${n3(i)}.webp`; b.dataset.t = `Photo ${n3(i)}`; b.setAttribute("aria-label", `Voir la photo ${i} en grand`);
+  const a = C && C.portfolio && (C.portfolio.data.alt || {})[i]; if (a) b.dataset.sub = T2(a, "fr");
+  return b;
+}
 function thumbImg(i) {
   const im = document.createElement("img"); im.alt = ""; im.loading = "lazy"; im.decoding = "async";
   im.src = LOCAL[i] || `../img/s/${n3(i)}.webp`;
@@ -218,6 +226,7 @@ function paintTree() {
   const extra = (key, label, hint) => { const b = document.createElement("button"); b.type = "button"; b.dataset.p = key; b.innerHTML = `${esc(label)}<br><span class="hint">${esc(hint)}</span>`; b.setAttribute("aria-current", String(cur === key)); b.addEventListener("click", () => open(key)); tree.appendChild(b); };
   tree.insertAdjacentHTML("beforeend", `<p class="ch">Site</p>`);
   extra("@home", "Accueil", `${C.home.data.hero.length} en ouverture · ${C.home.data.wall.length} coups de cœur`);
+  extra("@site", "Réglages du site", "coordonnées, liens, réservations");
   extra("@unpub", "Photos retirées", `${unpub().length} photo${unpub().length > 1 ? "s" : ""} hors du site`);
   C.portfolio.data.chapters.forEach(c => {
     tree.insertAdjacentHTML("beforeend", `<p class="ch">${esc(T2(c.name, "fr"))}</p>`);
@@ -240,6 +249,7 @@ function open(key) {
   $$("#pTree button[data-p]").forEach(b => b.setAttribute("aria-current", String(b.dataset.p === key)));
   if (key === "@home") return editHome();
   if (key === "@unpub") return editUnpub();
+  if (key === "@site") return editSite();
   if (!projOf(key)) { cur = null; return; }
   editProject(key);
   if (matchMedia("(max-width:900px)").matches) $("#pEd").scrollIntoView({ block: "start" });
@@ -269,15 +279,20 @@ function editProject(id) {
         ${field("Rôle (FR)", inp("role_fr", T2(p.role, "fr") || "Photographie"))}${field("Rôle (EN)", inp("role_en", T2(p.role, "en") || "Photography"))}
         ${field("Description (FR)", area("sub_fr", T2(p.sub, "fr")), 1)}${field("Description (EN)", area("sub_en", T2(p.sub, "en")), 1)}
         ${field("À la une (rang 1 à 5, vide = non)", inp("featured", p.featured || "", 'type="number" min="1" max="5"'))}${field("Photo de couverture (numéro)", inp("cover", p.cover ?? "", 'type="number" min="0"'))}
-        ${field("Instagram (comptes séparés par des virgules)", inp("ig", (p.ig || []).join(", ")), 1)}
       </div>
       <div class="row"><label class="check"><input type="checkbox" data-k="page"${p.page === false ? "" : " checked"}><span>Page de projet dédiée</span></label></div>
     </div>
-    <div class="edbox"><h2 class="s" style="margin:0">Sélection de la page du projet <span class="hint" id="pSelN"></span></h2>
-      <p class="hint" style="margin:0">Les 8 vignettes en tête de la page du projet. Choisissez-les avec « Sélection » sous les photos ; une photo horizontale y est recadrée en vertical autour du point choisi.</p>
-      <div class="thumbs" id="pSelGrid"></div>
+    <div class="edbox"><h2 class="s" style="margin:0">Liens <span class="hint">(site web, Instagram, réseaux)</span></h2>
+      <p class="hint" style="margin:0">Affichés sur l'accueil, à côté de « Page du projet », et dans les informations de la page du projet. 6 au plus, adresses en https:// (pour Instagram ou TikTok, un compte @nom suffit).</p>
+      <div id="pLinks"></div>
     </div>
-    <div class="edbox"><h2 class="s">Historique de l'événement</h2>
+    <div class="edbox"><h2 class="s" style="margin:0">Sélection de la page du projet <span class="hint" id="pSelN"></span></h2>
+      <p class="hint" style="margin:0">Les 8 vignettes en tête de la page du projet, dans cet ordre : glissez-les, ou utilisez ← et →. Une photo horizontale y est recadrée en vertical autour du point choisi. Elles peuvent venir d'un autre projet ou des « Photos retirées ».</p>
+      <div class="thumbs" id="pSelGrid"></div>
+      <div class="row"><button class="btn small" type="button" id="pSelAdd">Ajouter à la sélection…</button><label class="btn small"><input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden id="pSelFile">Ajouter depuis mon ordinateur</label></div>
+    </div>
+    <div class="edbox" id="pGrid"></div>
+    <div class="edbox" id="pHist"><h2 class="s">Historique de l'événement</h2>
       <p class="hint" style="margin:0">Affiché sous le titre : « ${p.eds ? p.eds.length : 1} édition(s) photographiée(s) sur N ». Laissez vide si le total n'est pas vérifié : rien n'est alors affirmé.</p>
       <div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
         ${field("Éditions connues au total", inp("known", s.known ?? "", 'type="number" min="1"'))}${field("Unité", `<select class="input" data-k="unit">${[["", "—"], ["edition", "éditions"], ["soiree", "soirées"], ["saison", "saisons"], ["concert", "concerts"], ["marque", "marques"], ["evenement", "événements"], ["session", "sessions"]].map(([k, l]) => `<option value="${k}"${(s.unit || "") === k ? " selected" : ""}>${l}</option>`).join("")}</select>`)}
@@ -290,10 +305,18 @@ function editProject(id) {
     <div id="pEds" class="stack"></div>
     <div class="row"><button class="btn small" id="pAddEd" type="button">Ajouter une édition</button><span class="hint">Une nouvelle édition commence « Non publiée ». Pour enlever des photos du site sans les perdre : sélectionnez-les puis « Retirer du site ».</span></div>
   </div>`;
-  $$("[data-k]", ed.firstElementChild.children[0]).concat($$("[data-k]", ed.firstElementChild.children[2])).forEach(el => el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", () => readProject(p)));
+  $$("[data-k]", ed.firstElementChild.children[0]).concat($$("[data-k]", $("#pHist"))).forEach(el => el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", () => readProject(p)));
   $("#pAddEd").addEventListener("click", () => {
     if (!p.eds) { p.eds = [{ year: p.year || "", imgs: p.imgs || [] }]; ["feature", "order"].forEach(k => { if (k in p) { p.eds[0][k] = p[k]; delete p[k]; } }); delete p.imgs; }
     p.eds.unshift({ year: String(new Date().getFullYear()), imgs: [], hidden: true }); mark(); paintEds(p); refreshTreeLight();
+  });
+  linkEditor($("#pLinks"), () => linksOf(p), l => { if (l.length) p.links = l; else delete p.links; delete p.ig; mark(); });
+  $("#pSelAdd").addEventListener("click", () => addToSel(p));
+  $("#pSelFile").addEventListener("change", async ev => {
+    const fs = [...ev.target.files]; ev.target.value = "";
+    const room = 8 - (p.selection || []).length; if (fs.length > room) { A().toast(`La sélection compte 8 photos au plus (${8 - room}/8 déjà).`, true); return; }
+    const ids = await addFiles(fs.map(f => ({ blob: f, name: f.name })), null, "ordinateur", true); // dans « Photos retirées », puis dans la sélection
+    if (ids && ids.length) { (p.selection ||= []).push(...ids); mark(); paintMarks(p); A().toast("Photos ajoutées aux « Photos retirées » et à la sélection. Publiez pour l'enregistrer."); }
   });
   paintEds(p);
 }
@@ -303,9 +326,9 @@ function readProject(p) {
   setT(p, "title", v("title_fr"), v("title_en")); p.place = v("place"); p.city = v("city");
   setT(p, "role", v("role_fr"), v("role_en")); if (T2(p.role, "fr") === "Photographie") delete p.role;
   setT(p, "sub", v("sub_fr"), v("sub_en"));
-  const f = parseInt(v("featured"), 10); if (f >= 1 && f <= 5) p.featured = f; else delete p.featured;
+  const f = parseInt(v("featured"), 10), wasF = !!p.featured; if (f >= 1 && f <= 5) p.featured = f; else delete p.featured;
+  if (wasF !== !!p.featured) setTimeout(() => paintGrid(p));
   const cv = v("cover"); if (cv !== "" && !isNaN(+cv)) p.cover = +cv; else delete p.cover;
-  const ig = v("ig").split(/[,\s]+/).map(h => h.replace(/^@/, "")).filter(h => /^[A-Za-z0-9._]{1,30}$/.test(h)); if (ig.length) p.ig = ig; else delete p.ig;
   if (v("page")) delete p.page; else p.page = false;
   if (v("published")) delete p.hidden; else p.hidden = true;
   $("[data-badge]", ed).innerHTML = badge(!p.hidden);
@@ -326,13 +349,24 @@ function paintMarks(p) {
   const n = $("#pSelN"); if (n) n.textContent = `(${(p.selection || []).length}/8)`;
   const g = $("#pSelGrid"); if (!g) return;
   g.textContent = "";
-  (p.selection || []).forEach(i => {
-    const t = document.createElement("div"); t.className = "th sel2"; t.dataset.i = i; t.appendChild(thumbImg(i));
-    t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}</span>`);
+  const S = p.selection || [], mine = photosOf(p);
+  const moveTo = (from, to) => { if (to < 0 || to >= S.length || from === to) return; const [m] = S.splice(from, 1); S.splice(to, 0, m); mark(); paintMarks(p); const b = $(`#pSelGrid .th[data-i="${m}"] [data-a=${to < from ? "l" : "r"}]`) || $(`#pSelGrid .th[data-i="${m}"] button`); if (b) b.focus(); };
+  S.forEach((i, k) => {
+    const t = document.createElement("div"); t.className = "th sel2"; t.dataset.i = i; t.draggable = true; t.appendChild(thumbImg(i)); t.appendChild(zoomBtn(i));
+    t.setAttribute("aria-label", `Sélection, position ${k + 1} : photo ${i}${mine.has(i) ? "" : " (hors du projet)"}`);
+    t.insertAdjacentHTML("beforeend", `<span class="no">${k + 1} · ${n3(i)}${mine.has(i) ? "" : " · ailleurs"}</span><span class="selnav"><button type="button" class="mini" data-a="l" aria-label="Photo ${i} : une place avant"${k ? "" : " disabled"}>←</button><button type="button" class="mini" data-a="x" aria-label="Retirer la photo ${i} de la sélection">×</button><button type="button" class="mini" data-a="r" aria-label="Photo ${i} : une place après"${k < S.length - 1 ? "" : " disabled"}>→</button></span>`);
+    t.querySelector("[data-a=l]").addEventListener("click", () => moveTo(k, k - 1));
+    t.querySelector("[data-a=r]").addEventListener("click", () => moveTo(k, k + 1));
+    t.querySelector("[data-a=x]").addEventListener("click", () => { S.splice(k, 1); if (p.selFocus) { delete p.selFocus[i]; if (!Object.keys(p.selFocus).length) delete p.selFocus; } if (!S.length) delete p.selection; mark(); paintMarks(p); });
+    t.addEventListener("dragstart", ev => { ev.dataTransfer.setData("text/x-sel", String(k)); ev.dataTransfer.effectAllowed = "move"; t.classList.add("drag"); });
+    t.addEventListener("dragend", () => t.classList.remove("drag"));
+    t.addEventListener("dragover", ev => { if (ev.dataTransfer.types.includes("text/x-sel")) { ev.preventDefault(); t.classList.add("over"); } });
+    t.addEventListener("dragleave", () => t.classList.remove("over"));
+    t.addEventListener("drop", ev => { ev.preventDefault(); t.classList.remove("over"); const from = parseInt(ev.dataTransfer.getData("text/x-sel"), 10); if (!isNaN(from)) moveTo(from, k); });
     if (isWide(i)) {
       const f = (p.selFocus || {})[i] ?? 50;
       t.firstChild.style.objectPosition = `${f}% 50%`;
-      t.insertAdjacentHTML("beforeend", `<label class="foc"><span class="vh">Recadrage de la photo ${i} (gauche 0, droite 100)</span><input type="range" min="0" max="100" step="1" value="${f}"></label>`);
+      t.insertAdjacentHTML("beforeend", `<label class="foc" draggable="false"><span class="vh">Recadrage de la photo ${i} (gauche 0, droite 100)</span><input type="range" min="0" max="100" step="1" value="${f}"></label>`);
       t.querySelector("input").addEventListener("input", ev => { const v = +ev.target.value; (p.selFocus ||= {})[i] = v; if (v === 50) delete p.selFocus[i]; if (!Object.keys(p.selFocus).length) delete p.selFocus; t.firstChild.style.objectPosition = `${v}% 50%`; mark(); });
     }
     g.appendChild(t);
@@ -366,7 +400,7 @@ function paintEds(p) {
     all.forEach(i => {
       const k = e.imgs.indexOf(i), feat = k < 0;
       const t = document.createElement("div"); t.className = "th" + (sel.has(i) ? " on" : ""); t.draggable = !feat; t.dataset.i = i; t.dataset.y = y; t.setAttribute("role", "listitem"); t.tabIndex = 0;
-      t.appendChild(thumbImg(i));
+      t.appendChild(thumbImg(i)); t.appendChild(zoomBtn(i));
       t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}${feat ? " · vedette" : ""}</span>${alt[i] ? '<span class="al" title="Texte alternatif rédigé"></span>' : ""}<span class="tags"></span>`);
       t.setAttribute("aria-label", `Photo ${i}${alt[i] ? " : " + T2(alt[i], "fr") : ""}`);
       const toggle = () => { sel.has(i) ? sel.delete(i) : sel.add(i); t.classList.toggle("on", sel.has(i)); t.setAttribute("aria-pressed", String(sel.has(i))); upd(); };
@@ -428,15 +462,20 @@ function paintEds(p) {
     box.appendChild(el);
   });
   paintMarks(p);
+  paintGrid(p);
 }
 function refreshUnpubCount() { const b = $('#pTree button[data-p="@unpub"] .hint'); if (b) b.textContent = `${unpub().length} photo${unpub().length > 1 ? "s" : ""} hors du site`; }
 // une référence (couverture, sélection, recadrage, accueil) vers une photo sortie du projet est oubliée
+// photos qu'une sélection peut reprendre : toutes celles du portfolio (tout projet, toute édition) et les photos retirées
+function poolOf() { const s = new Set(unpub()); C.portfolio.data.chapters.forEach(c => c.projects.forEach(q => photosOf(q).forEach(i => s.add(i)))); return s; }
 function prune() {
+  const shp = C.portfolio.data.shape;
+  if (shp) { const H = C.home.data, used = poolOf(); [...H.hero, ...H.about, ...H.wall, H.me].forEach(i => used.add(i)); for (const k of Object.keys(shp)) if (!used.has(+k)) delete shp[k]; if (!Object.keys(shp).length) delete C.portfolio.data.shape; }
   for (const c of C.portfolio.data.chapters) for (const p of c.projects) {
     const mine = photosOf(p);
     if (p.cover != null && !mine.has(p.cover)) delete p.cover;
-    if (p.selection) { p.selection = p.selection.filter(i => mine.has(i)).slice(0, 8); if (!p.selection.length) delete p.selection; }
-    if (p.selFocus) { for (const k of Object.keys(p.selFocus)) if (!mine.has(+k)) delete p.selFocus[k]; if (!Object.keys(p.selFocus).length) delete p.selFocus; }
+    if (p.selection) { const pool = poolOf(); p.selection.splice(0, p.selection.length, ...[...new Set(p.selection)].filter(i => pool.has(i)).slice(0, 8)); if (!p.selection.length) delete p.selection; }
+    if (p.selFocus) { for (const k of Object.keys(p.selFocus)) if (!(p.selection || []).includes(+k)) delete p.selFocus[k]; if (!Object.keys(p.selFocus).length) delete p.selFocus; }
     if (p.homePicks) { for (const y of Object.keys(p.homePicks)) { p.homePicks[y] = p.homePicks[y].filter(i => mine.has(i)).slice(0, 10); if (!p.homePicks[y].length) delete p.homePicks[y]; } if (!Object.keys(p.homePicks).length) delete p.homePicks; }
   }
 }
@@ -483,6 +522,200 @@ function editAlt(i) {
   mark(); open(cur);
 }
 
+// ---------- liens (site web, Instagram, réseaux) : même contrôle que le serveur ----------
+const LINK_KINDS = [["site", "Site web"], ["instagram", "Instagram"], ["tiktok", "TikTok"], ["youtube", "YouTube"], ["facebook", "Facebook"], ["x", "X"], ["autre", "Autre"]];
+const LINK_URL = /^https:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:[/?#][^\s"'<>`]*)?$/;
+// l'ancien champ « ig » (comptes Instagram) apparaît dans la même liste ; il est converti au premier changement
+const linksOf = p => (p.links || []).concat((p.ig || []).map(h => ({ kind: "instagram", label: `Instagram @${h}`, url: `https://www.instagram.com/${h}/` })));
+function normUrl(kind, v) {
+  v = v.trim(); const h = /^@?([A-Za-z0-9._]{1,30})$/.exec(v);
+  if (h && kind === "instagram") return `https://www.instagram.com/${h[1]}/`;
+  if (h && kind === "tiktok") return `https://www.tiktok.com/@${h[1]}`;
+  if (h && kind === "x") return `https://x.com/${h[1]}`;
+  if (/^http:\/\//i.test(v)) return v; // refusé plus bas : on ne change pas un http:// en silence
+  if (v && !/^[a-z]+:/i.test(v) && /^[A-Za-z0-9.-]+\.[A-Za-z]{2,}([/?#].*)?$/.test(v)) return "https://" + v;
+  return v;
+}
+function linkEditor(box, get, set) {
+  let rows = get().map(x => ({ ...x }));
+  const commit = () => { const ok = rows.filter(r => r.url && LINK_URL.test(r.url) && r.label.trim() && [...r.label].length <= 40).map(r => ({ kind: r.kind || "autre", label: r.label.trim(), url: r.url })); set(ok); };
+  const paint = () => {
+    box.innerHTML = rows.map((r, k) => `<div class="lrow" data-k2="${k}"><select class="input" data-f="kind" aria-label="Type du lien ${k + 1}">${LINK_KINDS.map(([v, l]) => `<option value="${v}"${(r.kind || "autre") === v ? " selected" : ""}>${l}</option>`).join("")}</select><input class="input" data-f="label" maxlength="40" placeholder="Libellé affiché" aria-label="Libellé du lien ${k + 1}" value="${esc(r.label || "")}"><input class="input" data-f="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://… ou @compte" aria-label="Adresse du lien ${k + 1}" value="${esc(r.url || "")}"><button class="btn small" type="button" data-f="up" aria-label="Lien ${k + 1} : monter"${k ? "" : " disabled"}>↑</button><button class="btn small danger" type="button" data-f="rm" aria-label="Retirer le lien ${k + 1}">Retirer</button><span class="hint lerr" data-f="err"></span></div>`).join("")
+      + `<div class="row"><button class="btn small" type="button" data-f="add"${rows.length >= 6 ? " disabled" : ""}>+ Ajouter un lien</button><span class="hint">${rows.length}/6</span></div>`;
+    $$(".lrow", box).forEach(el => {
+      const k = +el.dataset.k2, r = rows[k], e = $("[data-f=err]", el);
+      const val = () => { e.textContent = !r.url ? "" : !LINK_URL.test(r.url) ? "Adresse refusée : elle doit commencer par https://" : !r.label.trim() ? "Libellé manquant" : ""; el.classList.toggle("bad", !!e.textContent); };
+      $("[data-f=kind]", el).addEventListener("change", ev => { const old = LINK_KINDS.find(x => x[0] === (r.kind || "autre"))[1]; r.kind = ev.target.value; if (!r.label || r.label === old || r.label.startsWith(old + " @")) { r.label = LINK_KINDS.find(x => x[0] === r.kind)[1]; $("[data-f=label]", el).value = r.label; } r.url = normUrl(r.kind, r.url || ""); $("[data-f=url]", el).value = r.url; val(); commit(); });
+      $("[data-f=label]", el).addEventListener("input", ev => { r.label = ev.target.value; val(); commit(); });
+      $("[data-f=url]", el).addEventListener("change", ev => { const raw = ev.target.value.trim(), h = /^@([A-Za-z0-9._]{1,30})$/.exec(raw); r.url = normUrl(r.kind, raw); ev.target.value = r.url; if (h && (r.label === LINK_KINDS.find(x => x[0] === r.kind)[1])) { r.label += " @" + h[1]; $("[data-f=label]", el).value = r.label; } val(); commit(); });
+      $("[data-f=up]", el).addEventListener("click", () => { [rows[k - 1], rows[k]] = [rows[k], rows[k - 1]]; commit(); paint(); });
+      $("[data-f=rm]", el).addEventListener("click", () => { rows.splice(k, 1); commit(); paint(); });
+      val();
+    });
+    $("[data-f=add]", box).addEventListener("click", () => { rows.push({ kind: "site", label: "Site web", url: "" }); paint(); $(".lrow:last-of-type [data-f=url]", box)?.focus(); });
+  };
+  paint();
+}
+
+// ---------- sélection : ajouter des photos d'ailleurs (autre projet, photos retirées) ----------
+function addToSel(p) {
+  const d = $("#selDlg"), src = $("#selSrc"), grid = $("#selGrid"), go = $("#selGo"), picked = [];
+  const S = p.selection || [], room = () => 8 - S.length - picked.length;
+  const list = [{ label: "Photos retirées (hors du site)", ids: () => unpub().slice() }];
+  C.portfolio.data.chapters.forEach(c => c.projects.forEach(q => edsOf(q).forEach((e, k) => list.push({ label: `${q.id === p.id ? "Ce projet" : T2(q.title, "fr")}${q.eds ? " · " + [e.brand, e.look ? "Look " + e.look : "", e.year, T2(e.label, "fr")].filter(Boolean).join(" ") : ""}${q.hidden || e.hidden ? " (non publié)" : ""}`, ids: () => (e.feature ? [e.feature.img] : []).concat(e.imgs) }))));
+  src.innerHTML = list.map((t, k) => `<option value="${k}">${esc(t.label)}</option>`).join("");
+  const upd = () => { go.disabled = !picked.length; $("#selN").textContent = `${picked.length} cochée${picked.length > 1 ? "s" : ""} · place pour ${Math.max(0, room())} de plus (8 au plus)`; };
+  const paint = () => {
+    grid.textContent = "";
+    const ids = list[+src.value].ids();
+    ids.forEach(i => {
+      const t = document.createElement("button"); t.type = "button"; t.className = "th"; const inSel = S.includes(i);
+      t.setAttribute("aria-pressed", String(picked.includes(i))); t.setAttribute("aria-label", `Photo ${i}${inSel ? " (déjà dans la sélection)" : ""}`); t.disabled = inSel;
+      if (picked.includes(i)) t.classList.add("on"); if (inSel) t.classList.add("dim");
+      t.appendChild(thumbImg(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}${inSel ? " · déjà" : ""}</span>`);
+      t.addEventListener("click", () => { const k = picked.indexOf(i); if (k >= 0) picked.splice(k, 1); else { if (room() <= 0) { A().toast("La sélection compte 8 photos au plus.", true); return; } picked.push(i); } t.classList.toggle("on", picked.includes(i)); t.setAttribute("aria-pressed", String(picked.includes(i))); upd(); });
+      grid.appendChild(t);
+    });
+    if (!ids.length) grid.innerHTML = '<p class="hint" style="margin:0">Aucune photo ici.</p>';
+  };
+  src.onchange = paint; paint(); upd();
+  go.onclick = () => { (p.selection ||= []).push(...picked.filter(i => !p.selection.includes(i))); d.close(); mark(); paintMarks(p); A().toast(`${picked.length} photo${picked.length > 1 ? "s" : ""} ajoutée${picked.length > 1 ? "s" : ""} à la sélection.`); };
+  d.showModal();
+}
+
+// ---------- aperçu de la grille de l'accueil : le même calcul que la page d'accueil (src.html, layoutMosaic) ----------
+const PAT_D = ["SDS", "SSS", "DSS", "SSD", "SSSS", "SDSS", "SSDS", "DSD", "SS", "SD", "DS", "SSSSS", "DSSS", "SSSD", "SDSD", "S", "D"], PAT_M = ["SS", "SD", "DS", "S", "SSS", "D"];
+function mosaicLayout(as, W) {
+  const mob = W < 640, g = mob ? 6 : W < 1000 ? 8 : 10, T0 = mob ? 210 : W < 1000 ? 270 : 330, pats = mob ? PAT_M : PAT_D, n = as.length;
+  const tgt = par => mob ? T0 : T0 * (par ? 0.82 : 1.22);
+  const rowH = bl => { let A2 = 0, Sg = 0; for (const b of bl) { if (b.t === "S") A2 += b.a; else { const st = 1 / (1 / b.a1 + 1 / b.a2); A2 += st; Sg += st; } } return (W - (bl.length - 1) * g + g * Sg) / A2; };
+  const best = [[], []]; best[0][n] = best[1][n] = { cost: 0 };
+  for (let i = n - 1; i >= 0; i--) for (const par of [0, 1]) {
+    let bb = null;
+    for (const pt of pats) {
+      let need = 0; for (const c of pt) need += c === "D" ? 2 : 1; if (i + need > n) continue;
+      let k = i; const bl = [];
+      for (const c of pt) { if (c === "S") bl.push({ t: "S", a: as[k], k: [k++] }); else { bl.push({ t: "D", a1: as[k], a2: as[k + 1], k: [k, k + 1] }); k += 2; } }
+      const H = rowH(bl), T = tgt(par), dd = Math.log(H / T); let cost = dd * dd * 4;
+      for (const b of bl) if (b.t === "D" && (b.a1 < 1 || b.a2 < 1)) cost += .4;
+      if (H > T * 1.6 || H < T * .6) cost += 12 + dd * dd * 20;
+      const nx = best[1 - par][i + need]; if (!nx) continue;
+      if (!bb || cost + nx.cost < bb.cost) bb = { cost: cost + nx.cost, r: { bl, H, need } };
+    }
+    best[par][i] = bb;
+  }
+  const pos = []; let i = 0, y = 0, par = 0;
+  while (i < n) {
+    const r = best[par][i].r, T = tgt(par); let H = r.H, cap = false; if (H > T * 1.7) { H = T * 1.2; cap = true; }
+    const out = []; let x = 0;
+    for (const b of r.bl) {
+      if (b.t === "S") { const w = b.a * H; out.push([b.k[0], x, y, w, H]); x += w + g; }
+      else { const st = 1 / (1 / b.a1 + 1 / b.a2), w = (H - g) * st, h1 = w / b.a1; out.push([b.k[0], x, y, w, h1], [b.k[1], x, y + h1 + g, w, H - g - h1]); x += w + g; }
+    }
+    const off = cap ? Math.max(0, (W - (x - g)) / 2) : 0;
+    for (const [k, px, py, w, h] of out) pos[k] = [px + off, py, w, h];
+    y += H + g; i += r.need; par = 1 - par;
+  }
+  return { pos, H: Math.max(0, y - g) };
+}
+// l'ordre automatique (par couleur) est calculé à la publication : l'aperçu reprend l'ordre du site en ligne,
+// les photos qui n'y sont pas encore viennent à la fin
+let LIVE = null, liveTried = false;
+async function loadLive() {
+  if (liveTried) return LIVE; liveTried = true;
+  try { const t = await (await fetch("../index.html", { cache: "no-store" })).text(), m = /const DATA = (\{.*?\});\n/s.exec(t); if (m) LIVE = JSON.parse(m[1]); } catch {}
+  return LIVE;
+}
+function liveOrder() {
+  const o = new Map(); let n = 0;
+  if (LIVE) LIVE.chapters.forEach(c => c.projects.forEach(q => (q.home || edsOf(q)).forEach(b => b.imgs.forEach(i => o.set(i, n++)))));
+  return o;
+}
+const W_DESK = 1178, W_PHONE = 358; // largeur d'une mosaïque de l'accueil sur un écran de 1280 px et de 390 px
+function homeBlocks(p) {
+  const L = liveOrder(), ord = (ids, fixed) => fixed ? ids.slice() : ids.slice().sort((a, b) => (L.has(a) ? L.get(a) : 1e6 + ids.indexOf(a)) - (L.has(b) ? L.get(b) : 1e6 + ids.indexOf(b)));
+  const eds = edsOf(p).filter(e => !e.hidden || !p.eds);
+  const label = e => p.eds ? [e.brand, e.look ? "Look " + e.look : "", e.year, T2(e.label, "fr")].filter(Boolean).join(" · ") : "Photos";
+  if (p.featured && C.site.data.projectPages !== false) { // projet à la une : 10 photos par année (homePicks), comme build.py
+    const years = [], by = {};
+    eds.forEach(e => { const y = edYear(p, e); if (!by[y]) { by[y] = []; years.push(y); } by[y].push(e); });
+    let trimmed = false;
+    const blocks = years.map(y => {
+      const pool = []; by[y].forEach(e => { if (e.feature) pool.push(e.feature.img); pool.push(...e.imgs); });
+      const n = Math.min(10, pool.length), want = [...new Set(((p.homePicks || {})[y]) || [])].filter(i => pool.includes(i)).slice(0, n);
+      want.push(...pool.filter(i => !want.includes(i)).slice(0, n - want.length)); if (pool.length > want.length) trimmed = true;
+      const feats = new Set(by[y].filter(e => e.feature).map(e => e.feature.img)), feat = want.find(i => feats.has(i));
+      const imgs = want.filter(i => i !== feat);
+      return { title: y || "Photos", feat, imgs: by[y].some(e => e.order === "fixed") ? pool.filter(i => imgs.includes(i)) : ord(imgs), note: `${want.length} sur ${pool.length}` };
+    });
+    if (trimmed) return blocks;
+  }
+  return eds.map(e => ({ title: label(e), feat: e.feature ? e.feature.img : null, imgs: ord(e.imgs, e.order === "fixed"), note: `${e.imgs.length} photos` }));
+}
+let gridW = W_DESK, shapeCur = null;
+const arOf = i => { const s = (C.portfolio.data.shape || {})[i], m = C.meta && C.meta[i]; return s ? (s.r === "v" ? 2 / 3 : 3 / 2) : m ? m[0] / m[1] : 1.5; };
+async function paintGrid(p) {
+  const box = $("#pGrid"); if (!box) return;
+  box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 class="s" style="margin:0">Grille de l'accueil</h2><div class="seg" role="group" aria-label="Largeur de l'aperçu"><button type="button" class="btn small" data-w="${W_DESK}" aria-pressed="${gridW === W_DESK}">Ordinateur</button><button type="button" class="btn small" data-w="${W_PHONE}" aria-pressed="${gridW === W_PHONE}">Téléphone</button></div></div>
+    <p class="hint" style="margin:0">Les photos de ce projet telles que l'accueil les range${p.hidden ? " (projet non publié : rien n'est affiché sur le site pour l'instant)" : ""}. Touchez une photo pour l'afficher en vertical (2:3) ou en horizontal (3:2) sur l'accueil et choisir son cadrage ; la visionneuse montre toujours la photo entière.</p>
+    <div id="gShape"></div><div id="gBlocks" class="stack"><p class="hint">Chargement…</p></div>`;
+  $$("[data-w]", box).forEach(b => b.addEventListener("click", () => { gridW = +b.dataset.w; paintGrid(p); }));
+  await loadLive();
+  if (!$("#gBlocks") || cur !== p.id) return;
+  const host = $("#gBlocks"); host.textContent = "";
+  const blocks = homeBlocks(p);
+  if (!LIVE) host.insertAdjacentHTML("beforeend", '<p class="hint" style="margin:0">Site en ligne injoignable : l\'ordre montré est celui de vos éditions, avant le rangement automatique par couleur.</p>');
+  blocks.forEach(b => {
+    const sec = document.createElement("div"); sec.className = "gblock";
+    sec.innerHTML = `<p class="gtitle"><b>${esc(b.title)}</b> <span class="hint">${esc(b.note)}${b.feat != null ? ` · photo d'ouverture ${n3(b.feat)} au-dessus, en grand` : ""}</span></p>`;
+    const frame = document.createElement("div"); frame.className = "gframe" + (gridW === W_PHONE ? " phone" : "");
+    const stage = document.createElement("div"); stage.className = "gstage"; stage.style.width = gridW + "px";
+    const { pos, H } = mosaicLayout(b.imgs.map(arOf), gridW);
+    b.imgs.forEach((i, k) => {
+      const [x, y, w, h] = pos[k], t = document.createElement("button"), sh = (C.portfolio.data.shape || {})[i];
+      t.type = "button"; t.className = "gt" + (shapeCur === i ? " on" : "") + (sh ? " forced" : ""); t.dataset.i = i;
+      Object.assign(t.style, { left: x.toFixed(1) + "px", top: y.toFixed(1) + "px", width: w.toFixed(1) + "px", height: h.toFixed(1) + "px" });
+      t.setAttribute("aria-label", `Photo ${i}${sh ? (sh.r === "v" ? ", affichée en vertical" : ", affichée en horizontal") : ""} : changer sa forme`);
+      const im = thumbImg(i); if (sh) im.style.objectPosition = `${sh.x ?? 50}% ${sh.y ?? 50}%`; t.appendChild(im);
+      t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}${sh ? (sh.r === "v" ? " · V" : " · H") : ""}</span>`);
+      t.addEventListener("click", () => { shapeCur = i; paintShape(p); $$(".gt", host).forEach(z => z.classList.toggle("on", +z.dataset.i === i)); });
+      stage.appendChild(t);
+    });
+    stage.style.height = H.toFixed(1) + "px";
+    frame.appendChild(stage); sec.appendChild(frame); host.appendChild(sec);
+    const fit = () => { const s = Math.min(1, frame.clientWidth / gridW); stage.style.transform = `scale(${s})`; frame.style.height = (H * s).toFixed(1) + "px"; };
+    fit(); new ResizeObserver(fit).observe(frame);
+  });
+  if (!blocks.some(b => b.imgs.length)) host.insertAdjacentHTML("beforeend", '<p class="hint" style="margin:0">Aucune photo publiée dans ce projet.</p>');
+  paintShape(p);
+}
+function paintShape(p) {
+  const box = $("#gShape"); if (!box) return;
+  const i = shapeCur, all = new Set(homeBlocks(p).flatMap(b => b.imgs));
+  if (i == null || !all.has(i)) { box.innerHTML = ""; return; }
+  const sh = (C.portfolio.data.shape || {})[i], r = sh ? sh.r : "o", m = C.meta && C.meta[i];
+  box.innerHTML = `<div class="shapebox"><div class="shprev ${r}"><img alt=""></div><div class="stack" style="gap:8px;flex:1;min-width:200px">
+    <p style="margin:0"><b>Photo ${n3(i)}</b> <span class="hint">${m ? `${m[0]} × ${m[1]} px, ${m[0] > m[1] ? "horizontale" : m[0] < m[1] ? "verticale" : "carrée"}` : ""}</span></p>
+    <div class="seg" role="radiogroup" aria-label="Forme sur l'accueil">${[["o", "Original"], ["v", "Vertical (2:3)"], ["h", "Horizontal (3:2)"]].map(([k, l]) => `<button type="button" class="btn small" role="radio" data-r="${k}" aria-checked="${r === k}">${l}</button>`).join("")}</div>
+    <label class="field"><span>Cadrage horizontal : <b data-o="x">${sh ? sh.x ?? 50 : 50}</b> % (gauche 0, droite 100)</span><input type="range" min="0" max="100" step="1" data-a="x" value="${sh ? sh.x ?? 50 : 50}"${sh ? "" : " disabled"}></label>
+    <label class="field"><span>Cadrage vertical : <b data-o="y">${sh ? sh.y ?? 50 : 50}</b> % (haut 0, bas 100)</span><input type="range" min="0" max="100" step="1" data-a="y" value="${sh ? sh.y ?? 50 : 50}"${sh ? "" : " disabled"}></label>
+  </div></div>`;
+  const pv = $(".shprev img", box); pv.src = thumbImg(i).src; pv.style.objectPosition = sh ? `${sh.x ?? 50}% ${sh.y ?? 50}%` : ""; if (!sh && m) $(".shprev", box).style.aspectRatio = `${m[0]} / ${m[1]}`;
+  const repaint = () => { const y = $("#pGrid").getBoundingClientRect().top; paintGrid(p).then(() => { const d = $("#pGrid").getBoundingClientRect().top - y; if (d) scrollBy(0, d); }); };
+  $$("[data-r]", box).forEach(b => b.addEventListener("click", () => {
+    const d = C.portfolio.data;
+    if (b.dataset.r === "o") { if (d.shape) { delete d.shape[i]; if (!Object.keys(d.shape).length) delete d.shape; } }
+    else { const o = (d.shape ||= {})[i] || {}; d.shape[i] = { r: b.dataset.r, ...(o.x != null && o.x !== 50 ? { x: o.x } : {}), ...(o.y != null && o.y !== 50 ? { y: o.y } : {}) }; }
+    mark(); repaint();
+  }));
+  $$("input[type=range]", box).forEach(el => el.addEventListener("input", () => {
+    const s2 = C.portfolio.data.shape && C.portfolio.data.shape[i]; if (!s2) return;
+    const a = el.dataset.a, v = +el.value; if (v === 50) delete s2[a]; else s2[a] = v;
+    $(`[data-o=${a}]`, box).textContent = v; const pos = `${s2.x ?? 50}% ${s2.y ?? 50}%`; pv.style.objectPosition = pos;
+    $$(`#gBlocks .gt[data-i="${i}"] img`).forEach(im => { im.style.objectPosition = pos; }); mark();
+  }));
+}
+
 // ---------- photos retirées ----------
 function editUnpub() {
   const ed = $("#pEd"), list = unpub();
@@ -495,7 +728,7 @@ function editUnpub() {
   const g = $("#uGrid");
   list.forEach(i => {
     const t = document.createElement("div"); t.className = "th" + (sel.has(i) ? " on" : ""); t.dataset.i = i; t.tabIndex = 0; t.setAttribute("role", "button"); t.setAttribute("aria-label", `Photo ${i}`);
-    t.appendChild(thumbImg(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}</span>`);
+    t.appendChild(thumbImg(i)); t.appendChild(zoomBtn(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}</span>`);
     const toggle = () => { sel.has(i) ? sel.delete(i) : sel.add(i); t.classList.toggle("on", sel.has(i)); t.setAttribute("aria-pressed", String(sel.has(i))); upd(); };
     t.addEventListener("click", toggle); t.addEventListener("keydown", ev => { if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); toggle(); } });
     g.appendChild(t);
@@ -521,7 +754,7 @@ function editHome() {
     const g = box.querySelector(".thumbs"), mine = () => [...sel].filter(i => list.includes(i));
     list.forEach((i, k) => {
       const t = document.createElement("div"); t.className = "th" + (sel.has(i) ? " on" : ""); t.dataset.i = i; t.draggable = true; t.tabIndex = 0; t.setAttribute("role", "button"); t.setAttribute("aria-label", `Photo ${i}, position ${k + 1}`);
-      t.appendChild(thumbImg(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${k + 1} · ${n3(i)}</span>`);
+      t.appendChild(thumbImg(i)); t.appendChild(zoomBtn(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${k + 1} · ${n3(i)}</span>`);
       const toggle = () => { sel.has(i) ? sel.delete(i) : sel.add(i); t.classList.toggle("on", sel.has(i)); upd(); };
       t.addEventListener("click", toggle); t.addEventListener("keydown", ev => { if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); toggle(); } });
       t.addEventListener("dragstart", ev => ev.dataTransfer.setData("text/plain", String(k)));
@@ -573,9 +806,10 @@ async function prepare(blob) {
   } finally { bmp.close && bmp.close(); }
 }
 let busy = false;
-async function addFiles(items, target, origin = "ordinateur") {
+async function addFiles(items, target, origin = "ordinateur", keepDraft = false) {
   if (!items.length) return;
-  if (dirty) { A().toast("Publiez d'abord les modifications en cours : l'ajout de photos enregistre directement sur le site.", true); return; }
+  // keepDraft : la photo va dans « Photos retirées » (rien d'autre ne change côté serveur), les modifications en cours sont gardées
+  if (dirty && !keepDraft) { A().toast("Publiez d'abord les modifications en cours : l'ajout de photos enregistre directement sur le site.", true); return; }
   if (busy) { A().toast("Un envoi est déjà en cours.", true); return; }
   busy = true;
   const st = $("#pState"), done = [], errs = [];
@@ -601,6 +835,7 @@ async function addFiles(items, target, origin = "ordinateur") {
   st.textContent = done.length ? `${done.length} photo${done.length > 1 ? "s" : ""} ajoutée${done.length > 1 ? "s" : ""} (n° ${done.join(", ")}). Le site se met à jour dans quelques minutes.` : "";
   if (errs.length) A().toast(errs.slice(0, 2).join(" · "), true); else if (done.length) A().toast("Photos ajoutées au site.");
   refreshTree();
+  return done;
 }
 async function fromGallery(target) {
   if (dirty) { A().toast("Publiez d'abord les modifications en cours.", true); return; }
@@ -636,14 +871,17 @@ async function fromGallery(target) {
 }
 
 function editSite() {
-  cur = null; $$("#pTree button[data-p]").forEach(b => b.setAttribute("aria-current", "false"));
+  cur = "@site"; $$("#pTree button[data-p]").forEach(b => b.setAttribute("aria-current", String(b.dataset.p === "@site")));
   const s = C.site.data, ed = $("#pEd");
   ed.innerHTML = `<div class="edbox"><h2 class="s">Réglages du site</h2><div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
     ${field("Courriel de contact", inp("email", s.email, 'type="email"'))}${field("Téléphone affiché", inp("phone", s.phone))}${field("Téléphone (format international)", inp("phoneHref", s.phoneHref))}${field("Adresse du serveur (vide = automatique)", inp("api", s.api, 'placeholder="https://…"'))}${field("Clé publique Turnstile (facultatif, avec le secret TURNSTILE_SECRET du serveur)", inp("turnstile", s.turnstile, 'placeholder="0x4AAAA…" autocomplete="off"'))}</div>
     <label class="check"><input type="checkbox" data-k="legalOk"${s.legalOk ? " checked" : ""}><span>Les pages Confidentialité et Conditions ont été validées par un juriste (retire la mention « version de travail »)</span></label>
     <label class="check"><input type="checkbox" data-k="projectPages"${s.projectPages !== false ? " checked" : ""}><span>Pages de projet dédiées</span></label>
-    <p class="hint" style="margin:0">Types de prestation proposés dans le formulaire : ${(s.booking && s.booking.types || []).map(k => esc(TYPES[k] || k)).join(", ")}.</p></div>`;
+    <p class="hint" style="margin:0">Types de prestation proposés dans le formulaire : ${(s.booking && s.booking.types || []).map(k => esc(TYPES[k] || k)).join(", ")}.</p>
+    <h3 class="s" style="margin:8px 0 0">Liens du site</h3><p class="hint" style="margin:0">Affichés dans la section Contact de l'accueil (sous Instagram) et en pied de page des pages de projet. 6 au plus.</p><div id="sLinks"></div></div>`;
+  linkEditor($("#sLinks"), () => s.links || [], l => { if (l.length) s.links = l; else delete s.links; mark("site"); });
   $$("[data-k]", ed).forEach(x => x.addEventListener(x.type === "checkbox" ? "change" : "input", () => {
+    if (x.closest("#sLinks")) return;
     const v = k => { const z = $(`[data-k=${k}]`, ed); return z.type === "checkbox" ? z.checked : z.value.trim(); };
     s.email = v("email"); s.phone = v("phone"); s.phoneHref = v("phoneHref"); s.api = v("api"); s.legalOk = v("legalOk"); s.projectPages = v("projectPages");
     if (v("turnstile")) s.turnstile = v("turnstile"); else delete s.turnstile;

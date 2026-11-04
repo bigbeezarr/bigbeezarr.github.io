@@ -113,6 +113,30 @@ enregistrement qui casserait le site est refusé avec un message en français, e
   donc jamais un numéro sans son fichier. Un navigateur qui ne sait pas produire du WebP (Safari) envoie un JPEG,
   déposé dans `img/new/NNN.jpg` et converti par `build.py` pendant la publication.
 
+- **Grille de l'accueil** (dans chaque projet) : aperçu de la mosaïque de l'accueil, calculé comme `src.html`
+  (largeurs Ordinateur 1178 px / Téléphone 358 px, ordre du site en ligne). Toucher une photo : « Original »,
+  « Vertical » (2:3) ou « Horizontal » (3:2) et cadrage x/y de 0 à 100 → `shape` dans `content/portfolio.json`
+  (`{"714": {"r": "v", "x": 30, "y": 50}}`). La visionneuse montre toujours la photo entière.
+- **Sélection** : ordre par glisser-déposer ou ←/→ ; « Ajouter à la sélection… » prend une photo d'un autre projet ou
+  des « Photos retirées » ; « Ajouter depuis mon ordinateur » envoie la photo dans « Photos retirées » puis la met dans
+  la sélection. 8 au plus, sans doublon, toute photo du portfolio (pas les photos de l'accueil seules).
+- **Liens** (`links: [{kind, label, url}]` par projet et dans `content/site.json`) : Site web, Instagram, TikTok, YouTube,
+  Facebook, X, autre ; https:// seulement (un compte @nom est converti), 6 au plus, libellé de 40 caractères au plus.
+  L'ancien champ `ig` reste lu et passe dans la même liste à la première modification.
+- **Loupe** sur chaque vignette (portfolio et galeries client) : visionneuse plein écran (← → Échap, + −, F, pincer,
+  toucher deux fois, balayer), avec les aperçus signés 2048 px pour les galeries.
+
+### Dossiers des galeries client
+
+Tables `folders` et `photo_folder` (créées par `schema.sql`, rejouable sans erreur). Dans `/admin/` → une galerie :
+pastilles « Toutes », « Sans dossier » et chaque dossier ; « + Dossier », renommer, ←/→, supprimer (les photos reviennent
+dans « Sans dossier », rien n'est effacé) ; « Déplacer vers… » pour les photos sélectionnées ; un import fait dans un
+dossier y va directement, et un dossier de l'ordinateur (glissé ou « Ajouter un dossier ») crée un dossier du même nom.
+Côté client : pastilles de dossiers, la visionneuse et « Télécharger ce dossier » restent dans le dossier ouvert ; un
+invité limité à ses photos ne voit que les dossiers qui en contiennent. Points d'entrée :
+`POST /api/admin/galleries/:id/folders`, `POST …/folders/order`, `PUT …/folder-photos` (`{ folder | null, ids }`),
+`PATCH/DELETE /api/admin/folders/:id`.
+
 Points d'entrée (tous réservés à l'administrateur) : `GET/PUT /api/admin/content` (plusieurs fichiers par commit :
 `{ files: [{ file, data, sha }], message }`), `POST /api/admin/site-photos`, `GET /api/admin/photos/:id/site-source`.
 Chaque écriture est un commit via l'API « git data » ; la branche n'avance que si personne ne l'a modifiée entre-temps

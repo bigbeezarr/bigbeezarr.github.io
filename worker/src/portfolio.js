@@ -85,6 +85,19 @@ const isId = i => Number.isInteger(i) && i >= 0 && i <= 99999;
 const err = m => fail(400, "invalid_content", { detail: m });
 export const edsOf = p => p.eds || [p];
 export const photosOf = p => { const s = new Set(); for (const e of edsOf(p)) { (e.imgs || []).forEach(i => s.add(i)); if (e.feature) s.add(e.feature.img); } if (p.lead) s.add(p.lead.img); return s; };
+// Liens (site web, Instagram, réseaux) : 6 au plus, libellé de 1 à 40 caractères, adresse https:// seulement.
+export const LINK_KINDS = ["site", "instagram", "tiktok", "youtube", "facebook", "x", "autre"];
+const LINK_URL = /^https:\/\/[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?:[/?#][^\s"'<>`]*)?$/;
+function validateLinks(l, where) {
+  if (!Array.isArray(l) || l.length > 6) err(`liens de ${where} : 6 au plus`);
+  l.forEach((x, k) => {
+    if (!x || typeof x !== "object" || Array.isArray(x)) err(`lien ${k + 1} de ${where} illisible`);
+    if (typeof x.label !== "string" || !x.label.trim() || [...x.label].length > 40 || /[\u0000-\u001f\u007f]/.test(x.label)) err(`lien ${k + 1} de ${where} : libellé de 1 à 40 caractères`);
+    if (typeof x.url !== "string" || x.url.length > 300 || !LINK_URL.test(x.url)) err(`lien « ${oneLine(x.label, 40)} » de ${where} : l'adresse doit commencer par https:// (ou un compte Instagram @nom)`);
+    if (x.kind != null && !LINK_KINDS.includes(x.kind)) err(`lien « ${oneLine(x.label, 40)} » de ${where} : type inconnu`);
+    if (Object.keys(x).some(k2 => !["kind", "label", "url"].includes(k2))) err(`lien « ${oneLine(x.label, 40)} » de ${where} : champ inconnu`);
+  });
+}
 export function validateContent(file, d) {
   if (!d || typeof d !== "object" || Array.isArray(d)) err("contenu illisible");
   const ids = new Set();
@@ -123,12 +136,13 @@ export function validateContent(file, d) {
         if (p.selection != null) {
           if (!Array.isArray(p.selection) || p.selection.length > 8 || p.selection.some(i => !isId(i))) err(`sélection du projet ${p.id} : 8 photos au plus`);
           if (new Set(p.selection).size !== p.selection.length) err(`sélection du projet ${p.id} : photo en double`);
-          const out = p.selection.find(i => !mine.has(i)); if (out != null) err(`sélection du projet ${p.id} : la photo ${out} n'est pas dans ce projet`);
         }
         if (p.selFocus != null) {
           if (typeof p.selFocus !== "object" || Array.isArray(p.selFocus)) err(`recadrage de la sélection de ${p.id}`);
-          for (const [k, v] of Object.entries(p.selFocus)) if (!/^\d{1,5}$/.test(k) || !mine.has(+k) || typeof v !== "number" || !(v >= 0 && v <= 100)) err(`recadrage de la photo ${k} (${p.id}) : 0 à 100, photo du projet`);
+          for (const [k, v] of Object.entries(p.selFocus)) if (!/^\d{1,5}$/.test(k) || !(p.selection || []).includes(+k) || typeof v !== "number" || !(v >= 0 && v <= 100)) err(`recadrage de la photo ${k} (${p.id}) : 0 à 100, photo de la sélection`);
         }
+        if (p.links != null) validateLinks(p.links, `« ${typeof p.title === "string" ? p.title : p.title.fr || p.id} »`);
+        if (p.ig != null && (!Array.isArray(p.ig) || p.ig.length > 6 || p.ig.some(h => typeof h !== "string" || !/^[A-Za-z0-9._]{1,30}$/.test(h)))) err(`comptes Instagram du projet ${p.id}`);
         if (p.homePicks != null) {
           if (typeof p.homePicks !== "object" || Array.isArray(p.homePicks)) err(`photos d'accueil de ${p.id}`);
           for (const [y, l] of Object.entries(p.homePicks)) {
@@ -139,6 +153,20 @@ export function validateContent(file, d) {
       }
     }
     if (d.unpublished != null) imgList(d.unpublished, "photos retirées");
+    // sélection : n'importe quelle photo du portfolio (autre projet, édition non publiée, photos retirées), pas de l'accueil
+    for (const c of d.chapters) for (const p of c.projects) {
+      const out = (p.selection || []).find(i => !ids.has(i));
+      if (out != null) err(`sélection du projet ${p.id} : la photo ${out} n'est ni dans un projet ni dans « Photos retirées »`);
+    }
+    if (d.shape != null) {
+      if (typeof d.shape !== "object" || Array.isArray(d.shape) || Object.keys(d.shape).length > 5000) err("formes de la mosaïque illisibles");
+      for (const [k, v] of Object.entries(d.shape)) {
+        if (!/^\d{1,5}$/.test(k)) err(`forme de la mosaïque : numéro de photo invalide (${oneLine(k, 12)})`);
+        if (!v || typeof v !== "object" || Array.isArray(v) || !["v", "h"].includes(v.r)) err(`forme de la photo ${k} : « v » (vertical) ou « h » (horizontal)`);
+        for (const a of ["x", "y"]) if (v[a] != null && !(typeof v[a] === "number" && v[a] >= 0 && v[a] <= 100)) err(`cadrage de la photo ${k} : ${a} de 0 à 100`);
+        if (Object.keys(v).some(a => !["r", "x", "y"].includes(a))) err(`forme de la photo ${k} : champ inconnu`);
+      }
+    }
     if (d.alt && (typeof d.alt !== "object" || Object.values(d.alt).some(v => !isT(v)))) err("textes alternatifs");
     if ([...JSON.stringify(d)].length > 1500000) err("contenu trop volumineux");
   } else if (file === "home") {
@@ -151,6 +179,7 @@ export function validateContent(file, d) {
     if (d.email && !EMAIL.test(d.email)) err("courriel du site");
     if (d.api && !/^https:\/\/[a-z0-9.-]+(\/[^\s"'<>]*)?$/i.test(d.api)) err("adresse du serveur");
     if (d.turnstile && !/^[0-9A-Za-z_-]{10,100}$/.test(d.turnstile)) err("clé publique Turnstile");
+    if (d.links != null) validateLinks(d.links, "site");
   } else fail(400, "bad_file");
 }
 // Chaque photo du catalogue sert exactement une fois : éditions (même masquées), photos retirées, accueil.
@@ -165,6 +194,8 @@ export function validateUsage(port, home, metaIds) {
   (port.unpublished || []).forEach(i => add(i, "photos retirées"));
   home.hero.forEach(i => add(i, "accueil, ouverture")); home.about.forEach(i => add(i, "accueil, à propos")); home.wall.forEach(i => add(i, "coups de cœur")); add(home.me, "portrait");
   if (dup.length) err(dup[0]);
+  const ghost = Object.keys(port.shape || {}).map(Number).find(i => !where.has(i));
+  if (ghost != null) err(`forme de la mosaïque : la photo ${ghost} n'est utilisée nulle part`);
   if (!metaIds) return;
   const unknown = [...where.keys()].find(i => !metaIds.has(i));
   if (unknown != null) err(`photo ${unknown} inconnue : elle n'est pas dans le catalogue (meta.json)`);

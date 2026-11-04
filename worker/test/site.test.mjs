@@ -155,7 +155,44 @@ await refuse(d => { d.unpublished = [3, 99]; }, "numéro inconnu du catalogue re
 await refuse(d => { d.unpublished = [3, 1]; }, "photo à la fois publiée et retirée refusée", /1 utilisée deux fois/);
 await refuse(d => { d.unpublished = [3, 4]; }, "photo de l'accueil reprise dans le portfolio : refusée", /4 utilisée deux fois/);
 await refuse(d => { d.chapters[0].projects[0].cover = 3; }, "couverture hors du projet refusée", /couverture/);
-await refuse(d => { d.chapters[0].projects[0].selection = [1, 2, 3]; }, "sélection avec une photo hors du projet refusée", /sélection/);
+await refuse(d => { d.chapters[0].projects[0].selection = [1, 2, 4]; }, "sélection avec une photo de l'accueil (hors portfolio) refusée", /sélection.*4/);
+await refuse(d => { d.chapters[0].projects[0].selection = [1, 2, 98]; }, "sélection avec un numéro inconnu refusée", /sélection/);
+await refuse(d => { d.chapters[0].projects[0].selection = [1, 1]; }, "sélection avec un doublon refusée", /double/);
+await refuse(d => { d.chapters[0].projects[0].selFocus = { 3: 40 }; }, "recadrage d'une photo hors de la sélection refusé", /recadrage/);
+await refuse(d => { d.shape = { 1: { r: "carre" } }; }, "forme inconnue refusée", /forme de la photo 1/);
+await refuse(d => { d.shape = { 1: { r: "v", x: 120 } }; }, "cadrage hors de 0 à 100 refusé", /cadrage de la photo 1/);
+await refuse(d => { d.shape = { 1: { r: "v", style: "x" } }; }, "champ inconnu dans une forme refusé", /champ inconnu/);
+await refuse(d => { d.shape = { 99: { r: "h" } }; }, "forme d'une photo utilisée nulle part refusée", /99/);
+await refuse(d => { d.shape = { "1x": { r: "h" } }; }, "forme : numéro invalide refusé", /numéro/);
+await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "site", label: "Site", url: "http://exemple.com" }]; }, "lien non https refusé", /https/);
+await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "site", label: "Site", url: "javascript:alert(1)" }]; }, "lien javascript: refusé", /https/);
+await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "site", label: "Site", url: "https://exemple.com/\"><script>" }]; }, "lien avec guillemets ou chevrons refusé", /https/);
+await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "site", label: "x".repeat(41), url: "https://exemple.com" }]; }, "libellé de plus de 40 caractères refusé", /40/);
+await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "site", label: "", url: "https://exemple.com" }]; }, "libellé vide refusé", /libellé/);
+await refuse(d => { d.chapters[0].projects[0].links = Array.from({ length: 7 }, (_, k) => ({ label: "L" + k, url: "https://exemple.com/" + k })); }, "plus de 6 liens refusés", /6 au plus/);
+await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "myspace", label: "M", url: "https://exemple.com" }]; }, "type de lien inconnu refusé", /type/);
+await refuse(d => { d.chapters[0].projects[0].ig = ["bon", "mau vais"]; }, "compte Instagram invalide refusé", /Instagram/);
+// sélection prise ailleurs (photo retirée), réordonnée ; forme imposée sur l'accueil ; liens du projet
+{ const d = P(), q = d.chapters[0].projects[0]; q.selection = [3, 1, 2]; q.selFocus = { 3: 30 };
+  d.shape = { 1: { r: "h", x: 50, y: 20 }, 3: { r: "v" } };
+  q.links = [{ kind: "site", label: "Site web", url: "https://bashment.example/" }, { kind: "instagram", label: "Instagram @thebashment", url: "https://www.instagram.com/thebashment/" }];
+  r = await putF([{ file: "portfolio", data: d, sha: C.portfolio.sha }], "Test : sélection, formes, liens");
+  check(r.status === 200, "sélection avec une photo de « Photos retirées », formes de la mosaïque et liens acceptés", r.data);
+  const w = await fileOf("content/portfolio.json");
+  check(w.chapters[0].projects[0].selection.join() === "3,1,2" && w.shape["1"].r === "h" && w.chapters[0].projects[0].links.length === 2, "écrits tels quels (ordre de la sélection gardé)");
+  C = (await call("GET", "/api/admin/content", { token: A })).data;
+  const d2 = P(); d2.chapters[0].projects[0].selection = [2, 1]; delete d2.chapters[0].projects[0].selFocus; delete d2.shape[3];
+  r = await putF([{ file: "portfolio", data: d2, sha: C.portfolio.sha }], "Test : sélection remise");
+  check(r.status === 200, "sélection remise dans le projet", r.data);
+  C = (await call("GET", "/api/admin/content", { token: A })).data; }
+{ const sb = JSON.parse(JSON.stringify(C.site.data));
+  sb.links = [{ kind: "x", label: "X", url: "ftp://exemple.com" }];
+  let x = await putF([{ file: "site", data: sb, sha: C.site.sha }]);
+  check(x.data.error === "invalid_content" && /site/.test(x.data.detail), "liens du site : adresse non https refusée", x.data);
+  sb.links = [{ kind: "tiktok", label: "TikTok", url: "https://www.tiktok.com/@bigbeezarr" }];
+  x = await putF([{ file: "site", data: sb, sha: C.site.sha }]);
+  check(x.status === 200, "liens du site acceptés", x.data);
+  C = (await call("GET", "/api/admin/content", { token: A })).data; }
 await refuse(d => { const p = d.chapters[0].projects[0]; p.eds[0].imgs = [1, 2, 3, 10, 11, 12, 13, 14, 15]; d.unpublished = []; p.selection = [1, 2, 3, 10, 11, 12, 13, 14, 15]; }, "sélection de plus de 8 photos refusée");
 await refuse(d => { d.chapters[0].projects[0].selFocus = { 1: 140 }; }, "recadrage hors de 0 à 100 refusé", /recadrage/);
 await refuse(d => { d.chapters[0].projects[0].homePicks = { 2025: [3] }; }, "photo d'accueil hors du projet refusée", /accueil/);
