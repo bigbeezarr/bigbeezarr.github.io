@@ -6,6 +6,7 @@ import {
 } from "./util.js";
 import { planZip, streamZip, uniqueNames } from "./zip.js";
 import * as site from "./site.js";
+import * as portfolio from "./portfolio.js";
 
 const KINDS = new Set(["private", "event", "restricted"]);
 const SINGLE_MAX = 95 * 1024 * 1024;        // au-delà : import en plusieurs parties
@@ -108,8 +109,9 @@ async function route(req, env, ctx) {
     if (is("GET", "api", "admin", "selections")) return site.listSelections(env, url);
     if (is("PATCH", "api", "admin", "selections", "*")) return site.updateSelection(req, env, p[3]);
     if (is("GET", "api", "admin", "stats")) return site.stats(env, url);
-    if (is("GET", "api", "admin", "content")) return site.getContent(env);
-    if (is("PUT", "api", "admin", "content")) return site.putContent(req, env);
+    if (is("GET", "api", "admin", "content")) return portfolio.getContent(env);
+    if (is("PUT", "api", "admin", "content")) return portfolio.putContent(req, env);
+    if (is("POST", "api", "admin", "site-photos")) return portfolio.addSitePhoto(req, env);
     if (p[2] === "galleries" && p[3]) {
       const g = await gallery(env, "id", p[3]);
       if (is("GET", "api", "admin", "galleries", "*")) return galleryDetail(env, url, g);
@@ -132,6 +134,7 @@ async function route(req, env, ctx) {
     if (p[2] === "photos" && p[3]) {
       const ph = await env.DB.prepare("SELECT * FROM photos WHERE id = ?").bind(p[3]).first();
       if (!ph) fail(404, "not_found");
+      if (is("GET", "api", "admin", "photos", "*", "site-source")) return siteSource(env, ph);
       if (is("PUT", "api", "admin", "photos", "*", "original")) return putOriginal(req, env, ph);
       if (is("PUT", "api", "admin", "photos", "*", "preview")) return putRendition(req, env, ph, "p");
       if (is("PUT", "api", "admin", "photos", "*", "thumb")) return putRendition(req, env, ph, "t");
@@ -154,6 +157,13 @@ async function gallery(env, by, value) {
   if (!g) fail(404, "gallery_not_found");
   return g;
 }
+// Aperçu 2048 px d'une photo de galerie, lu par l'administration pour l'ajouter au portfolio (choix explicite, admin seulement).
+async function siteSource(env, ph) {
+  const obj = ph.has_preview ? await env.BUCKET.get(pkey(ph.gallery_id, ph.id)) : null;
+  if (!obj) fail(404, "not_found");
+  return new Response(obj.body, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "private, no-store" } });
+}
+
 async function admin(req, env) {
   const t = await readToken(env, bearer(req));
   if (!t || t.r !== "a" || t.k !== await adminKey(env)) fail(401, "admin_required");

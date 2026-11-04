@@ -121,6 +121,30 @@ h2.s{margin:0 0 12px;font-family:var(--font-d);font-weight:800;font-size:1.2rem}
 .th .no{position:absolute;left:4px;top:4px;padding:1px 5px;border-radius:4px;background:rgba(10,10,10,.8);font-family:var(--font-d);font-weight:700;font-size:.66rem}
 .th .al{position:absolute;right:4px;bottom:4px;width:10px;height:10px;border-radius:50%;background:var(--ok)}
 .th.on{border-color:var(--accent)}.th.drag{opacity:.4}.th.over{border-color:var(--ink)}
+.edbox.off{border-style:dashed}
+.th .tags{position:absolute;left:4px;right:4px;bottom:4px;display:flex;flex-wrap:wrap;gap:3px;pointer-events:none}
+.th .tags span{padding:1px 5px;border-radius:999px;background:rgba(10,10,10,.82);font-family:var(--font-d);font-weight:700;font-size:.6rem;letter-spacing:.03em}
+.th .tags .cov{background:var(--accent);color:#fff}
+button.th{all:unset;position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;background:var(--raise);cursor:pointer;border:2px solid transparent;box-sizing:border-box}
+button.th img{width:100%;height:100%;object-fit:cover;pointer-events:none}
+button.th.on{border-color:var(--accent)}button.th:focus-visible,.th:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px}
+.th.sel2{aspect-ratio:2/3;cursor:default}
+.th .foc{position:absolute;left:4px;right:4px;bottom:4px}
+.th .foc input{width:100%;accent-color:var(--accent);margin:0}
+.vh{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+.ptbar{display:flex;flex-wrap:wrap;gap:6px}
+.ptbar .btn:disabled{opacity:.45;cursor:default}
+.tree .pill{height:18px;padding:0 6px;font-size:.6rem;vertical-align:1px;margin-left:4px}
+.tree button.add{color:var(--ink-3);font-size:.84rem;padding:6px 10px}
+.edbox h2 .pill,.edbox h3 .pill{margin-left:8px;vertical-align:2px}
+.switch{display:inline-flex;align-items:center;gap:10px;cursor:pointer;font-family:var(--font-d);font-weight:700;font-size:.88rem;min-height:44px}
+.switch input{position:absolute;opacity:0;width:1px;height:1px}
+.switch .tr{position:relative;width:42px;height:24px;border-radius:999px;background:var(--line-2);transition:background-color .15s ease;flex:none}
+.switch .tr::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .15s ease}
+.switch input:checked+.tr{background:var(--ok)}.switch input:checked+.tr::after{transform:translateX(18px)}
+.switch input:focus-visible+.tr{outline:2px solid var(--accent-text);outline-offset:2px}
+#galGrid{max-height:52dvh;overflow:auto}
+@media (prefers-reduced-motion:reduce){.switch .tr,.switch .tr::after{transition:none}}
 .edbox{padding:14px;border-radius:var(--radius);background:var(--ground-2);border:1px solid var(--line);display:grid;gap:12px}
 .bar2{display:flex;align-items:flex-end;gap:3px;height:120px}
 .bar2 i{flex:1;background:var(--accent);border-radius:3px 3px 0 0;min-height:2px}
@@ -303,6 +327,27 @@ h2.s{margin:0 0 12px;font-family:var(--font-d);font-weight:800;font-size:1.2rem}
     <h2>Attribuer les photos</h2>
     <p id="asP"></p>
     <div class="stack" id="asList"></div>
+  </div>
+</dialog>
+
+<dialog id="pickDlg" class="bottom">
+  <div class="sheet stack" style="position:relative">
+    <button class="x" type="button" data-close aria-label="Fermer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <h2 id="pickT">Déplacer vers…</h2>
+    <label class="field"><span>Destination</span><select class="input" id="pickS"></select></label>
+    <button class="btn primary" type="button" id="pickGo">Déplacer</button>
+  </div>
+</dialog>
+
+<dialog id="galDlg" class="bottom">
+  <div class="sheet stack" style="position:relative">
+    <button class="x" type="button" data-close aria-label="Fermer"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3 3 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+    <h2>Ajouter depuis une galerie client</h2>
+    <p class="hint" style="margin:0">Seules les photos que vous cochez sont ajoutées au site (aperçu 2048 px, redimensionné à 1800 px), dans : <b id="galWhere"></b>. La galerie elle-même reste privée.</p>
+    <label class="field"><span>Galerie</span><select class="input" id="galS"></select></label>
+    <div class="thumbs" id="galGrid"></div>
+    <p class="hint" id="galN" style="margin:0"></p>
+    <button class="btn primary" type="button" id="galGo" disabled>Ajouter au site</button>
   </div>
 </dialog>
 

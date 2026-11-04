@@ -97,6 +97,9 @@ const rg = await call("GET", ph0.o, { headers: { Range: "bytes=100-1099" } });
 check(rg.status === 206 && rg.data.length === 1000 && sha(rg.data) === sha(b0.subarray(100, 1100)), "reprise de téléchargement (Range)");
 const forged = ph0.o.replace(/s=[^&]+/, "s=AAAAAAAAAAAAAAAAAAAAAAAA");
 check((await call("GET", forged)).status === 403, "URL falsifiée refusée");
+const srcA = await call("GET", `/api/admin/photos/${ph0.id}/site-source`, { token: A });
+check(srcA.status === 200 && srcA.headers.get("content-type") === "image/jpeg" && srcA.data.length > 1000, "aperçu 2048 px lisible par l'administration (ajout au portfolio)");
+check((await call("GET", `/api/admin/photos/${ph0.id}/site-source`)).status === 401, "aperçu pour le portfolio fermé sans jeton admin");
 const thumb = await call("GET", ph0.t);
 check(thumb.status === 200 && thumb.data.length > 1000, "aperçu servi");
 

@@ -92,6 +92,33 @@ lieux, rubriques, ordre des photos, projets à la une (5 au plus), historique de
 projets masqués, coordonnées. « Publier » enregistre un commit ; le workflow « Publier le portfolio » reconstruit
 alors le site (environ deux minutes, plus la mise à jour de GitHub Pages).
 
+Ce qui se modifie depuis l'administration (tout passe par le même contrôle que `build.py`, côté serveur : un
+enregistrement qui casserait le site est refusé avec un message en français, et rien n'est écrit) :
+
+- **Publié sur le site** : un interrupteur par projet (`hidden`) et par édition (`hidden: true` sur l'édition).
+  Un projet ou une édition créé dans l'administration commence **non publié** (pastille « Non publié »). Une édition
+  masquée disparaît partout : accueil, page du projet, comptes, plan du site, visionneuse.
+- **Retirer du site** : les photos choisies passent dans `unpublished` (`content/portfolio.json`) : gardées au
+  catalogue, jamais affichées ; le panneau « Photos retirées » les remet dans une édition ou dans les coups de cœur.
+- **Couverture** (« Définir comme couverture », repère sur la vignette), **Sélection** des 8 vignettes de la page du
+  projet (avec recadrage 0 à 100 % pour une photo horizontale, `selFocus`), **Accueil** : 10 photos par année des
+  projets à la une (`homePicks`), et la page d'accueil (`content/home.json`) : ouverture (`hero`) et coups de cœur
+  (`wall`) : ajouter par numéro, retirer, réordonner.
+- **Ajouter des photos** : « depuis mon ordinateur » ou « depuis une galerie client » (aperçus 2048 px de la galerie,
+  photo par photo : c'est la seule façon dont une photo privée rejoint le site). Le navigateur redimensionne à 1800 px
+  (WebP 0,82, aperçu flou 16 px, empreinte pour les quasi-doublons) ; le serveur vérifie le fichier (WebP ou JPEG,
+  3 Mo au plus, 300 à 1800 px, dimensions lues dans le fichier), choisit le numéro (le plus grand de `meta.json` + 1),
+  écrit d'abord `img/f/NNN.webp` sur `main` (création seule : un numéro déjà pris là-bas passe au suivant), puis
+  `meta.json`, `hashes.json` et l'édition choisie sur `source` en un seul commit. La publication automatique ne voit
+  donc jamais un numéro sans son fichier. Un navigateur qui ne sait pas produire du WebP (Safari) envoie un JPEG,
+  déposé dans `img/new/NNN.jpg` et converti par `build.py` pendant la publication.
+
+Points d'entrée (tous réservés à l'administrateur) : `GET/PUT /api/admin/content` (plusieurs fichiers par commit :
+`{ files: [{ file, data, sha }], message }`), `POST /api/admin/site-photos`, `GET /api/admin/photos/:id/site-source`.
+Chaque écriture est un commit via l'API « git data » ; la branche n'avance que si personne ne l'a modifiée entre-temps
+(sinon « Le contenu a changé entre-temps », rien n'est perdu côté dépôt). Variable facultative : `GITHUB_SITE_BRANCH`
+(défaut `main`). Si `main` est protégée, le jeton doit pouvoir y pousser.
+
 Le jeton ne quitte jamais le serveur. Pour le créer (GitHub → Settings → Developer settings → Personal access tokens →
 **Fine-grained tokens** → Generate new token) :
 
@@ -137,7 +164,8 @@ bash test/run-all.sh      # Node 22+, Python 3 et Pillow ; 99 contrôles en troi
 - `test/api.test.mjs` : galeries, import simple et en plusieurs parties, liens signés, ZIP vérifiés octet par octet,
   galerie restreinte, expiration et nettoyage ;
 - `test/site.test.mjs` : réservations (validation, robots, limites, Turnstile), disponibilités, double réservation,
-  clients, archives, sélections, statistiques sans témoin, contenu du portfolio (conflits, validation) ;
+  clients, archives, sélections, statistiques sans témoin, contenu du portfolio (conflits, validation identique à `build.py`, photos retirées, éditions masquées,
+  accueil, ajout de photos au site, numéros, quasi-doublons) ;
 - `test/bare.test.mjs` : sans aucune clé facultative, chaque service préparé refuse clairement au lieu de faire semblant.
 
 Serveur de développement seul : `node --no-warnings test/devserver.mjs 8787 /tmp/bbz-data` (la tâche quotidienne

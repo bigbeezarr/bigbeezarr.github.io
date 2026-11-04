@@ -177,11 +177,28 @@ async function stats() {
 }
 
 // =============== contenu du portfolio ===============
+// Rien n'est public par accident : un projet ou une édition créé ici commence « Non publié » ; une photo retirée du site
+// va dans « Photos retirées » (content/portfolio.json → unpublished), jamais à la corbeille. Les galeries client ne
+// rejoignent le portfolio que par « Ajouter depuis une galerie client », photo par photo.
 let C = null, cur = null, dirty = false, sel = new Set();
-const T2 = (v, l) => v == null ? "" : typeof v === "string" ? (l === "fr" ? v : v) : (v[l] ?? "");
+const LOCAL = {}; // vignettes des photos envoyées pendant cette visite (pas encore sur le site)
+const T2 = (v, l) => v == null ? "" : typeof v === "string" ? v : (v[l] ?? "");
 const setT = (obj, k, fr, en) => { if (!fr && !en) { delete obj[k]; return; } obj[k] = fr === en ? fr : { fr, en: en || fr }; };
 const projOf = id => { for (const c of C.portfolio.data.chapters) for (const p of c.projects) if (p.id === id) return { c, p }; return null; };
 const edsOf = p => p.eds || [p];
+const edYear = (p, e) => String(e.year || p.year || "");
+const n3 = i => String(i).padStart(3, "0");
+const isWide = i => { const m = C.meta && C.meta[i]; return !!m && m[0] > m[1]; };
+const photosOf = p => { const s = new Set(); edsOf(p).forEach(e => { e.imgs.forEach(i => s.add(i)); if (e.feature) s.add(e.feature.img); }); if (p.lead) s.add(p.lead.img); return s; };
+const unpub = () => (C.portfolio.data.unpublished ||= []);
+const badge = on => on ? "" : ' <span class="pill red">Non publié</span>';
+function thumbImg(i) {
+  const im = document.createElement("img"); im.alt = ""; im.loading = "lazy"; im.decoding = "async";
+  im.src = LOCAL[i] || `../img/s/${n3(i)}.webp`;
+  im.addEventListener("error", () => { if (!im.dataset.f) { im.dataset.f = 1; im.src = `../img/f/${n3(i)}.webp`; } else im.style.visibility = "hidden"; });
+  return im;
+}
+
 async function portfolio() {
   const v = $("#vPort");
   v.innerHTML = head("Contenu public", "Portfolio", `<div class="row"><span class="hint" id="pState"></span><button class="btn primary" id="pSave" type="button" disabled>Publier les modifications</button></div>`) + '<div id="pBody"><p class="hint">Chargement…</p></div>';
@@ -196,32 +213,56 @@ async function portfolio() {
 function mark(file = "portfolio") { C[file].dirty = true; dirty = true; $("#pSave").disabled = false; $("#pState").textContent = "Modifications non publiées"; }
 function paintTree() {
   const body = $("#pBody");
-  body.innerHTML = `<div class="ptree"><nav class="tree" id="pTree" aria-label="Chapitres et projets"></nav><div id="pEd"><div class="box"><p>Choisissez un projet à gauche. Chaque modification est enregistrée dans le dépôt GitHub du site, puis la publication automatique reconstruit le site (quelques minutes).</p><p class="hint">Réglages généraux : coordonnées, types de prestation, validation des pages légales.</p><button class="btn small" id="pSite" type="button">Réglages du site</button></div></div></div>`;
+  body.innerHTML = `<div class="ptree"><nav class="tree" id="pTree" aria-label="Chapitres et projets"></nav><div id="pEd"><div class="box"><p>Choisissez un projet à gauche. Chaque modification est enregistrée dans le dépôt GitHub du site, puis la publication automatique reconstruit le site (quelques minutes).</p><p class="hint">Un projet ou une édition « Non publié » n'apparaît nulle part sur le site (accueil, pages, plan du site, visionneuse). Les galeries client ne sont jamais publiées d'elles-mêmes.</p><div class="row"><button class="btn small" id="pSite" type="button">Réglages du site</button></div></div></div></div>`;
   const tree = $("#pTree");
+  const extra = (key, label, hint) => { const b = document.createElement("button"); b.type = "button"; b.dataset.p = key; b.innerHTML = `${esc(label)}<br><span class="hint">${esc(hint)}</span>`; b.setAttribute("aria-current", String(cur === key)); b.addEventListener("click", () => open(key)); tree.appendChild(b); };
+  tree.insertAdjacentHTML("beforeend", `<p class="ch">Site</p>`);
+  extra("@home", "Accueil", `${C.home.data.hero.length} en ouverture · ${C.home.data.wall.length} coups de cœur`);
+  extra("@unpub", "Photos retirées", `${unpub().length} photo${unpub().length > 1 ? "s" : ""} hors du site`);
   C.portfolio.data.chapters.forEach(c => {
     tree.insertAdjacentHTML("beforeend", `<p class="ch">${esc(T2(c.name, "fr"))}</p>`);
     c.projects.forEach(p => {
       const b = document.createElement("button"); b.type = "button"; b.dataset.p = p.id;
-      const n = edsOf(p).reduce((s, e) => s + e.imgs.length, 0);
-      b.innerHTML = `${esc(T2(p.title, "fr"))}${p.featured ? " ★" : ""}${p.hidden ? " (masqué)" : ""}<br><span class="hint">${n} photos${p.eds ? " · " + p.eds.length + " éditions" : ""}</span>`;
+      const n = edsOf(p).reduce((s, e) => s + e.imgs.length, 0), off = p.eds ? p.eds.filter(e => e.hidden).length : 0;
+      b.innerHTML = `${esc(T2(p.title, "fr"))}${p.featured ? " ★" : ""}${badge(!p.hidden)}<br><span class="hint">${n} photos${p.eds ? " · " + p.eds.length + " éditions" : ""}${off ? ` · ${off} non publiée${off > 1 ? "s" : ""}` : ""}</span>`;
       b.setAttribute("aria-current", String(cur === p.id));
-      b.addEventListener("click", () => editProject(p.id));
+      b.addEventListener("click", () => open(p.id));
       tree.appendChild(b);
     });
+    const nb = document.createElement("button"); nb.type = "button"; nb.className = "add"; nb.textContent = "+ Nouveau projet";
+    nb.addEventListener("click", () => newProject(c)); tree.appendChild(nb);
   });
   $("#pSite").addEventListener("click", editSite);
-  if (cur) editProject(cur);
+  if (cur) open(cur);
 }
+function open(key) {
+  cur = key; sel.clear();
+  $$("#pTree button[data-p]").forEach(b => b.setAttribute("aria-current", String(b.dataset.p === key)));
+  if (key === "@home") return editHome();
+  if (key === "@unpub") return editUnpub();
+  if (!projOf(key)) { cur = null; return; }
+  editProject(key);
+  if (matchMedia("(max-width:900px)").matches) $("#pEd").scrollIntoView({ block: "start" });
+}
+function refreshTree() { const y = $("#pTree") ? $("#pTree").scrollTop : 0; paintTree(); $("#pTree").scrollTop = y; }
+function newProject(c) {
+  const title = (prompt(`Nouveau projet dans « ${T2(c.name, "fr")} » : titre`) || "").trim(); if (!title) return;
+  let id = title.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40) || "projet";
+  const base = id; let k = 2; while (projOf(id)) id = `${base}-${k++}`.slice(0, 40);
+  c.projects.push({ id, title, city: "none", place: "", hidden: true, eds: [{ year: String(new Date().getFullYear()), imgs: [], hidden: true }] });
+  mark(); cur = id; refreshTree();
+  A().toast("Projet créé, non publié. Ajoutez des photos puis activez « Publié sur le site ».");
+}
+
 const field = (label, html, w) => `<label class="field"${w ? ' style="grid-column:1/-1"' : ""}><span>${label}</span>${html}</label>`;
 const inp = (k, v, attrs = "") => `<input class="input" data-k="${k}" value="${esc(v ?? "")}" ${attrs}>`;
 const area = (k, v) => `<textarea class="input" data-k="${k}">${esc(v ?? "")}</textarea>`;
+const sw = (k, on, label) => `<label class="switch"><input type="checkbox" role="switch" data-k="${k}"${on ? " checked" : ""}><span class="tr" aria-hidden="true"></span><span>${label}</span></label>`;
 function editProject(id) {
-  cur = id; sel.clear();
-  $$("#pTree button").forEach(b => b.setAttribute("aria-current", String(b.dataset.p === id)));
   const { p } = projOf(id), s = p.series || {};
   const ed = $("#pEd");
   ed.innerHTML = `<div class="stack">
-    <div class="edbox"><h2 class="s">${esc(T2(p.title, "fr"))}</h2>
+    <div class="edbox"><div class="row" style="justify-content:space-between"><h2 class="s" style="margin:0">${esc(T2(p.title, "fr"))}<span data-badge>${badge(!p.hidden)}</span></h2>${sw("published", !p.hidden, "Publié sur le site")}</div>
       <div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
         ${field("Titre (FR)", inp("title_fr", T2(p.title, "fr"), 'maxlength="120"'))}${field("Titre (EN)", inp("title_en", T2(p.title, "en"), 'maxlength="120"'))}
         ${field("Lieu affiché", inp("place", p.place, 'maxlength="80"'))}${field("Ville", `<select class="input" data-k="city">${[["sn", "Dakar / Sénégal"], ["mtl", "Montréal"], ["mix", "Les deux"], ["none", "Non précisé"]].map(([k, l]) => `<option value="${k}"${p.city === k ? " selected" : ""}>${l}</option>`).join("")}</select>`)}
@@ -230,7 +271,11 @@ function editProject(id) {
         ${field("À la une (rang 1 à 5, vide = non)", inp("featured", p.featured || "", 'type="number" min="1" max="5"'))}${field("Photo de couverture (numéro)", inp("cover", p.cover ?? "", 'type="number" min="0"'))}
         ${field("Instagram (comptes séparés par des virgules)", inp("ig", (p.ig || []).join(", ")), 1)}
       </div>
-      <div class="row"><label class="check"><input type="checkbox" data-k="page"${p.page === false ? "" : " checked"}><span>Page de projet dédiée</span></label><label class="check"><input type="checkbox" data-k="hidden"${p.hidden ? " checked" : ""}><span>Masquer ce projet du site</span></label></div>
+      <div class="row"><label class="check"><input type="checkbox" data-k="page"${p.page === false ? "" : " checked"}><span>Page de projet dédiée</span></label></div>
+    </div>
+    <div class="edbox"><h2 class="s" style="margin:0">Sélection de la page du projet <span class="hint" id="pSelN"></span></h2>
+      <p class="hint" style="margin:0">Les 8 vignettes en tête de la page du projet. Choisissez-les avec « Sélection » sous les photos ; une photo horizontale y est recadrée en vertical autour du point choisi.</p>
+      <div class="thumbs" id="pSelGrid"></div>
     </div>
     <div class="edbox"><h2 class="s">Historique de l'événement</h2>
       <p class="hint" style="margin:0">Affiché sous le titre : « ${p.eds ? p.eds.length : 1} édition(s) photographiée(s) sur N ». Laissez vide si le total n'est pas vérifié : rien n'est alors affirmé.</p>
@@ -243,15 +288,16 @@ function editProject(id) {
       <label class="check"><input type="checkbox" data-k="verify"${s.verify ? " checked" : ""}><span>Données à vérifier</span></label>
     </div>
     <div id="pEds" class="stack"></div>
-    <div class="row"><button class="btn small" id="pAddEd" type="button">Ajouter une édition</button><span class="hint">Pour retirer une photo du site, déplacez-la vers une autre édition ou masquez le projet : chaque photo publiée doit appartenir à une rubrique.</span></div>
+    <div class="row"><button class="btn small" id="pAddEd" type="button">Ajouter une édition</button><span class="hint">Une nouvelle édition commence « Non publiée ». Pour enlever des photos du site sans les perdre : sélectionnez-les puis « Retirer du site ».</span></div>
   </div>`;
-  $$("[data-k]", ed).forEach(el => el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", () => readProject(p)));
+  $$("[data-k]", ed.firstElementChild.children[0]).concat($$("[data-k]", ed.firstElementChild.children[2])).forEach(el => el.addEventListener(el.type === "checkbox" || el.tagName === "SELECT" ? "change" : "input", () => readProject(p)));
   $("#pAddEd").addEventListener("click", () => {
-    if (!p.eds) { p.eds = [{ year: p.year || "", imgs: p.imgs || [] }]; ["imgs", "feature", "order"].forEach(k => { if (k in p) { if (k !== "imgs") p.eds[0][k] = p[k]; delete p[k]; } }); }
-    p.eds.unshift({ year: String(new Date().getFullYear()), imgs: [] }); mark(); paintEds(p);
+    if (!p.eds) { p.eds = [{ year: p.year || "", imgs: p.imgs || [] }]; ["feature", "order"].forEach(k => { if (k in p) { p.eds[0][k] = p[k]; delete p[k]; } }); delete p.imgs; }
+    p.eds.unshift({ year: String(new Date().getFullYear()), imgs: [], hidden: true }); mark(); paintEds(p); refreshTreeLight();
   });
   paintEds(p);
 }
+function refreshTreeLight() { const b = $(`#pTree button[data-p="${CSS.escape(cur)}"]`); if (!b) return; const { p } = projOf(cur); const n = edsOf(p).reduce((s, e) => s + e.imgs.length, 0), off = p.eds ? p.eds.filter(e => e.hidden).length : 0; b.innerHTML = `${esc(T2(p.title, "fr"))}${p.featured ? " ★" : ""}${badge(!p.hidden)}<br><span class="hint">${n} photos${p.eds ? " · " + p.eds.length + " éditions" : ""}${off ? ` · ${off} non publiée${off > 1 ? "s" : ""}` : ""}</span>`; }
 function readProject(p) {
   const ed = $("#pEd"), v = k => { const el = $(`[data-k=${k}]`, ed); return el.type === "checkbox" ? el.checked : el.value.trim(); };
   setT(p, "title", v("title_fr"), v("title_en")); p.place = v("place"); p.city = v("city");
@@ -261,71 +307,336 @@ function readProject(p) {
   const cv = v("cover"); if (cv !== "" && !isNaN(+cv)) p.cover = +cv; else delete p.cover;
   const ig = v("ig").split(/[,\s]+/).map(h => h.replace(/^@/, "")).filter(h => /^[A-Za-z0-9._]{1,30}$/.test(h)); if (ig.length) p.ig = ig; else delete p.ig;
   if (v("page")) delete p.page; else p.page = false;
-  if (v("hidden")) p.hidden = true; else delete p.hidden;
+  if (v("published")) delete p.hidden; else p.hidden = true;
+  $("[data-badge]", ed).innerHTML = badge(!p.hidden);
   const known = parseInt(v("known"), 10), unit = v("unit"), missed = v("missed").split("\n").map(x => x.trim()).filter(Boolean);
   const s = {}; if (known > 0) s.known = known; if (unit) s.unit = unit; if (v("min")) s.min = true; if (v("verify")) s.verify = true;
   setT(s, "note", v("note_fr"), v("note_en")); if (missed.length) s.missed = missed.map(label => ({ label }));
   if (Object.keys(s).length) p.series = s; else delete p.series;
-  mark();
+  mark(); refreshTreeLight(); paintMarks(p);
+}
+// repères sur les vignettes : couverture, sélection (8), accueil (10 par année, projets à la une)
+function paintMarks(p) {
+  const cover = p.cover ?? null, selSet = new Set(p.selection || []);
+  $$("#pEds .th").forEach(t => {
+    const i = +t.dataset.i, y = t.dataset.y, home = new Set(((p.homePicks || {})[y]) || []);
+    t.querySelector(".tags").innerHTML = (cover === i ? '<span class="cov">Couverture</span>' : "") + (selSet.has(i) ? "<span>Sélection</span>" : "") + (home.has(i) ? "<span>Accueil</span>" : "");
+  });
+  $$("#pEds [data-homen]").forEach(x => { const y = x.dataset.homen; x.textContent = p.featured ? `Accueil ${y} : ${((p.homePicks || {})[y] || []).length}/10` : ""; });
+  const n = $("#pSelN"); if (n) n.textContent = `(${(p.selection || []).length}/8)`;
+  const g = $("#pSelGrid"); if (!g) return;
+  g.textContent = "";
+  (p.selection || []).forEach(i => {
+    const t = document.createElement("div"); t.className = "th sel2"; t.dataset.i = i; t.appendChild(thumbImg(i));
+    t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}</span>`);
+    if (isWide(i)) {
+      const f = (p.selFocus || {})[i] ?? 50;
+      t.firstChild.style.objectPosition = `${f}% 50%`;
+      t.insertAdjacentHTML("beforeend", `<label class="foc"><span class="vh">Recadrage de la photo ${i} (gauche 0, droite 100)</span><input type="range" min="0" max="100" step="1" value="${f}"></label>`);
+      t.querySelector("input").addEventListener("input", ev => { const v = +ev.target.value; (p.selFocus ||= {})[i] = v; if (v === 50) delete p.selFocus[i]; if (!Object.keys(p.selFocus).length) delete p.selFocus; t.firstChild.style.objectPosition = `${v}% 50%`; mark(); });
+    }
+    g.appendChild(t);
+  });
+  if (!(p.selection || []).length) g.innerHTML = '<p class="hint" style="margin:0">Aucune sélection choisie : le site prend la première photo de chaque édition.</p>';
 }
 function paintEds(p) {
   const box = $("#pEds"); box.textContent = "";
   const eds = edsOf(p);
   eds.forEach((e, ei) => {
-    const el = document.createElement("div"); el.className = "edbox";
+    const el = document.createElement("div"); el.className = "edbox" + (e.hidden ? " off" : "");
     const named = e.brand ? `Marque ${e.brand}` : e.look ? `Look ${e.look}` : "";
-    el.innerHTML = `<div class="row" style="justify-content:space-between"><h3 class="s" style="margin:0">${p.eds ? `Édition ${ei + 1}` : "Photos"}${named ? " · " + esc(named) : ""} <span class="hint">(${e.imgs.length} photos)</span></h3>${p.eds && !e.imgs.length ? '<button class="btn small danger" type="button" data-a="rm">Retirer cette édition vide</button>' : ""}</div>
+    const y = edYear(p, e);
+    el.innerHTML = `<div class="row" style="justify-content:space-between"><h3 class="s" style="margin:0">${p.eds ? `Édition ${ei + 1}` : "Photos"}${named ? " · " + esc(named) : ""} <span class="hint">(${e.imgs.length} photos)</span>${p.eds ? badge(!e.hidden) : ""}</h3><div class="row">${p.eds ? sw("published", !e.hidden, "Publiée sur le site") : ""}${p.eds && !e.imgs.length ? '<button class="btn small danger" type="button" data-a="rm">Retirer cette édition vide</button>' : ""}</div></div>
       ${p.eds ? `<div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">${field("Année", inp("year", e.year, 'maxlength="12"'))}${field("Volume / libellé (FR)", inp("label_fr", T2(e.label, "fr"), 'maxlength="80"'))}${field("Libellé (EN)", inp("label_en", T2(e.label, "en"), 'maxlength="80"'))}${field("Lieu", inp("place", e.place, 'maxlength="80"'))}${field("Sous-titre (FR)", inp("sub_fr", T2(e.sub, "fr")), 1)}${field("Sous-titre (EN)", inp("sub_en", T2(e.sub, "en")), 1)}</div>` : ""}
       <label class="check"><input type="checkbox" data-k="fixed"${e.order === "fixed" ? " checked" : ""}><span>Garder mon ordre (sinon, rangement automatique par couleur)</span></label>
       <div class="thumbs" role="list"></div>
-      <div class="row"><span class="hint" data-n></span><button class="btn small" type="button" data-a="move">Déplacer la sélection vers…</button><button class="btn small" type="button" data-a="alt">Texte alternatif…</button></div>`;
+      <div class="row"><span class="hint" data-n></span><span class="hint" data-homen="${esc(y)}"></span></div>
+      <div class="ptbar" role="group" aria-label="Actions sur les photos sélectionnées">
+        <button class="btn small" type="button" data-a="cover">Définir comme couverture</button>
+        <button class="btn small" type="button" data-a="sel">Sélection</button>
+        ${p.featured ? '<button class="btn small" type="button" data-a="home">Accueil</button>' : ""}
+        <button class="btn small" type="button" data-a="move">Déplacer vers…</button>
+        <button class="btn small" type="button" data-a="alt">Texte alternatif…</button>
+        <button class="btn small danger" type="button" data-a="out">Retirer du site</button>
+      </div>
+      <div class="row"><label class="btn small"><input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden data-a="file">Ajouter depuis mon ordinateur</label><button class="btn small" type="button" data-a="gal">Ajouter depuis une galerie client</button></div>`;
     const th = el.querySelector(".thumbs");
     const alt = C.portfolio.data.alt || {};
-    e.imgs.forEach((i, k) => {
-      const t = document.createElement("div"); t.className = "th" + (sel.has(i) ? " on" : ""); t.draggable = true; t.dataset.i = i; t.setAttribute("role", "listitem"); t.tabIndex = 0;
-      t.innerHTML = `<img alt="" loading="lazy" src="../img/s/${String(i).padStart(3, "0")}.webp"><span class="no">${String(i).padStart(3, "0")}</span>${alt[i] ? '<span class="al" title="Texte alternatif rédigé"></span>' : ""}`;
-      t.firstChild.addEventListener("error", ev => { const im = ev.target; if (!im.dataset.f) { im.dataset.f = 1; im.src = `../img/f/${String(i).padStart(3, "0")}.webp`; } }, { once: true });
+    const all = (e.feature ? [e.feature.img] : []).concat(e.imgs);
+    all.forEach(i => {
+      const k = e.imgs.indexOf(i), feat = k < 0;
+      const t = document.createElement("div"); t.className = "th" + (sel.has(i) ? " on" : ""); t.draggable = !feat; t.dataset.i = i; t.dataset.y = y; t.setAttribute("role", "listitem"); t.tabIndex = 0;
+      t.appendChild(thumbImg(i));
+      t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}${feat ? " · vedette" : ""}</span>${alt[i] ? '<span class="al" title="Texte alternatif rédigé"></span>' : ""}<span class="tags"></span>`);
       t.setAttribute("aria-label", `Photo ${i}${alt[i] ? " : " + T2(alt[i], "fr") : ""}`);
-      t.addEventListener("click", () => { sel.has(i) ? sel.delete(i) : sel.add(i); t.classList.toggle("on", sel.has(i)); upd(); });
-      t.addEventListener("dragstart", ev => { ev.dataTransfer.setData("text/plain", String(k)); t.classList.add("drag"); });
-      t.addEventListener("dragend", () => t.classList.remove("drag"));
-      t.addEventListener("dragover", ev => { ev.preventDefault(); t.classList.add("over"); });
-      t.addEventListener("dragleave", () => t.classList.remove("over"));
-      t.addEventListener("drop", ev => { ev.preventDefault(); t.classList.remove("over"); const from = +ev.dataTransfer.getData("text/plain"); if (isNaN(from) || from === k) return; const [m] = e.imgs.splice(from, 1); e.imgs.splice(k, 0, m); e.order = "fixed"; mark(); paintEds(p); });
+      const toggle = () => { sel.has(i) ? sel.delete(i) : sel.add(i); t.classList.toggle("on", sel.has(i)); t.setAttribute("aria-pressed", String(sel.has(i))); upd(); };
+      t.addEventListener("click", toggle);
+      t.addEventListener("keydown", ev => { if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); toggle(); } });
+      if (!feat) {
+        t.addEventListener("dragstart", ev => { ev.dataTransfer.setData("text/plain", String(k)); t.classList.add("drag"); });
+        t.addEventListener("dragend", () => t.classList.remove("drag"));
+        t.addEventListener("dragover", ev => { ev.preventDefault(); t.classList.add("over"); });
+        t.addEventListener("dragleave", () => t.classList.remove("over"));
+        t.addEventListener("drop", ev => { ev.preventDefault(); t.classList.remove("over"); const from = +ev.dataTransfer.getData("text/plain"); if (isNaN(from) || from === k) return; const [m] = e.imgs.splice(from, 1); e.imgs.splice(k, 0, m); e.order = "fixed"; mark(); paintEds(p); });
+      }
       th.appendChild(t);
     });
-    const upd = () => { el.querySelector("[data-n]").textContent = sel.size ? `${sel.size} sélectionnée(s)` : "Touchez des photos pour les sélectionner ; glissez-les pour changer l'ordre."; };
+    if (!all.length) th.innerHTML = '<p class="hint" style="margin:0">Aucune photo. Ajoutez-en depuis votre ordinateur, une galerie client ou « Photos retirées ».</p>';
+    const upd = () => {
+      const mine = [...sel].filter(i => all.includes(i)).length;
+      el.querySelector("[data-n]").textContent = mine ? `${mine} sélectionnée(s)` : "Touchez des photos pour les sélectionner ; glissez-les pour changer l'ordre.";
+      el.querySelectorAll(".ptbar button").forEach(b => { b.disabled = !mine || (b.dataset.a === "cover" && mine !== 1) || (b.dataset.a === "alt" && mine !== 1); });
+    };
     upd();
     $$("[data-k]", el).forEach(x => x.addEventListener(x.type === "checkbox" ? "change" : "input", () => {
       const v = k => { const z = $(`[data-k=${k}]`, el); return z ? (z.type === "checkbox" ? z.checked : z.value.trim()) : ""; };
       if (p.eds) { e.year = v("year"); setT(e, "label", v("label_fr"), v("label_en")); if (v("place")) e.place = v("place"); else delete e.place; setT(e, "sub", v("sub_fr"), v("sub_en")); }
       if (v("fixed")) e.order = "fixed"; else delete e.order;
+      if (p.eds && x.dataset.k === "published") { if (v("published")) delete e.hidden; else e.hidden = true; mark(); paintEds(p); refreshTreeLight(); return; }
       mark();
     }));
-    const rm = el.querySelector("[data-a=rm]"); if (rm) rm.addEventListener("click", () => { p.eds.splice(ei, 1); mark(); paintEds(p); });
-    el.querySelector("[data-a=move]").addEventListener("click", () => moveSel(p));
-    el.querySelector("[data-a=alt]").addEventListener("click", () => editAlt());
+    const mineSel = () => [...sel].filter(i => all.includes(i));
+    const on = (a, f) => { const b = el.querySelector(`[data-a=${a}]`); if (b) b.addEventListener("click", f); };
+    on("rm", () => { p.eds.splice(ei, 1); mark(); paintEds(p); refreshTreeLight(); });
+    on("move", () => moveSel(mineSel()));
+    on("alt", () => editAlt(mineSel()[0]));
+    on("cover", () => { const [i] = mineSel(); p.cover = i; $("#pEd [data-k=cover]").value = i; mark(); paintMarks(p); A().toast(`Photo ${i} : couverture du projet.`); });
+    on("sel", () => {
+      const s2 = p.selection ||= [], ids = mineSel(), allIn = ids.every(i => s2.includes(i));
+      if (allIn) p.selection = s2.filter(i => !ids.includes(i));
+      else { const add = ids.filter(i => !s2.includes(i)); if (s2.length + add.length > 8) { A().toast(`La sélection compte 8 photos au plus (${s2.length}/8 déjà).`, true); return; } s2.push(...add); }
+      if (!p.selection.length) delete p.selection;
+      Object.keys(p.selFocus || {}).forEach(k => { if (!(p.selection || []).includes(+k)) delete p.selFocus[k]; }); if (p.selFocus && !Object.keys(p.selFocus).length) delete p.selFocus;
+      mark(); paintMarks(p);
+    });
+    on("home", () => {
+      const hp = p.homePicks ||= {}, l = hp[y] ||= [], ids = mineSel(), allIn = ids.every(i => l.includes(i));
+      if (allIn) hp[y] = l.filter(i => !ids.includes(i));
+      else { const add = ids.filter(i => !l.includes(i)); if (l.length + add.length > 10) { A().toast(`L'accueil montre 10 photos au plus pour ${y} (${l.length}/10 déjà).`, true); return; } l.push(...add); }
+      if (!hp[y].length) delete hp[y]; if (!Object.keys(hp).length) delete p.homePicks;
+      mark(); paintMarks(p);
+    });
+    on("out", () => {
+      const ids = mineSel().filter(i => e.imgs.includes(i));
+      if (!ids.length) { A().toast("La photo vedette ne se retire pas d'ici.", true); return; }
+      e.imgs = e.imgs.filter(i => !ids.includes(i)); unpub().push(...ids); ids.forEach(i => sel.delete(i));
+      prune(); mark(); paintEds(p); refreshTreeLight(); refreshUnpubCount();
+      A().toast(`${ids.length} photo${ids.length > 1 ? "s" : ""} retirée${ids.length > 1 ? "s" : ""} du site (dans « Photos retirées »).`);
+    });
+    el.querySelector("[data-a=file]").addEventListener("change", ev => { const fs = [...ev.target.files]; ev.target.value = ""; addFiles(fs.map(f => ({ blob: f, name: f.name })), { project: p.id, ed: ei }); });
+    on("gal", () => fromGallery({ project: p.id, ed: ei }));
     box.appendChild(el);
   });
+  paintMarks(p);
 }
-function moveSel(p) {
-  if (!sel.size) { A().toast("Sélectionnez d'abord des photos.", true); return; }
-  const targets = [];
-  C.portfolio.data.chapters.forEach(c => c.projects.forEach(q => edsOf(q).forEach((e, k) => targets.push({ q, e, label: `${T2(q.title, "fr")}${q.eds ? " · " + (e.brand || (e.look ? "Look " + e.look : "")) + " " + (e.year || "") + " " + T2(e.label, "fr") : ""}` }))));
-  const pick = prompt("Déplacer vers (numéro) :\n" + targets.map((x, k) => `${k + 1}. ${x.label}`).join("\n"));
-  const t = targets[(+pick || 0) - 1]; if (!t) return;
-  C.portfolio.data.chapters.forEach(c => c.projects.forEach(q => edsOf(q).forEach(e => { e.imgs = e.imgs.filter(i => !sel.has(i)); })));
-  t.e.imgs.push(...sel); sel.clear(); mark(); editProject(cur);
+function refreshUnpubCount() { const b = $('#pTree button[data-p="@unpub"] .hint'); if (b) b.textContent = `${unpub().length} photo${unpub().length > 1 ? "s" : ""} hors du site`; }
+// une référence (couverture, sélection, recadrage, accueil) vers une photo sortie du projet est oubliée
+function prune() {
+  for (const c of C.portfolio.data.chapters) for (const p of c.projects) {
+    const mine = photosOf(p);
+    if (p.cover != null && !mine.has(p.cover)) delete p.cover;
+    if (p.selection) { p.selection = p.selection.filter(i => mine.has(i)).slice(0, 8); if (!p.selection.length) delete p.selection; }
+    if (p.selFocus) { for (const k of Object.keys(p.selFocus)) if (!mine.has(+k)) delete p.selFocus[k]; if (!Object.keys(p.selFocus).length) delete p.selFocus; }
+    if (p.homePicks) { for (const y of Object.keys(p.homePicks)) { p.homePicks[y] = p.homePicks[y].filter(i => mine.has(i)).slice(0, 10); if (!p.homePicks[y].length) delete p.homePicks[y]; } if (!Object.keys(p.homePicks).length) delete p.homePicks; }
+  }
 }
-function editAlt() {
-  if (sel.size !== 1) { A().toast("Sélectionnez une seule photo pour écrire son texte alternatif.", true); return; }
-  const i = [...sel][0], alt = (C.portfolio.data.alt ||= {}), cur2 = alt[i] || {};
+// destinations : chaque édition de chaque projet (et « Photos retirées »)
+function targets(withUnpub) {
+  const out = [];
+  C.portfolio.data.chapters.forEach(c => c.projects.forEach(q => edsOf(q).forEach((e, k) => out.push({ project: q.id, ed: k, e, label: `${T2(q.title, "fr")}${q.eds ? " · " + [e.brand, e.look ? "Look " + e.look : "", e.year, T2(e.label, "fr")].filter(Boolean).join(" ") : ""}${q.hidden || e.hidden ? " (non publié)" : ""}` }))));
+  if (withUnpub) out.push({ unpub: true, label: "Photos retirées (hors du site)" });
+  return out;
+}
+function pickTarget(title, withUnpub, preset) {
+  return new Promise(resolve => {
+    const d = $("#pickDlg"), list = targets(withUnpub);
+    $("#pickT").textContent = title;
+    $("#pickS").innerHTML = list.map((t, k) => `<option value="${k}"${preset && t.project === preset.project && t.ed === preset.ed ? " selected" : ""}>${esc(t.label)}</option>`).join("");
+    const go = $("#pickGo"), done = v => { go.removeEventListener("click", ok); d.removeEventListener("close", cl); resolve(v); };
+    const ok = () => { const t = list[+$("#pickS").value]; d.close(); done(t || null); };
+    const cl = () => done(null);
+    go.addEventListener("click", ok); d.addEventListener("close", cl, { once: true });
+    d.showModal();
+  });
+}
+function detach(ids) {
+  const set = new Set(ids);
+  C.portfolio.data.chapters.forEach(c => c.projects.forEach(q => edsOf(q).forEach(e => { e.imgs = e.imgs.filter(i => !set.has(i)); })));
+  if (C.portfolio.data.unpublished) C.portfolio.data.unpublished = C.portfolio.data.unpublished.filter(i => !set.has(i));
+}
+async function moveSel(ids, from = "") {
+  ids = ids.filter(i => !isFixedSpot(i));
+  if (!ids.length) { A().toast("Sélectionnez d'abord des photos (pas la photo vedette).", true); return; }
+  const t = await pickTarget(`Déplacer ${ids.length} photo${ids.length > 1 ? "s" : ""} vers…`, from !== "unpub"); if (!t) return;
+  detach(ids);
+  if (t.unpub) unpub().push(...ids); else t.e.imgs.push(...ids);
+  ids.forEach(i => sel.delete(i)); prune(); mark(); refreshTree();
+  A().toast(t.unpub ? "Photos retirées du site." : `Déplacées vers ${t.label}.`);
+}
+const isFixedSpot = i => C.portfolio.data.chapters.some(c => c.projects.some(q => (q.lead && q.lead.img === i) || edsOf(q).some(e => e.feature && e.feature.img === i)));
+function editAlt(i) {
+  if (i == null) { A().toast("Sélectionnez une seule photo pour écrire son texte alternatif.", true); return; }
+  const alt = (C.portfolio.data.alt ||= {}), cur2 = alt[i] || {};
   const fr = prompt(`Photo ${i} : que montre-t-elle ? (FR, une phrase, sans nommer une personne que vous ne connaissez pas)`, T2(cur2, "fr")); if (fr === null) return;
   const en = prompt(`Photo ${i} : same description in English`, T2(cur2, "en")); if (en === null) return;
   if (!fr.trim() && !en.trim()) delete alt[i]; else alt[i] = { fr: fr.trim(), en: (en || fr).trim() };
-  mark(); editProject(cur);
+  mark(); open(cur);
 }
+
+// ---------- photos retirées ----------
+function editUnpub() {
+  const ed = $("#pEd"), list = unpub();
+  ed.innerHTML = `<div class="edbox"><h2 class="s" style="margin:0">Photos retirées <span class="hint">(${list.length})</span></h2>
+    <p class="hint" style="margin:0">Ces photos restent dans le catalogue du site mais ne sont affichées nulle part. Sélectionnez-les puis « Remettre dans une édition ». Les photos ajoutées sans destination arrivent aussi ici.</p>
+    <div class="thumbs" id="uGrid"></div>
+    <div class="row"><span class="hint" id="uN"></span></div>
+    <div class="ptbar"><button class="btn small primary" type="button" id="uBack">Remettre dans une édition…</button><button class="btn small" type="button" id="uHome">Ajouter aux coups de cœur</button></div>
+    <div class="row"><label class="btn small"><input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" multiple hidden id="uFile">Ajouter depuis mon ordinateur</label><button class="btn small" type="button" id="uGal">Ajouter depuis une galerie client</button></div></div>`;
+  const g = $("#uGrid");
+  list.forEach(i => {
+    const t = document.createElement("div"); t.className = "th" + (sel.has(i) ? " on" : ""); t.dataset.i = i; t.tabIndex = 0; t.setAttribute("role", "button"); t.setAttribute("aria-label", `Photo ${i}`);
+    t.appendChild(thumbImg(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}</span>`);
+    const toggle = () => { sel.has(i) ? sel.delete(i) : sel.add(i); t.classList.toggle("on", sel.has(i)); t.setAttribute("aria-pressed", String(sel.has(i))); upd(); };
+    t.addEventListener("click", toggle); t.addEventListener("keydown", ev => { if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); toggle(); } });
+    g.appendChild(t);
+  });
+  if (!list.length) g.innerHTML = '<p class="hint" style="margin:0">Aucune photo retirée.</p>';
+  const upd = () => { const n = [...sel].filter(i => list.includes(i)).length; $("#uN").textContent = n ? `${n} sélectionnée(s)` : ""; $("#uBack").disabled = $("#uHome").disabled = !n; };
+  upd();
+  $("#uBack").addEventListener("click", () => moveSel([...sel].filter(i => list.includes(i)), "unpub"));
+  $("#uHome").addEventListener("click", () => { const ids = [...sel].filter(i => list.includes(i)); detach(ids); C.home.data.wall.push(...ids); sel.clear(); mark(); mark("home"); refreshTree(); A().toast("Ajoutées aux coups de cœur."); });
+  $("#uFile").addEventListener("change", ev => { const fs = [...ev.target.files]; ev.target.value = ""; addFiles(fs.map(f => ({ blob: f, name: f.name })), null); });
+  $("#uGal").addEventListener("click", () => fromGallery(null));
+}
+
+// ---------- accueil : ouverture (hero) et coups de cœur (wall) ----------
+function editHome() {
+  const ed = $("#pEd"), H = C.home.data;
+  ed.innerHTML = `<div class="stack"><div class="edbox" id="hHero"></div><div class="edbox" id="hWall"></div></div>`;
+  const paint = (box, key, title, hint) => {
+    const list = H[key];
+    box.innerHTML = `<h2 class="s" style="margin:0">${title} <span class="hint">(${list.length})</span></h2><p class="hint" style="margin:0">${hint}</p><div class="thumbs"></div>
+      <div class="ptbar"><button class="btn small" type="button" data-a="l">← Avant</button><button class="btn small" type="button" data-a="r">Après →</button><button class="btn small danger" type="button" data-a="out">Retirer du site</button></div>
+      <div class="row"><label class="field" style="min-width:150px;flex:0 1 180px"><span>Ajouter par numéro</span><input class="input" type="number" min="0" inputmode="numeric" data-a="id"></label><button class="btn small" type="button" data-a="add">Ajouter</button></div>`;
+    const g = box.querySelector(".thumbs"), mine = () => [...sel].filter(i => list.includes(i));
+    list.forEach((i, k) => {
+      const t = document.createElement("div"); t.className = "th" + (sel.has(i) ? " on" : ""); t.dataset.i = i; t.draggable = true; t.tabIndex = 0; t.setAttribute("role", "button"); t.setAttribute("aria-label", `Photo ${i}, position ${k + 1}`);
+      t.appendChild(thumbImg(i)); t.insertAdjacentHTML("beforeend", `<span class="no">${k + 1} · ${n3(i)}</span>`);
+      const toggle = () => { sel.has(i) ? sel.delete(i) : sel.add(i); t.classList.toggle("on", sel.has(i)); upd(); };
+      t.addEventListener("click", toggle); t.addEventListener("keydown", ev => { if (ev.key === " " || ev.key === "Enter") { ev.preventDefault(); toggle(); } });
+      t.addEventListener("dragstart", ev => ev.dataTransfer.setData("text/plain", String(k)));
+      t.addEventListener("dragover", ev => { ev.preventDefault(); t.classList.add("over"); });
+      t.addEventListener("dragleave", () => t.classList.remove("over"));
+      t.addEventListener("drop", ev => { ev.preventDefault(); const from = +ev.dataTransfer.getData("text/plain"); if (isNaN(from) || from === k) return; const [m] = list.splice(from, 1); list.splice(k, 0, m); mark("home"); paint(box, key, title, hint); });
+      g.appendChild(t);
+    });
+    const upd = () => box.querySelectorAll(".ptbar button").forEach(b => { b.disabled = !mine().length || (key === "hero" && b.dataset.a === "out" && mine().length >= list.length); });
+    upd();
+    const shift = d => { const ids = new Set(mine()); const order = d < 0 ? list.map((_, k) => k) : list.map((_, k) => list.length - 1 - k); for (const k of order) { const j = k + d; if (ids.has(list[k]) && j >= 0 && j < list.length && !ids.has(list[j])) [list[k], list[j]] = [list[j], list[k]]; } mark("home"); paint(box, key, title, hint); };
+    box.querySelector("[data-a=l]").addEventListener("click", () => shift(-1));
+    box.querySelector("[data-a=r]").addEventListener("click", () => shift(1));
+    box.querySelector("[data-a=out]").addEventListener("click", () => { const ids = mine(); H[key] = list.filter(i => !ids.includes(i)); unpub().push(...ids); ids.forEach(i => sel.delete(i)); mark("home"); mark(); editHome(); refreshUnpubCount(); A().toast("Retirées de l'accueil (dans « Photos retirées »)."); });
+    box.querySelector("[data-a=add]").addEventListener("click", () => {
+      const i = parseInt(box.querySelector("[data-a=id]").value, 10);
+      if (isNaN(i) || (C.meta && !C.meta[i])) { A().toast("Numéro inconnu : la photo n'est pas dans le catalogue du site.", true); return; }
+      if (H.hero.includes(i) || H.wall.includes(i) || H.about.includes(i) || H.me === i) { A().toast(`La photo ${i} est déjà sur l'accueil.`, true); return; }
+      if (isFixedSpot(i)) { A().toast(`La photo ${i} est une photo vedette d'un projet : choisissez-en une autre.`, true); return; }
+      const where = targets(false).find(t => t.e.imgs.includes(i));
+      if (where && !confirm(`La photo ${i} est dans « ${where.label} ». La déplacer sur l'accueil ?`)) return;
+      detach([i]); H[key].push(i); prune(); mark("home"); mark(); editHome(); refreshUnpubCount();
+    });
+  };
+  paint($("#hHero"), "hero", "Ouverture de l'accueil", "Les grandes photos d'artistes en tête de l'accueil, dans l'ordre. La première sert aussi d'image de partage.");
+  paint($("#hWall"), "wall", "Coups de cœur", "Le mur de photos de l'accueil (rangé automatiquement par couleur). Une photo retirée va dans « Photos retirées ».");
+}
+
+// ---------- ajout de photos au site : redimensionnement dans le navigateur, envoi au serveur ----------
+const canvasOf = (src, w, h) => { const c = document.createElement("canvas"); c.width = w; c.height = h; const x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(src, 0, 0, w, h); return c; };
+const toBlob = (c, type, q) => new Promise(r => c.toBlob(r, type, q));
+const blobB64 = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(b); });
+async function prepare(blob) {
+  let bmp; try { bmp = await createImageBitmap(blob, { imageOrientation: "from-image" }); } catch { throw new Error("Format illisible par ce navigateur."); }
+  try {
+    const s = Math.min(1, 1800 / Math.max(bmp.width, bmp.height)), w = Math.round(bmp.width * s), h = Math.round(bmp.height * s);
+    if (Math.max(w, h) < 300) throw new Error("Photo trop petite (moins de 300 px).");
+    const c = canvasOf(bmp, w, h);
+    let out = null;
+    for (const q of [.82, .74, .66]) { out = await toBlob(c, "image/webp", q); if (!out || out.type !== "image/webp") { out = null; break; } if (out.size <= 3 * 1024 * 1024) break; }
+    if (!out) for (const q of [.9, .82, .72]) { out = await toBlob(c, "image/jpeg", q); if (out.size <= 3 * 1024 * 1024) break; } // navigateur sans WebP : converti au moment de la publication
+    if (out.size > 3 * 1024 * 1024) throw new Error("Photo trop lourde même compressée (plus de 3 Mo).");
+    const qs = 16 / Math.max(w, h), qc = canvasOf(c, Math.max(1, Math.round(w * qs)), Math.max(1, Math.round(h * qs)));
+    const qd = qc.toDataURL("image/webp", .5), lqip = qd.startsWith("data:image/webp") ? qd.split(",")[1] : "";
+    const hc = canvasOf(c, 9, 8), px = hc.getContext("2d").getImageData(0, 0, 9, 8).data; let hash = 0n;
+    const L = k => (px[k * 4] * 299 + px[k * 4 + 1] * 587 + px[k * 4 + 2] * 114) / 1000;
+    for (let r = 0; r < 8; r++) for (let x = 0; x < 8; x++) hash = (hash << 1n) | (L(r * 9 + x) > L(r * 9 + x + 1) ? 1n : 0n);
+    return { blob: out, data: await blobB64(out), lqip, hash: hash.toString(), w, h };
+  } finally { bmp.close && bmp.close(); }
+}
+let busy = false;
+async function addFiles(items, target, origin = "ordinateur") {
+  if (!items.length) return;
+  if (dirty) { A().toast("Publiez d'abord les modifications en cours : l'ajout de photos enregistre directement sur le site.", true); return; }
+  if (busy) { A().toast("Un envoi est déjà en cours.", true); return; }
+  busy = true;
+  const st = $("#pState"), done = [], errs = [];
+  try {
+    for (const [k, it] of items.entries()) {
+      st.textContent = `Photo ${k + 1}/${items.length} : préparation…`;
+      let pr; try { pr = await (it.prep ? it.prep() : prepare(it.blob)); } catch (e) { errs.push(`${it.name} : ${e.message}`); continue; }
+      st.textContent = `Photo ${k + 1}/${items.length} : envoi…`;
+      const body = { data: pr.data, lqip: pr.lqip, hash: pr.hash, target, origin };
+      let r;
+      try { r = await A().api("/api/admin/site-photos", { method: "POST", body }); }
+      catch (e) {
+        if (e.code === "near_duplicate" && confirm(`« ${it.name} » ressemble beaucoup à la photo ${e.data.like} déjà dans le catalogue. L'ajouter quand même ?`)) {
+          try { r = await A().api("/api/admin/site-photos", { method: "POST", body: { ...body, force: true } }); } catch (e2) { errs.push(`${it.name} : ${A().errText(e2)}`); continue; }
+        } else { if (e.code !== "near_duplicate") errs.push(`${it.name} : ${A().errText(e)}`); continue; }
+      }
+      // le serveur a ajouté la photo au même endroit : même changement ici, avec la nouvelle version du fichier
+      LOCAL[r.id] = URL.createObjectURL(pr.blob); (C.meta ||= {})[r.id] = [r.w, r.h];
+      if (target) edsOf(projOf(target.project).p)[target.ed].imgs.push(r.id); else unpub().push(r.id);
+      C.portfolio.sha = r.shas.portfolio; done.push(r.id);
+    }
+  } finally { busy = false; }
+  st.textContent = done.length ? `${done.length} photo${done.length > 1 ? "s" : ""} ajoutée${done.length > 1 ? "s" : ""} (n° ${done.join(", ")}). Le site se met à jour dans quelques minutes.` : "";
+  if (errs.length) A().toast(errs.slice(0, 2).join(" · "), true); else if (done.length) A().toast("Photos ajoutées au site.");
+  refreshTree();
+}
+async function fromGallery(target) {
+  if (dirty) { A().toast("Publiez d'abord les modifications en cours.", true); return; }
+  const d = $("#galDlg"), gs = $("#galS"), grid = $("#galGrid"), go = $("#galGo"), picked = new Set();
+  let OV; try { OV = await A().api("/api/admin/overview"); } catch (e) { A().toast(A().errText(e), true); return; }
+  gs.innerHTML = '<option value="">Choisir une galerie…</option>' + OV.galleries.map(g => `<option value="${esc(g.id)}">${esc(g.title)}${g.client ? " · " + esc(g.client) : ""} (${g.n} photos)</option>`).join("");
+  grid.innerHTML = ""; go.disabled = true; $("#galN").textContent = "";
+  const upd = () => { go.disabled = !picked.size; $("#galN").textContent = picked.size ? `${picked.size} photo${picked.size > 1 ? "s" : ""} cochée${picked.size > 1 ? "s" : ""}` : ""; };
+  gs.onchange = async () => {
+    picked.clear(); upd(); grid.innerHTML = gs.value ? '<p class="hint">Chargement…</p>' : "";
+    if (!gs.value) return;
+    let g; try { g = await A().api("/api/admin/galleries/" + gs.value); } catch (e) { grid.innerHTML = `<p class="err">${esc(A().errText(e))}</p>`; return; }
+    grid.textContent = "";
+    g.photos.filter(ph => ph.t && ph.status === "ready").forEach(ph => {
+      const t = document.createElement("button"); t.type = "button"; t.className = "th"; t.setAttribute("aria-pressed", "false"); t.setAttribute("aria-label", ph.name);
+      const im = document.createElement("img"); im.alt = ""; im.loading = "lazy"; im.src = ph.t; t.appendChild(im);
+      t.insertAdjacentHTML("beforeend", `<span class="no">${esc(ph.name.slice(0, 18))}</span>`);
+      t.addEventListener("click", () => { picked.has(ph) ? picked.delete(ph) : picked.add(ph); t.classList.toggle("on", picked.has(ph)); t.setAttribute("aria-pressed", String(picked.has(ph))); upd(); });
+      grid.appendChild(t);
+    });
+    if (!grid.children.length) grid.innerHTML = '<p class="hint">Aucune photo avec aperçu dans cette galerie.</p>';
+  };
+  go.onclick = () => {
+    const list = [...picked]; d.close();
+    addFiles(list.map(ph => ({ name: ph.name, prep: async () => {
+      const r = await fetch(A().API + `/api/admin/photos/${encodeURIComponent(ph.id)}/site-source`, { headers: { Authorization: "Bearer " + A().token() } });
+      if (!r.ok) throw new Error("aperçu introuvable");
+      return prepare(await r.blob());
+    } })), target, "galerie");
+  };
+  $("#galWhere").textContent = target ? targets(false).find(t => t.project === target.project && t.ed === target.ed).label : "Photos retirées (hors du site)";
+  d.showModal();
+}
+
 function editSite() {
+  cur = null; $$("#pTree button[data-p]").forEach(b => b.setAttribute("aria-current", "false"));
   const s = C.site.data, ed = $("#pEd");
   ed.innerHTML = `<div class="edbox"><h2 class="s">Réglages du site</h2><div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
     ${field("Courriel de contact", inp("email", s.email, 'type="email"'))}${field("Téléphone affiché", inp("phone", s.phone))}${field("Téléphone (format international)", inp("phoneHref", s.phoneHref))}${field("Adresse du serveur (vide = automatique)", inp("api", s.api, 'placeholder="https://…"'))}${field("Clé publique Turnstile (facultatif, avec le secret TURNSTILE_SECRET du serveur)", inp("turnstile", s.turnstile, 'placeholder="0x4AAAA…" autocomplete="off"'))}</div>
@@ -339,20 +650,31 @@ function editSite() {
     mark("site");
   }));
 }
-function check(d) {
-  const seen = new Set(), probs = [];
-  d.chapters.forEach(c => c.projects.forEach(p => edsOf(p).forEach(e => e.imgs.forEach(i => { if (seen.has(i)) probs.push(`photo ${i} en double`); seen.add(i); }))));
+// même contrôle que le serveur et build.py : chaque photo du catalogue sert une seule fois
+function check() {
+  const d = C.portfolio.data, H = C.home.data, seen = new Map(), probs = [];
+  const add = (i, w) => { if (seen.has(i)) probs.push(`photo ${i} en double (${seen.get(i)} et ${w})`); else seen.set(i, w); };
+  d.chapters.forEach(c => c.projects.forEach(p => { edsOf(p).forEach(e => { e.imgs.forEach(i => add(i, T2(p.title, "fr"))); if (e.feature) add(e.feature.img, T2(p.title, "fr")); }); if (p.lead) add(p.lead.img, T2(p.title, "fr")); }));
+  (d.unpublished || []).forEach(i => add(i, "photos retirées"));
+  [...H.hero, ...H.about, ...H.wall, H.me].forEach(i => add(i, "accueil"));
+  if (C.meta) { const miss = Object.keys(C.meta).map(Number).filter(i => !seen.has(i)); if (miss.length) probs.push(`photo${miss.length > 1 ? "s" : ""} ${miss.slice(0, 5).join(", ")} plus nulle part`); }
+  if (!H.hero.length) probs.push("l'ouverture de l'accueil est vide");
+  d.chapters.forEach(c => c.projects.forEach(p => { if (!p.hidden && edsOf(p).some(e => !e.hidden) && !edsOf(p).some(e => !e.hidden && (e.imgs.length || e.feature))) probs.push(`« ${T2(p.title, "fr")} » est publié sans aucune photo publiée`); }));
   const feat = d.chapters.flatMap(c => c.projects).filter(p => p.featured && !p.hidden);
   if (feat.length > 5) probs.push("plus de 5 projets à la une");
   return probs;
 }
 async function save() {
-  const probs = check(C.portfolio.data);
+  prune();
+  const probs = check();
   if (probs.length) { A().toast("À corriger : " + probs.slice(0, 3).join(", "), true); return; }
+  if (!C.portfolio.data.unpublished || !C.portfolio.data.unpublished.length) delete C.portfolio.data.unpublished;
+  const files = ["portfolio", "home", "site"].filter(k => C[k].dirty).map(file => ({ file, data: C[file].data, sha: C[file].sha }));
+  if (!files.length) return;
   $("#pSave").disabled = true; $("#pState").textContent = "Publication…";
   try {
-    if (C.portfolio.dirty) { const r = await A().api("/api/admin/content", { method: "PUT", body: { file: "portfolio", data: C.portfolio.data, sha: C.portfolio.sha, message: "Administration : portfolio mis à jour" } }); C.portfolio.sha = r.sha; C.portfolio.dirty = false; }
-    if (C.site.dirty) { const r2 = await A().api("/api/admin/content", { method: "PUT", body: { file: "site", data: C.site.data, sha: C.site.sha, message: "Administration : réglages du site" } }); C.site.sha = r2.sha; C.site.dirty = false; }
+    const r = await A().api("/api/admin/content", { method: "PUT", body: { files, message: `Administration : ${files.map(f => ({ portfolio: "portfolio", home: "accueil", site: "réglages du site" })[f.file]).join(", ")} mis à jour` } });
+    for (const f of files) { C[f.file].sha = r.shas[f.file]; C[f.file].dirty = false; }
     dirty = false; $("#pState").textContent = "Publié. Le site se met à jour dans quelques minutes."; A().toast("Modifications envoyées. Publication en cours.");
   } catch (e) {
     $("#pSave").disabled = false; $("#pState").textContent = "";

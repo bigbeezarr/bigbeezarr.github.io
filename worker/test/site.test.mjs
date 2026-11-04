@@ -2,6 +2,7 @@
 // sélections, statistiques sans témoin, contenu du portfolio (GitHub imité), sécurité.
 // Lancer après devserver.mjs (avec GITHUB_*, RESEND_*, TURNSTILE_* pointant vers mock_services.mjs).
 import zlib from "node:zlib";
+import fs from "node:fs";
 const API = process.env.API || "http://127.0.0.1:8787", MOCK = process.env.MOCK || "http://127.0.0.1:9922";
 let ok = 0, bad = 0;
 const check = (c, label, extra) => { if (c) { ok++; console.log("  ✓", label); } else { bad++; console.log("  ✗", label, extra === undefined ? "" : JSON.stringify(extra).slice(0, 300)); } };
@@ -130,6 +131,85 @@ check((await call("PUT", "/api/admin/content", { token: A, body: { file: "site",
 check((await call("GET", "/api/admin/content")).status === 401, "contenu fermé sans jeton admin");
 const ghCalls = (await (await fetch(MOCK + "/")).json()).calls.filter(c => c.path.includes("/contents/"));
 check(ghCalls.every(c => c.auth.startsWith("Bearer gh_test")), "le jeton GitHub reste côté serveur");
+
+{
+console.log("Portfolio : publication, éditions, photos retirées, couverture, sélection, accueil");
+const st0 = async (ref = "source") => (await (await fetch(MOCK + "/__state?ref=" + ref)).json());
+const fileOf = async (path, ref) => JSON.parse((await st0(ref)).files[path].text);
+let C = (await call("GET", "/api/admin/content", { token: A })).data;
+check(C.meta && C.meta["1"][0] === 1200 && C.meta["7"], "le catalogue (dimensions) est lu avec le contenu", C.meta);
+const P = () => JSON.parse(JSON.stringify(C.portfolio.data)), H = () => JSON.parse(JSON.stringify(C.home.data));
+const putF = (files, msg) => call("PUT", "/api/admin/content", { token: A, body: { files, message: msg } });
+// photo retirée du site : comptée, jamais perdue
+let p1 = P(); p1.chapters[0].projects[0].eds[0].imgs = [1, 2]; p1.unpublished = [3];
+p1.chapters[0].projects[0].eds.push({ year: "2024", hidden: true, imgs: [] });
+p1.chapters[0].projects[0].hidden = true; p1.chapters[0].projects[0].cover = 2; p1.chapters[0].projects[0].selection = [2, 1];
+let r = await putF([{ file: "portfolio", data: p1, sha: C.portfolio.sha }], "Test : retrait");
+check(r.status === 200 && r.data.shas.portfolio, "retirer une photo (→ « Photos retirées »), édition et projet non publiés, couverture et sélection", r.data);
+const after = await fileOf("content/portfolio.json");
+check(after.unpublished[0] === 3 && after.chapters[0].projects[0].eds[1].hidden === true && after.chapters[0].projects[0].hidden === true, "écrit tel quel dans content/portfolio.json");
+C = (await call("GET", "/api/admin/content", { token: A })).data;
+const refuse = async (mut, label, re) => { const d = P(); mut(d); const x = await putF([{ file: "portfolio", data: d, sha: C.portfolio.sha }]); check(x.status === 400 && x.data.error === "invalid_content" && (!re || re.test(x.data.detail)), label, x.data); };
+await refuse(d => { d.unpublished = []; }, "photo sortie de partout : refusée avec un message clair", /3 plus nulle part/);
+await refuse(d => { d.unpublished = [3, 99]; }, "numéro inconnu du catalogue refusé", /99 inconnue/);
+await refuse(d => { d.unpublished = [3, 1]; }, "photo à la fois publiée et retirée refusée", /1 utilisée deux fois/);
+await refuse(d => { d.unpublished = [3, 4]; }, "photo de l'accueil reprise dans le portfolio : refusée", /4 utilisée deux fois/);
+await refuse(d => { d.chapters[0].projects[0].cover = 3; }, "couverture hors du projet refusée", /couverture/);
+await refuse(d => { d.chapters[0].projects[0].selection = [1, 2, 3]; }, "sélection avec une photo hors du projet refusée", /sélection/);
+await refuse(d => { const p = d.chapters[0].projects[0]; p.eds[0].imgs = [1, 2, 3, 10, 11, 12, 13, 14, 15]; d.unpublished = []; p.selection = [1, 2, 3, 10, 11, 12, 13, 14, 15]; }, "sélection de plus de 8 photos refusée");
+await refuse(d => { d.chapters[0].projects[0].selFocus = { 1: 140 }; }, "recadrage hors de 0 à 100 refusé", /recadrage/);
+await refuse(d => { d.chapters[0].projects[0].homePicks = { 2025: [3] }; }, "photo d'accueil hors du projet refusée", /accueil/);
+await refuse(d => { d.chapters[0].projects[0].eds[1].hidden = "non"; }, "« Publiée sur le site » doit être oui ou non");
+// accueil : coups de cœur et ouverture, avec le portfolio dans le même commit
+let h1 = H(), p2 = P(); h1.wall = [6, 3]; p2.unpublished = [];
+const before = (await st0()).branches.source;
+r = await putF([{ file: "portfolio", data: p2, sha: C.portfolio.sha }, { file: "home", data: h1, sha: C.home.sha }], "Test : mur");
+check(r.status === 200 && r.data.shas.home && r.data.shas.portfolio, "accueil et portfolio enregistrés ensemble", r.data);
+const s1 = await st0();
+check(s1.parents.source === before, "un seul commit pour les deux fichiers");
+check((await fileOf("content/home.json")).wall.join() === "6,3", "mur des coups de cœur mis à jour (ajout, ordre)");
+C = (await call("GET", "/api/admin/content", { token: A })).data;
+let h2 = H(); h2.wall = [6]; // la photo 3 sortirait de partout
+r = await putF([{ file: "home", data: h2, sha: C.home.sha }]);
+check(r.data.error === "invalid_content" && /3 plus nulle part/.test(r.data.detail), "accueil seul contrôlé avec le portfolio du dépôt", r.data);
+h2 = H(); h2.hero = [];
+check((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.error === "invalid_content", "ouverture vide refusée");
+h2 = H(); h2.hero = [4, 4];
+check((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.error === "invalid_content", "doublon dans l'ouverture refusé");
+check((await putF([{ file: "home", data: H(), sha: "vieux" }])).data.error === "content_changed", "conflit : accueil modifié entre-temps");
+const s2 = await st0(); check(s2.branches.source === s1.branches.source, "un enregistrement refusé n'écrit rien");
+
+console.log("Portfolio : ajout de photos au site");
+const [fWebp, fJpg, fBig, fQ] = process.argv.slice(2).map(f => fs.readFileSync(f));
+const up = (bytes, extra = {}) => call("POST", "/api/admin/site-photos", { token: A, body: { data: bytes.toString("base64"), lqip: fQ.toString("base64"), hash: "1234567890123456789", target: { project: "bashment", ed: 1 }, ...extra } });
+check((await call("POST", "/api/admin/site-photos", { body: { data: fWebp.toString("base64") } })).status === 401, "ajout de photo fermé sans jeton admin");
+check((await up(Buffer.from("<svg onload=alert(1)>"))).data.error === "bad_image", "fichier qui n'est pas une photo refusé");
+check((await up(fBig)).data.error === "bad_dimensions", "photo de plus de 1800 px refusée (redimensionner d'abord)");
+check((await up(Buffer.concat([fWebp, Buffer.alloc(3.1 * 1024 * 1024)]))).status === 413, "photo de plus de 3 Mo refusée");
+check((await up(fWebp, { target: { project: "inconnu", ed: 0 } })).data.error === "bad_target", "rubrique inconnue refusée");
+const mainBefore = (await st0("main")).branches.main;
+const a1 = await up(fWebp);
+check(a1.status === 201 && a1.data.id === 8 && a1.data.w === 1800 && a1.data.h === 1200, "photo ajoutée : numéro suivant du catalogue, dimensions lues dans le fichier", a1.data);
+const sm = await st0("main"), ss = await st0();
+check(sm.files["img/f/008.webp"] && sm.files["img/f/008.webp"].size === fWebp.length && sm.branches.main !== mainBefore, "pleine taille sur la branche du site (img/f/008.webp)");
+const meta = JSON.parse(ss.files["meta.json"].text), port2 = JSON.parse(ss.files["content/portfolio.json"].text);
+check(meta["8"] && meta["8"].w === 1800 && meta["8"].q === fQ.toString("base64") && /"8": \{"w": 1800, "h": 1200, "q": "/.test(ss.files["meta.json"].text), "meta.json complété (même écriture que Python)");
+check(/"1": 13562375111192815399/.test(ss.files["hashes.json"].text) && /"8": 1234567890123456789\}$/.test(ss.files["hashes.json"].text), "hashes.json complété sans arrondir les grands nombres");
+check(port2.chapters[0].projects[0].eds[1].imgs.includes(8), "la photo est dans l'édition choisie, dans le même commit que le catalogue");
+check((await up(fWebp)).data.error === "near_duplicate", "quasi-doublon d'une photo du site signalé");
+const a2 = await up(fJpg, { hash: "", lqip: "", target: null, origin: "galerie" });
+const sm2 = await st0("main"), port3 = await fileOf("content/portfolio.json");
+check(a2.status === 201 && a2.data.id === 9 && sm2.files["img/new/009.jpg"] && port3.unpublished.includes(9), "JPEG (navigateur sans WebP) : déposé pour conversion, rangé dans « Photos retirées »", a2.data);
+check(JSON.parse((await st0()).files["meta.json"].text)["9"].q === "", "aperçu flou laissé à calculer par la construction");
+// numéro déjà occupé sur la branche du site (fichier orphelin) : on passe au suivant
+await fetch(MOCK + "/__orphan?path=img/f/010.webp");
+const a3 = await up(fWebp, { force: true, target: null });
+check(a3.status === 201 && a3.data.id === 11, "numéro déjà pris sur le site : le suivant est utilisé", a3.data);
+C = (await call("GET", "/api/admin/content", { token: A })).data;
+check(C.meta["11"] && C.portfolio.data.unpublished.includes(11), "relecture : catalogue et photos retirées à jour");
+const okSave = await putF([{ file: "portfolio", data: P(), sha: C.portfolio.sha }]);
+check(okSave.status === 200, "le contenu reste enregistrable après les ajouts", okSave.data);
+}
 
 console.log("Prix et changement de date");
 const pr = await call("PATCH", `/api/admin/bookings/${b1.data.id}`, { token: A, body: { price_cents: 50000, deposit_cents: 15000, currency: "CAD" } });

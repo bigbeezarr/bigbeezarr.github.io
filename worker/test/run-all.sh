@@ -22,6 +22,11 @@ c = Image.new("RGB", (1500, 1000), (10, 10, 10)); d = ImageDraw.Draw(c)
 for i in range(0, 1500, 90): d.polygon([(i, 0), (i + 45, 1000), (i + 90, 0)], fill=(200, (i * 3) % 255, 40))
 c.save(f"{t}/photo3.jpg", quality=85)
 open(f"{t}/fichier.NEF", "wb").write(os.urandom(1600000))
+# photos pour le portfolio : WebP 1800 px, JPEG 1200 px, WebP trop grand, aperçu 16 px
+b.resize((1800, 1200)).save(f"{t}/site.webp", "WEBP", quality=82)
+a.resize((800, 1200)).save(f"{t}/site.jpg", quality=88)
+b.resize((2400, 1600)).save(f"{t}/big.webp", "WEBP", quality=60)
+b.resize((16, 11)).save(f"{t}/lqip.webp", "WEBP", quality=50)
 PY
 
 # Un ancien serveur de test resté allumé fausserait tout : on refuse de démarrer si un port est déjà pris.
@@ -49,7 +54,7 @@ DATA="$T/data" node --no-warnings test/api.test.mjs "$T/photo1.jpg" "$T/photo2.j
 
 echo "== Réservations, clients, sélections, statistiques, contenu =="
 start_api full
-node --no-warnings test/site.test.mjs
+node --no-warnings test/site.test.mjs "$T/site.webp" "$T/site.jpg" "$T/big.webp" "$T/lqip.webp"
 
 echo "== Sans aucune clé facultative =="
 start_api bare

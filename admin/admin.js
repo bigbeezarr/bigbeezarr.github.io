@@ -28,6 +28,8 @@ const ERR = {
   admin_not_configured: "Serveur incomplet : le mot de passe administrateur manque.",
   date_taken: "Cette date est déjà confirmée ou bloquée.", content_not_configured: "Édition du portfolio non reliée à GitHub (GITHUB_TOKEN).", content_changed: "Le contenu a changé entre-temps : rechargez la page.",
   invalid_content: "Contenu refusé par le contrôle.", bad_client: "Client introuvable.",
+  bad_image: "Ce fichier n'est pas une photo WebP ou JPEG lisible.", image_too_large: "Photo trop lourde (3 Mo au plus).", too_large: "Envoi trop volumineux.",
+  bad_dimensions: "Dimensions refusées : 300 à 1800 px sur le grand côté.", bad_target: "Édition introuvable : rechargez la page.", near_duplicate: "Photo presque identique à une photo du site.",
   github_error: "GitHub a refusé la requête (jeton expiré ou permissions insuffisantes).", name_required: "Le nom est obligatoire.", bad_email: "Adresse courriel invalide.", bad_date: "Date invalide.",
 };
 const errText = e => (e && ERR[e.code]) || (e && e.net ? "Serveur injoignable. Vérifiez votre connexion." : `Erreur${e && e.code ? " : " + e.code : ""}.`);
@@ -451,6 +453,6 @@ function route() {
 }
 window.addEventListener("hashchange", route);
 /* outils partagés avec admin/site.js (réservations, calendrier, clients, sélections, portfolio, statistiques) */
-window.BBZA = { api, toast, esc, errText, show, fmtDate, fmtWhen, fmtNum, fmtBytes, copy, API, ERR };
+window.BBZA = { token: () => auth.get(), api, toast, esc, errText, show, fmtDate, fmtWhen, fmtNum, fmtBytes, copy, API, ERR };
 route();
 })();
