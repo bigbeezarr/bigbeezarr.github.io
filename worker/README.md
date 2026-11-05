@@ -123,6 +123,13 @@ enregistrement qui casserait le site est refusé avec un message en français, e
 - **Liens** (`links: [{kind, label, url}]` par projet et dans `content/site.json`) : Site web, Instagram, TikTok, YouTube,
   Facebook, X, autre ; https:// seulement (un compte @nom est converti), 6 au plus, libellé de 40 caractères au plus.
   L'ancien champ `ig` reste lu et passe dans la même liste à la première modification.
+- **Contact** (Portfolio → Contact) : tout ce que montre la section Contact de l'accueil, avec un aperçu en direct.
+  Photo de contact (`me` de `content/home.json`) remplacée depuis le portfolio, les « Photos retirées » ou l'ordinateur
+  (l'ancienne va dans « Photos retirées ») ; recadrage portrait 2:3 facultatif, cadrage x/y et zoom 100 à 300 %
+  (`meFocus: {x, y, z}`). Courriel (obligatoire), téléphone affiché + international (`+` et 7 à 15 chiffres, les deux ou
+  aucun), comptes Instagram (6 au plus), liens du site, titre et texte FR/EN (`contact: {title: {fr, en}, text: {fr, en}}`
+  dans `content/site.json` ; vide = texte d'origine de `src.html`, 80 et 400 caractères au plus). `build.py` écrit ces
+  coordonnées dans le HTML ; « Réglages du site » ne garde que le serveur, Turnstile et les pages.
 - **Loupe** sur chaque vignette (portfolio et galeries client) : visionneuse plein écran (← → Échap, + −, F, pincer,
   toucher deux fois, balayer), avec les aperçus signés 2048 px pour les galeries.
 

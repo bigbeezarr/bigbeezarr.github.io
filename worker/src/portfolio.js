@@ -7,7 +7,9 @@
 import { fail, json, readJson } from "./util.js";
 
 export const FILES = { portfolio: "content/portfolio.json", home: "content/home.json", site: "content/site.json" };
-const EMAIL = /^[^\s@<>()[\]\\,;:"]{1,64}@[^\s@<>()[\]\\,;:"]{1,190}\.[A-Za-z]{2,24}$/;
+// courriel affiché sur le site (HTML et textes) : caractères sûrs seulement, comme build.py
+const SITE_EMAIL = /^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$/;
+export const CONTACT_MAX = { title: 80, text: 400 };
 const MAX_PHOTO = 3 * 1024 * 1024, LONG_MAX = 1800, LONG_MIN = 300;
 const pad = i => String(i).padStart(3, "0");
 const oneLine = (v, max) => String(v ?? "").replace(/[\u0000-\u001f\u007f]+/g, " ").trim().slice(0, max);
@@ -185,6 +187,7 @@ export function validateContent(file, d) {
     imgList(d.hero, "accueil (photos d'ouverture)"); imgList(d.about, "accueil (à propos)"); imgList(d.wall, "coups de cœur");
     if (!d.hero.length) err("l'accueil a besoin d'au moins une photo d'ouverture");
     if (!isId(d.me)) err("portrait (me)"); imgList([d.me], "portrait");
+    if (d.meFocus != null) { const f = d.meFocus; if (!f || typeof f !== "object" || Array.isArray(f) || Object.keys(f).some(a => !["x", "y", "z"].includes(a)) || ["x", "y"].some(a => f[a] != null && !(typeof f[a] === "number" && f[a] >= 0 && f[a] <= 100)) || (f.z != null && !(typeof f.z === "number" && f.z >= 100 && f.z <= 300))) err("cadrage de la photo de contact : x et y de 0 à 100, zoom de 100 à 300 %"); }
     if (d.heroLab == null || typeof d.heroLab !== "object" || Array.isArray(d.heroLab)) err("légendes des photos d'ouverture");
     // mêmes contrôles que build.py : une carte n'existe que pour une photo de l'ouverture ; nom 40, légende 80
     for (const [k, v] of Object.entries(d.heroLab)) {
@@ -196,7 +199,19 @@ export function validateContent(file, d) {
     }
     if ([...JSON.stringify(d)].length > 300000) err("contenu trop volumineux");
   } else if (file === "site") {
-    if (d.email && !EMAIL.test(d.email)) err("courriel du site");
+    // section Contact (mêmes contrôles que build.py) : le courriel est obligatoire, le téléphone va par deux formats
+    if (typeof d.email !== "string" || !SITE_EMAIL.test(d.email)) err("courriel de contact : adresse invalide (exemple : nom@domaine.com)");
+    const ph = d.phone ?? "", phH = d.phoneHref ?? "";
+    if (typeof ph !== "string" || [...ph].length > 30 || !/^[0-9 +().-]*$/.test(ph) || (ph && !/\d/.test(ph))) err("téléphone affiché : chiffres, espaces, + ( ) . - seulement (30 caractères au plus)");
+    if (typeof phH !== "string" || (phH && !/^\+[1-9][0-9]{6,14}$/.test(phH))) err("téléphone au format international : + puis 7 à 15 chiffres, sans espace (exemple : +14383047844)");
+    if (!ph !== !phH) err("téléphone : remplissez les deux formats (affiché et international), ou aucun");
+    if (d.instagram != null && (!Array.isArray(d.instagram) || d.instagram.length > 6 || d.instagram.some(h => typeof h !== "string" || !/^[A-Za-z0-9._]{1,30}$/.test(h)) || new Set(d.instagram).size !== d.instagram.length)) err("comptes Instagram : 6 au plus, sans doublon, lettres, chiffres, . et _ (30 caractères)");
+    if (d.contact != null) {
+      const c = d.contact;
+      if (!c || typeof c !== "object" || Array.isArray(c) || Object.keys(c).some(k => !Object.hasOwn(CONTACT_MAX, k))) err("textes de la section Contact illisibles");
+      for (const [k, v] of Object.entries(c)) if (!v || typeof v !== "object" || Array.isArray(v) || Object.keys(v).some(l => !["fr", "en"].includes(l)) || Object.values(v).some(x => typeof x !== "string" || [...x].length > CONTACT_MAX[k] || /[\u0000-\u001f\u007f]/.test(x)))
+        err(`${k === "title" ? "titre" : "texte"} de la section Contact : ${CONTACT_MAX[k]} caractères au plus, sur une ligne (fr, en)`);
+    }
     if (d.api && !/^https:\/\/[a-z0-9.-]+(\/[^\s"'<>]*)?$/i.test(d.api)) err("adresse du serveur");
     if (d.turnstile && !/^[0-9A-Za-z_-]{10,100}$/.test(d.turnstile)) err("clé publique Turnstile");
     if (d.links != null) validateLinks(d.links, "site");

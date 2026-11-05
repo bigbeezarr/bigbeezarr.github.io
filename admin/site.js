@@ -226,7 +226,8 @@ function paintTree() {
   const extra = (key, label, hint) => { const b = document.createElement("button"); b.type = "button"; b.dataset.p = key; b.innerHTML = `${esc(label)}<br><span class="hint">${esc(hint)}</span>`; b.setAttribute("aria-current", String(cur === key)); b.addEventListener("click", () => open(key)); tree.appendChild(b); };
   tree.insertAdjacentHTML("beforeend", `<p class="ch">Site</p>`);
   extra("@home", "Accueil", `${C.home.data.hero.length} en ouverture · ${featList().length} à la une · ${C.home.data.wall.length} coups de cœur`);
-  extra("@site", "Réglages du site", "coordonnées, liens, réservations");
+  extra("@contact", "Contact", "photo, coordonnées, liens, textes");
+  extra("@site", "Réglages du site", "serveur, réservations, pages");
   extra("@unpub", "Photos retirées", `${unpub().length} photo${unpub().length > 1 ? "s" : ""} hors du site`);
   C.portfolio.data.chapters.forEach(c => {
     tree.insertAdjacentHTML("beforeend", `<p class="ch">${esc(T2(c.name, "fr"))}</p>`);
@@ -250,6 +251,7 @@ function open(key) {
   if (key === "@home") return editHome();
   if (key === "@unpub") return editUnpub();
   if (key === "@site") return editSite();
+  if (key === "@contact") return editContact();
   if (!projOf(key)) { cur = null; return; }
   editProject(key);
   if (matchMedia("(max-width:900px)").matches) $("#pEd").scrollIntoView({ block: "start" });
@@ -1048,19 +1050,128 @@ function editSite() {
   cur = "@site"; $$("#pTree button[data-p]").forEach(b => b.setAttribute("aria-current", String(b.dataset.p === "@site")));
   const s = C.site.data, ed = $("#pEd");
   ed.innerHTML = `<div class="edbox"><h2 class="s">Réglages du site</h2><div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
-    ${field("Courriel de contact", inp("email", s.email, 'type="email"'))}${field("Téléphone affiché", inp("phone", s.phone))}${field("Téléphone (format international)", inp("phoneHref", s.phoneHref))}${field("Adresse du serveur (vide = automatique)", inp("api", s.api, 'placeholder="https://…"'))}${field("Clé publique Turnstile (facultatif, avec le secret TURNSTILE_SECRET du serveur)", inp("turnstile", s.turnstile, 'placeholder="0x4AAAA…" autocomplete="off"'))}</div>
+    ${field("Adresse du serveur (vide = automatique)", inp("api", s.api, 'placeholder="https://…"'))}${field("Clé publique Turnstile (facultatif, avec le secret TURNSTILE_SECRET du serveur)", inp("turnstile", s.turnstile, 'placeholder="0x4AAAA…" autocomplete="off"'))}</div>
     <label class="check"><input type="checkbox" data-k="legalOk"${s.legalOk ? " checked" : ""}><span>Les pages Confidentialité et Conditions ont été validées par un juriste (retire la mention « version de travail »)</span></label>
     <label class="check"><input type="checkbox" data-k="projectPages"${s.projectPages !== false ? " checked" : ""}><span>Pages de projet dédiées</span></label>
     <p class="hint" style="margin:0">Types de prestation proposés dans le formulaire : ${(s.booking && s.booking.types || []).map(k => esc(TYPES[k] || k)).join(", ")}.</p>
-    <h3 class="s" style="margin:8px 0 0">Liens du site</h3><p class="hint" style="margin:0">Affichés dans la section Contact de l'accueil (sous Instagram) et en pied de page des pages de projet. 6 au plus.</p><div id="sLinks"></div></div>`;
-  linkEditor($("#sLinks"), () => s.links || [], l => { if (l.length) s.links = l; else delete s.links; mark("site"); });
+    <div class="row"><span class="hint">Courriel, téléphone, Instagram, liens du site et textes de la section Contact : tout est dans « Contact ».</span><button class="btn small" type="button" data-a="ct">Ouvrir « Contact »</button></div></div>`;
+  $("[data-a=ct]", ed).addEventListener("click", () => open("@contact"));
   $$("[data-k]", ed).forEach(x => x.addEventListener(x.type === "checkbox" ? "change" : "input", () => {
-    if (x.closest("#sLinks")) return;
     const v = k => { const z = $(`[data-k=${k}]`, ed); return z.type === "checkbox" ? z.checked : z.value.trim(); };
-    s.email = v("email"); s.phone = v("phone"); s.phoneHref = v("phoneHref"); s.api = v("api"); s.legalOk = v("legalOk"); s.projectPages = v("projectPages");
+    s.api = v("api"); s.legalOk = v("legalOk"); s.projectPages = v("projectPages");
     if (v("turnstile")) s.turnstile = v("turnstile"); else delete s.turnstile;
     mark("site");
   }));
+}
+// ---------- Contact : tout ce que montre la section Contact de l'accueil (photo, coordonnées, liens, textes) ----------
+// textes d'origine de src.html (dictionnaire T, clés contact.h et contact.p) : un champ vide garde ce texte
+const CT_DEF = { title: { fr: "Parlons de votre projet.", en: "Let’s talk about your project." }, text: { fr: "Soirée, concert, équipe, marque ou shooting : écrivez-moi ou retrouvez-moi sur Instagram. Je vous réponds avec plaisir.", en: "A party, a concert, a team, a brand or a shoot: email me or find me on Instagram. I’d love to hear from you." } };
+const CT_MAX = { title: 80, text: 400 };
+const SITE_EMAIL = /^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}$/, IG_RE = /^[A-Za-z0-9._]{1,30}$/;
+const igHandle = v => String(v || "").trim().replace(/^https?:\/\/(www\.)?instagram\.com\//i, "").replace(/^@/, "").replace(/[/?#].*$/, "");
+const phoneIntl = v => { const d = String(v || "").replace(/[^\d+]/g, ""), n = d.replace(/\D/g, ""); return !n ? "" : d.startsWith("+") ? "+" + n : n.length === 10 ? "+1" + n : n.length === 11 && n[0] === "1" ? "+" + n : "+" + n; };
+function contactProbs() {
+  const s = C.site.data, out = [], ph = s.phone || "", h = s.phoneHref || "";
+  if (!SITE_EMAIL.test(s.email || "")) out.push("courriel de contact invalide");
+  if ([...ph].length > 30 || !/^[0-9 +().-]*$/.test(ph) || (ph && !/\d/.test(ph))) out.push("téléphone affiché : chiffres, espaces, + ( ) . - seulement");
+  if (h && !/^\+[1-9][0-9]{6,14}$/.test(h)) out.push("téléphone international : + puis 7 à 15 chiffres");
+  if (!ph !== !h) out.push("téléphone : les deux formats, ou aucun");
+  if ((s.instagram || []).some(x => !IG_RE.test(x))) out.push("compte Instagram invalide");
+  for (const k of ["title", "text"]) for (const l of ["fr", "en"]) if ([...(((s.contact || {})[k] || {})[l] || "")].length > CT_MAX[k]) out.push(`${k === "title" ? "titre" : "texte"} Contact (${l}) : ${CT_MAX[k]} caractères au plus`);
+  return out;
+}
+async function mePhoto() {
+  const r = await pickPhoto({ title: "Changer la photo de contact", hint: "La photo quitte son édition ou « Photos retirées » : sur le site, chaque photo n'apparaît qu'une fois. L'ancienne photo de contact va dans « Photos retirées ». Les photos de l'accueil et les photos vedettes des projets ne peuvent pas être prises.", why: homeWhy });
+  if (r == null) return null;
+  if (typeof r === "object") { const id = await uploadOne(r.files); if (id == null) return null; detach([id]); return id; }
+  return takeForHome(r, false) ? r : null;
+}
+function editContact() {
+  cur = "@contact"; $$("#pTree button[data-p]").forEach(b => b.setAttribute("aria-current", String(b.dataset.p === "@contact")));
+  const s = C.site.data, H = C.home.data, ed = $("#pEd"), ct = () => (s.contact || {});
+  const f = H.meFocus || {}, crop = H.meFocus != null, igs = (s.instagram || []).join(" ");
+  const tx = (k, l) => esc(((ct()[k] || {})[l]) || "");
+  ed.innerHTML = `<div class="stack">
+    <div class="edbox"><h2 class="s" style="margin:0">Aperçu de la section Contact</h2><p class="hint" style="margin:0">Telle qu'elle s'affiche en bas de l'accueil (version française ; la version anglaise suit le même modèle). Mise à jour à chaque frappe ; rien n'est en ligne avant « Publier les modifications ».</p>
+      <div class="ctp" id="ctPrev" aria-label="Aperçu de la section Contact"><div class="ctp-main"><h3 class="ctp-t" data-p="t"></h3><p class="ctp-p" data-p="p"></p><div class="ctp-ctas"><span class="ctp-btn pri">Demander une date</span><span class="ctp-btn">Écrire un courriel</span></div><dl class="ctp-list" data-p="list"></dl></div><div class="ctp-me"><div class="ctp-card" data-p="card"><img alt=""><span class="card-tag">Mamadou Beye</span></div></div></div></div>
+    <div class="edbox"><h2 class="s" style="margin:0">Photo de contact</h2><p class="hint" style="margin:0">La carte portrait à droite de la section. Remplacez-la par n'importe quelle photo du portfolio, des « Photos retirées » ou de votre ordinateur : l'ancienne va dans « Photos retirées ».</p>
+      <div class="row"><span class="hint" data-o="me">Photo ${n3(H.me)}</span><button class="btn small primary" type="button" data-a="me">Changer la photo…</button></div>
+      <label class="check"><input type="checkbox" data-a="crop"${crop ? " checked" : ""}><span>Recadrer en portrait 2:3 (sinon la photo garde ses proportions)</span></label>
+      <div class="two" data-o="crop" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px"${crop ? "" : " hidden"}>
+        <label class="field"><span>Cadrage horizontal : <b data-o="x">${f.x ?? 50}</b> %</span><input type="range" min="0" max="100" step="1" data-a="x" value="${f.x ?? 50}"></label>
+        <label class="field"><span>Cadrage vertical : <b data-o="y">${f.y ?? 50}</b> %</span><input type="range" min="0" max="100" step="1" data-a="y" value="${f.y ?? 50}"></label>
+        <label class="field"><span>Zoom : <b data-o="z">${f.z ?? 100}</b> %</span><input type="range" min="100" max="300" step="5" data-a="z" value="${f.z ?? 100}"></label>
+      </div></div>
+    <div class="edbox"><h2 class="s" style="margin:0">Coordonnées</h2>
+      <div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        ${field("Courriel de contact", `<input class="input" data-c="email" type="email" autocomplete="off" maxlength="200" value="${esc(s.email || "")}">`)}
+        ${field("Téléphone affiché (vide = pas de téléphone)", `<input class="input" data-c="phone" inputmode="tel" maxlength="30" value="${esc(s.phone || "")}" placeholder="(438) 304-7844">`)}
+        ${field("Téléphone, format international (lien d'appel)", `<input class="input" data-c="phoneHref" inputmode="tel" maxlength="16" value="${esc(s.phoneHref || "")}" placeholder="+14383047844">`)}
+        ${field("Comptes Instagram (séparés par des espaces, 6 au plus)", `<input class="input" data-c="ig" autocomplete="off" value="${esc(igs)}" placeholder="bigbeezarr beyethekage">`)}
+      </div><p class="err" data-o="err" style="margin:0" role="status"></p>
+      <h3 class="s" style="margin:8px 0 0">Liens du site</h3><p class="hint" style="margin:0">Sous Instagram dans la section Contact, et en pied de page des pages de projet. 6 au plus.</p><div id="sLinks"></div></div>
+    <div class="edbox"><h2 class="s" style="margin:0">Textes de la section</h2><p class="hint" style="margin:0">Un champ vide garde le texte d'origine (affiché en gris).</p>
+      <div class="two" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px">
+        ${field(`Titre (FR) <span class="hint" data-n="title-fr"></span>`, `<input class="input" data-t="title-fr" maxlength="${CT_MAX.title}" value="${tx("title", "fr")}" placeholder="${esc(CT_DEF.title.fr)}">`)}
+        ${field(`Titre (EN) <span class="hint" data-n="title-en"></span>`, `<input class="input" data-t="title-en" maxlength="${CT_MAX.title}" value="${tx("title", "en")}" placeholder="${esc(CT_DEF.title.en)}">`)}
+        ${field(`Texte (FR) <span class="hint" data-n="text-fr"></span>`, `<textarea class="input" data-t="text-fr" maxlength="${CT_MAX.text}" rows="3" placeholder="${esc(CT_DEF.text.fr)}">${tx("text", "fr")}</textarea>`)}
+        ${field(`Texte (EN) <span class="hint" data-n="text-en"></span>`, `<textarea class="input" data-t="text-en" maxlength="${CT_MAX.text}" rows="3" placeholder="${esc(CT_DEF.text.en)}">${tx("text", "en")}</textarea>`)}
+      </div></div></div>`;
+  const P = k => $(`#ctPrev [data-p=${k}]`), im = $("#ctPrev img");
+  const paintImg = () => {
+    const i = H.me, m = C.meta && C.meta[i], q = H.meFocus;
+    im.onerror = () => { if (!im.dataset.f) { im.dataset.f = 1; im.src = `../img/f/${n3(i)}.webp`; } }; delete im.dataset.f;
+    im.src = LOCAL[i] || `../img/m/${n3(i)}.webp`;
+    P("card").style.aspectRatio = q ? "2 / 3" : m ? `${m[0]} / ${m[1]}` : "2 / 3";
+    const o = q ? `${q.x ?? 50}% ${q.y ?? 50}%` : "50% 50%"; im.style.objectPosition = o; im.style.transformOrigin = o; im.style.scale = q && q.z > 100 ? String(q.z / 100) : "";
+    $("[data-o=me]", ed).textContent = `Photo ${n3(i)}`;
+  };
+  const paintTxt = () => {
+    P("t").textContent = (ct().title || {}).fr || CT_DEF.title.fr; P("p").textContent = (ct().text || {}).fr || CT_DEF.text.fr;
+    const L = P("list"); L.textContent = "";
+    const row = (dt, vals) => { const d = document.createElement("div"); d.innerHTML = `<dt>${esc(dt)}</dt><dd>${vals.map(v => `<span class="ctp-v">${esc(v)}</span>`).join("")}</dd>`; L.appendChild(d); };
+    row("E-mail", [s.email || "—"]); if (s.phone) row("Téléphone", [s.phone]); if ((s.instagram || []).length) row("Instagram", s.instagram.map(h => "@" + h)); if ((s.links || []).length) row("Liens", s.links.map(x => x.label));
+    $$("[data-n]", ed).forEach(n => { const x = $(`[data-t=${n.dataset.n}]`, ed); n.textContent = `${[...x.value].length}/${x.maxLength}`; });
+    $("[data-o=err]", ed).textContent = contactProbs().join(" · ");
+  };
+  paintImg(); paintTxt();
+  linkEditor($("#sLinks"), () => s.links || [], l => { if (l.length) s.links = l; else delete s.links; mark("site"); paintTxt(); });
+  // coordonnées
+  const ci = k => $(`[data-c=${k}]`, ed);
+  let autoHref = !s.phoneHref || s.phoneHref === phoneIntl(s.phone);
+  ci("phoneHref").addEventListener("input", () => { autoHref = false; });
+  $$("[data-c]", ed).forEach(x => x.addEventListener("input", () => {
+    s.email = ci("email").value.trim();
+    s.phone = ci("phone").value.trim();
+    if (autoHref && x.dataset.c === "phone") ci("phoneHref").value = phoneIntl(s.phone);
+    s.phoneHref = ci("phoneHref").value.trim().replace(/[\s().-]/g, "");
+    const l = [...new Set(ci("ig").value.split(/[\s,;]+/).map(igHandle).filter(Boolean))];
+    if (l.length) s.instagram = l; else delete s.instagram;
+    mark("site"); paintTxt();
+  }));
+  ci("ig").addEventListener("change", () => { ci("ig").value = (s.instagram || []).join(" "); });
+  // textes
+  $$("[data-t]", ed).forEach(x => x.addEventListener("input", () => {
+    const c = {};
+    for (const k of ["title", "text"]) { const o = {}; for (const l of ["fr", "en"]) { const v = $(`[data-t=${k}-${l}]`, ed).value.replace(/\s+/g, " ").trim(); if (v) o[l] = v; } if (Object.keys(o).length) c[k] = o; }
+    if (Object.keys(c).length) s.contact = c; else delete s.contact;
+    mark("site"); paintTxt();
+  }));
+  // photo et cadrage
+  $("[data-a=crop]", ed).addEventListener("change", ev => {
+    if (ev.target.checked) H.meFocus = {}; else delete H.meFocus;
+    $("[data-o=crop]", ed).hidden = !ev.target.checked; mark("home"); paintImg();
+  });
+  $$("input[type=range]", ed).forEach(el => el.addEventListener("input", () => {
+    const q = (H.meFocus ||= {}), a = el.dataset.a, v = +el.value; if (v === (a === "z" ? 100 : 50)) delete q[a]; else q[a] = v;
+    $(`[data-o=${a}]`, ed).textContent = v; mark("home"); paintImg();
+  }));
+  $("[data-a=me]", ed).addEventListener("click", async () => {
+    const j = await mePhoto(); if (j == null) return;
+    const old = H.me; H.me = j; unpub().push(old); if (H.meFocus) H.meFocus = {};
+    prune(); mark("home"); mark(); refreshUnpubCount(); editContact();
+    A().toast(`Photo de contact remplacée (cadrage remis au centre). L'ancienne photo ${old} est dans « Photos retirées ».`);
+  });
 }
 // même contrôle que le serveur et build.py : chaque photo du catalogue sert une seule fois
 function check() {
@@ -1076,6 +1187,7 @@ function check() {
   if (feat.length > 5) probs.push("plus de 5 projets à la une");
   const ranks = d.chapters.flatMap(c => c.projects).filter(p => p.featured).map(p => p.featured); if (new Set(ranks).size !== ranks.length) probs.push("deux projets ont le même rang « à la une »");
   for (const [k, v] of Object.entries(H.heroLab || {})) { if ([...(v.name || "")].length > 40) probs.push(`carte ${k} : nom de 40 caractères au plus`); if (["fr", "en"].some(l => [...((v.meta || {})[l] || "")].length > 80)) probs.push(`carte ${k} : légende de 80 caractères au plus`); }
+  probs.push(...contactProbs());
   return probs;
 }
 async function save() {

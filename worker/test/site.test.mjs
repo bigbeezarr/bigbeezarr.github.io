@@ -206,6 +206,24 @@ await refuse(d => { const q = d.chapters[0].projects[0]; q.hidden = false; q.eds
   x = await putF([{ file: "site", data: sb, sha: C.site.sha }]);
   check(x.status === 200, "liens du site acceptés", x.data);
   C = (await call("GET", "/api/admin/content", { token: A })).data; }
+// section Contact : coordonnées, textes (mêmes contrôles que build.py)
+{ const S0 = () => JSON.parse(JSON.stringify(C.site.data));
+  const bad = async (f, label, re) => { const sb = S0(); f(sb); const x = await putF([{ file: "site", data: sb, sha: C.site.sha }]); check(x.data.error === "invalid_content" && (!re || re.test(x.data.detail)), label, x.data); };
+  await bad(sb => { sb.email = "pas-une-adresse"; }, "contact : courriel invalide refusé", /courriel/);
+  await bad(sb => { sb.email = "a\"><script>@x.com"; }, "contact : courriel avec guillemets ou chevrons refusé", /courriel/);
+  await bad(sb => { delete sb.email; }, "contact : courriel obligatoire", /courriel/);
+  await bad(sb => { sb.phone = "438 <b>"; sb.phoneHref = "+14383047844"; }, "contact : caractères interdits dans le téléphone refusés", /téléphone affiché/);
+  await bad(sb => { sb.phone = "(438) 304-7844"; sb.phoneHref = "438 304"; }, "contact : format international invalide refusé", /international/);
+  await bad(sb => { sb.phone = "(438) 304-7844"; sb.phoneHref = ""; }, "contact : un seul format de téléphone refusé", /deux formats/);
+  await bad(sb => { sb.instagram = ["bon", "mau vais"]; }, "contact : compte Instagram invalide refusé", /Instagram/);
+  await bad(sb => { sb.instagram = ["a", "a"]; }, "contact : compte Instagram en double refusé", /Instagram/);
+  await bad(sb => { sb.contact = { title: { fr: "x".repeat(81) } }; }, "contact : titre de plus de 80 caractères refusé", /80/);
+  await bad(sb => { sb.contact = { text: { en: "a\nb" } }; }, "contact : texte sur plusieurs lignes refusé", /400/);
+  await bad(sb => { sb.contact = { html: { fr: "x" } }; }, "contact : champ inconnu refusé", /Contact/);
+  const sb = S0(); Object.assign(sb, { email: "hello@bigbeezarr.com", phone: "+221 77 000 00 00", phoneHref: "+221770000000", instagram: ["bigbeezarr", "beye.the_kage"], contact: { title: { fr: "Écrivez-moi.", en: "" }, text: { fr: "", en: "Say hi." } } });
+  const x = await putF([{ file: "site", data: sb, sha: C.site.sha }]);
+  check(x.status === 200 && (await fileOf("content/site.json")).contact.title.fr === "Écrivez-moi.", "contact : coordonnées et textes enregistrés", x.data);
+  C = (await call("GET", "/api/admin/content", { token: A })).data; }
 await refuse(d => { const p = d.chapters[0].projects[0]; p.eds[0].imgs = [1, 2, 3, 10, 11, 12, 13, 14, 15]; d.unpublished = []; p.selection = [1, 2, 3, 10, 11, 12, 13, 14, 15]; }, "sélection de plus de 8 photos refusée");
 await refuse(d => { d.chapters[0].projects[0].selFocus = { 1: 140 }; }, "recadrage hors de 0 à 100 refusé", /recadrage/);
 await refuse(d => { d.chapters[0].projects[0].homePicks = { 2025: [3] }; }, "photo d'accueil hors du projet refusée", /accueil/);
@@ -235,6 +253,14 @@ h2 = H(); h2.heroLab = { 6: { name: "Pas là", meta: { fr: "", en: "" } } };
 check(/n'est pas dans l'ouverture/.test((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.detail || ""), "carte d'une photo hors de l'ouverture refusée");
 h2 = H(); h2.heroLab = { 4: { name: "SDM", meta: { fr: "x", en: "y" }, html: "<b>" } };
 check((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.error === "invalid_content", "carte : champ inconnu refusé");
+h2 = H(); h2.meFocus = { x: 120 };
+check(/photo de contact/.test((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.detail || ""), "photo de contact : cadrage hors de 0 à 100 refusé");
+h2 = H(); h2.meFocus = { z: 50 };
+check(/zoom/.test((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.detail || ""), "photo de contact : zoom hors de 100 à 300 refusé");
+h2 = H(); h2.me = 4;
+check(/deux fois/.test((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.detail || ""), "photo de contact déjà dans l'ouverture refusée");
+h2 = H(); h2.me = 99;
+check((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.error === "invalid_content", "photo de contact inconnue refusée");
 h2 = H(); delete h2.heroLab;
 check((await putF([{ file: "home", data: h2, sha: C.home.sha }])).data.error === "invalid_content", "accueil sans heroLab refusé (build.py en a besoin)");
 check((await putF([{ file: "home", data: H(), sha: "vieux" }])).data.error === "content_changed", "conflit : accueil modifié entre-temps");
