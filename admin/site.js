@@ -480,6 +480,8 @@ function poolOf() { const s = new Set(unpub()); C.portfolio.data.chapters.forEac
 function prune() {
   const shp = C.portfolio.data.shape;
   if (shp) { const H = C.home.data, used = poolOf(); [...H.hero, ...H.about, ...H.wall, H.me].forEach(i => used.add(i)); for (const k of Object.keys(shp)) if (!used.has(+k)) delete shp[k]; if (!Object.keys(shp).length) delete C.portfolio.data.shape; }
+  const szm = C.portfolio.data.size;
+  if (szm) { const used = poolOf(); for (const k of Object.keys(szm)) if (!used.has(+k)) delete szm[k]; if (!Object.keys(szm).length) delete C.portfolio.data.size; }
   const HL = C.home.data.heroLab; if (HL) for (const k of Object.keys(HL)) if (!C.home.data.hero.includes(+k)) delete HL[k];
   { const pool = poolOf(); for (const c of C.portfolio.data.chapters) for (const p of c.projects) { if (p.featuredCover != null && !pool.has(p.featuredCover)) delete p.featuredCover; if (p.hidden && p.featured) delete p.featured; } }
   for (const c of C.portfolio.data.chapters) for (const p of c.projects) {
@@ -595,29 +597,42 @@ function addToSel(p) {
 }
 
 // ---------- aperçu de la grille de l'accueil : le même calcul que la page d'accueil (src.html, layoutMosaic) ----------
+// et que les pages de projet (assets/projet.js) ; « size » : "s" petite, "l" grande, "xl" pleine largeur
 const PAT_D = ["SDS", "SSS", "DSS", "SSD", "SSSS", "SDSS", "SSDS", "DSD", "SS", "SD", "DS", "SSSSS", "DSSS", "SSSD", "SDSD", "S", "D"], PAT_M = ["SS", "SD", "DS", "S", "SSS", "D"];
-function mosaicLayout(as, W) {
+function mosaicLayout(as, W, zs = []) {
   const mob = W < 640, g = mob ? 6 : W < 1000 ? 8 : 10, T0 = mob ? 210 : W < 1000 ? 270 : 330, pats = mob ? PAT_M : PAT_D, n = as.length;
-  const tgt = par => mob ? T0 : T0 * (par ? 0.82 : 1.22);
+  const tgt = par => mob ? T0 : T0 * (par ? 0.82 : 1.22), sized = zs.some(Boolean), Z = k => zs[k];
   const rowH = bl => { let A2 = 0, Sg = 0; for (const b of bl) { if (b.t === "S") A2 += b.a; else { const st = 1 / (1 / b.a1 + 1 / b.a2); A2 += st; Sg += st; } } return (W - (bl.length - 1) * g + g * Sg) / A2; };
   const best = [[], []]; best[0][n] = best[1][n] = { cost: 0 };
   for (let i = n - 1; i >= 0; i--) for (const par of [0, 1]) {
     let bb = null;
+    if (sized && Z(i) === "xl") { const nx = best[par][i + 1]; best[par][i] = nx ? { cost: nx.cost, r: { xl: 1, need: 1 } } : null; continue; }
     for (const pt of pats) {
       let need = 0; for (const c of pt) need += c === "D" ? 2 : 1; if (i + need > n) continue;
       let k = i; const bl = [];
       for (const c of pt) { if (c === "S") bl.push({ t: "S", a: as[k], k: [k++] }); else { bl.push({ t: "D", a1: as[k], a2: as[k + 1], k: [k, k + 1] }); k += 2; } }
-      const H = rowH(bl), T = tgt(par), dd = Math.log(H / T); let cost = dd * dd * 4;
-      for (const b of bl) if (b.t === "D" && (b.a1 < 1 || b.a2 < 1)) cost += .4;
+      let zl = 0, zc = 0, bad = false;
+      if (sized) for (const b of bl) {
+        const z1 = Z(b.k[0]), z2 = b.t === "D" ? Z(b.k[1]) : null;
+        if (z1 === "xl" || z2 === "xl" || (b.t === "D" && (z1 === "l" || z2 === "l"))) bad = true;
+        if (b.t === "S") { if (z1 === "l") zl = 1; else if (z1 === "s") zc += .5; }
+        else if (z1 === "s" && z2 === "s") zc -= .8; else if (z1 === "s" || z2 === "s") zc -= .3;
+      }
+      if (bad) continue;
+      const H = rowH(bl), T = zl ? tgt(par) * 1.4 : tgt(par), dd = Math.log(H / T); let cost = dd * dd * 4;
+      for (const b of bl) if (b.t === "D" && (b.a1 < 1 || b.a2 < 1) && !(sized && Z(b.k[0]) === "s" && Z(b.k[1]) === "s")) cost += .4;
       if (H > T * 1.6 || H < T * .6) cost += 12 + dd * dd * 20;
+      if (sized) cost += zc;
       const nx = best[1 - par][i + need]; if (!nx) continue;
-      if (!bb || cost + nx.cost < bb.cost) bb = { cost: cost + nx.cost, r: { bl, H, need } };
+      if (!bb || cost + nx.cost < bb.cost) bb = { cost: cost + nx.cost, r: { bl, H, need, T } };
     }
     best[par][i] = bb;
   }
   const pos = []; let i = 0, y = 0, par = 0;
   while (i < n) {
-    const r = best[par][i].r, T = tgt(par); let H = r.H, cap = false; if (H > T * 1.7) { H = T * 1.2; cap = true; }
+    const r = best[par][i].r;
+    if (r.xl) { const a = as[i], H = Math.min(W / a, T0 * 2.4), w = a * H; pos[i] = [(W - w) / 2, y, w, H]; y += H + g; i += 1; continue; }
+    const T = r.T; let H = r.H, cap = false; if (H > T * 1.7) { H = T * 1.2; cap = true; }
     const out = []; let x = 0;
     for (const b of r.bl) {
       if (b.t === "S") { const w = b.a * H; out.push([b.k[0], x, y, w, H]); x += w + g; }
@@ -637,17 +652,18 @@ async function loadLive() {
   try { const t = await (await fetch("../index.html", { cache: "no-store" })).text(), m = /const DATA = (\{.*?\});\n/s.exec(t); if (m) LIVE = JSON.parse(m[1]); } catch {}
   return LIVE;
 }
-function liveOrder() {
+function liveOrder(page) {
   const o = new Map(); let n = 0;
-  if (LIVE) LIVE.chapters.forEach(c => c.projects.forEach(q => (q.home || edsOf(q)).forEach(b => b.imgs.forEach(i => o.set(i, n++)))));
+  if (LIVE) LIVE.chapters.forEach(c => c.projects.forEach(q => ((!page && q.home) || edsOf(q)).forEach(b => b.imgs.forEach(i => o.set(i, n++)))));
   return o;
 }
 const W_DESK = 1178, W_PHONE = 358; // largeur d'une mosaïque de l'accueil sur un écran de 1280 px et de 390 px
-function homeBlocks(p) {
-  const L = liveOrder(), ord = (ids, fixed) => fixed ? ids.slice() : ids.slice().sort((a, b) => (L.has(a) ? L.get(a) : 1e6 + ids.indexOf(a)) - (L.has(b) ? L.get(b) : 1e6 + ids.indexOf(b)));
+// chaque bloc dit comment enregistrer un nouvel ordre : édition (« order: fixed ») ou année d'un projet à la une (homePicks + homeFixed)
+function homeBlocks(p, page) {
+  const L = liveOrder(page), ord = (ids, fixed) => fixed ? ids.slice() : ids.slice().sort((a, b) => (L.has(a) ? L.get(a) : 1e6 + ids.indexOf(a)) - (L.has(b) ? L.get(b) : 1e6 + ids.indexOf(b)));
   const eds = edsOf(p).filter(e => !e.hidden || !p.eds);
   const label = e => p.eds ? [e.brand, e.look ? "Look " + e.look : "", e.year, T2(e.label, "fr")].filter(Boolean).join(" · ") : "Photos";
-  if (p.featured && C.site.data.projectPages !== false) { // projet à la une : 10 photos par année (homePicks), comme build.py
+  if (!page && p.featured && C.site.data.projectPages !== false) { // projet à la une : 10 photos par année (homePicks), comme build.py
     const years = [], by = {};
     eds.forEach(e => { const y = edYear(p, e); if (!by[y]) { by[y] = []; years.push(y); } by[y].push(e); });
     let trimmed = false;
@@ -656,40 +672,63 @@ function homeBlocks(p) {
       const n = Math.min(10, pool.length), want = [...new Set(((p.homePicks || {})[y]) || [])].filter(i => pool.includes(i)).slice(0, n);
       want.push(...pool.filter(i => !want.includes(i)).slice(0, n - want.length)); if (pool.length > want.length) trimmed = true;
       const feats = new Set(by[y].filter(e => e.feature).map(e => e.feature.img)), feat = want.find(i => feats.has(i));
-      const imgs = want.filter(i => i !== feat);
-      return { title: y || "Photos", feat, imgs: by[y].some(e => e.order === "fixed") ? pool.filter(i => imgs.includes(i)) : ord(imgs), note: `${want.length} sur ${pool.length}` };
+      const imgs = want.filter(i => i !== feat), hand = (p.homeFixed || []).includes(y), edFix = by[y].some(e => e.order === "fixed");
+      return { kind: "year", y, want, title: y || "Photos", feat, fixed: hand, imgs: hand ? imgs : edFix ? pool.filter(i => imgs.includes(i)) : ord(imgs), note: `${want.length} sur ${pool.length}` };
     });
     if (trimmed) return blocks;
   }
-  return eds.map(e => ({ title: label(e), feat: e.feature ? e.feature.img : null, imgs: ord(e.imgs, e.order === "fixed"), note: `${e.imgs.length} photos` }));
+  return eds.map(e => ({ kind: "ed", e, title: label(e), feat: e.feature ? e.feature.img : null, fixed: e.order === "fixed", imgs: ord(e.imgs, e.order === "fixed"), note: `${e.imgs.length} photos` }));
 }
-let gridW = W_DESK, shapeCur = null;
-const arOf = i => { const s = (C.portfolio.data.shape || {})[i], m = C.meta && C.meta[i]; return s ? (s.r === "v" ? 2 / 3 : 3 / 2) : m ? m[0] / m[1] : 1.5; };
+// nouvel ordre d'un bloc : il devient manuel
+function setOrder(p, b, imgs) {
+  if (b.kind === "ed") { b.e.imgs = imgs; b.e.order = "fixed"; }
+  else {
+    const hp = (p.homePicks ||= {}); hp[b.y] = [...(b.feat != null ? [b.feat] : []), ...imgs];
+    const hf = (p.homeFixed ||= []); if (!hf.includes(b.y)) hf.push(b.y);
+  }
+  mark();
+}
+function resetOrder(p, b) {
+  if (b.kind === "ed") delete b.e.order;
+  else if (p.homeFixed) { p.homeFixed = p.homeFixed.filter(y => y !== b.y); if (!p.homeFixed.length) delete p.homeFixed; }
+  mark();
+}
+const SIZES = [["", "Normale"], ["s", "Petite"], ["l", "Grande"], ["xl", "Pleine largeur"]];
+const sizeOf = i => (C.portfolio.data.size || {})[i] || "";
+let gridW = W_DESK, gridPage = false, shapeCur = null;
+const arOf = (i, page) => { const s = !page && (C.portfolio.data.shape || {})[i], m = C.meta && C.meta[i]; return s ? (s.r === "v" ? 2 / 3 : 3 / 2) : m ? m[0] / m[1] : 1.5; };
+// garde la grille à la même hauteur dans la fenêtre pendant qu'on la redessine
+function repaintGrid(p) { const g = $("#pGrid"); if (!g) return; const y = g.getBoundingClientRect().top; return paintGrid(p).then(() => { const d = $("#pGrid").getBoundingClientRect().top - y; if (d) scrollBy(0, d); }); }
 async function paintGrid(p) {
   const box = $("#pGrid"); if (!box) return;
-  box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 class="s" style="margin:0">Grille de l'accueil</h2><div class="seg" role="group" aria-label="Largeur de l'aperçu"><button type="button" class="btn small" data-w="${W_DESK}" aria-pressed="${gridW === W_DESK}">Ordinateur</button><button type="button" class="btn small" data-w="${W_PHONE}" aria-pressed="${gridW === W_PHONE}">Téléphone</button></div></div>
-    <p class="hint" style="margin:0">Les photos de ce projet telles que l'accueil les range${p.hidden ? " (projet non publié : rien n'est affiché sur le site pour l'instant)" : ""}. Touchez une photo pour l'afficher en vertical (2:3) ou en horizontal (3:2) sur l'accueil et choisir son cadrage ; la visionneuse montre toujours la photo entière.</p>
+  const pages = C.site.data.projectPages !== false; if (!pages) gridPage = false;
+  box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 class="s" style="margin:0">${gridPage ? "Galeries de la page du projet" : "Grille de l'accueil"}</h2><div class="row" style="gap:8px">${pages ? `<div class="seg" role="group" aria-label="Mosaïque montrée"><button type="button" class="btn small" data-v="home" aria-pressed="${!gridPage}">Accueil</button><button type="button" class="btn small" data-v="page" aria-pressed="${gridPage}">Page du projet</button></div>` : ""}<div class="seg" role="group" aria-label="Largeur de l'aperçu"><button type="button" class="btn small" data-w="${W_DESK}" aria-pressed="${gridW === W_DESK}">Ordinateur</button><button type="button" class="btn small" data-w="${W_PHONE}" aria-pressed="${gridW === W_PHONE}">Téléphone</button></div></div></div>
+    <p class="hint" style="margin:0">${gridPage ? "Les photos de chaque édition telles que la page du projet les range (photo d'ouverture à part, au-dessus)." : "Les photos de ce projet telles que l'accueil les range."}${p.hidden ? " (projet non publié : rien n'est affiché sur le site pour l'instant)" : ""} Glissez une photo pour la déplacer (l'ordre devient manuel), ou touchez-la pour choisir sa taille, la déplacer avec ← et →${gridPage ? "" : ", l'afficher en vertical (2:3) ou en horizontal (3:2) et choisir son cadrage"}. La taille vaut pour l'accueil et la page du projet ; la visionneuse montre toujours la photo entière.</p>
     <div id="gShape"></div><div id="gBlocks" class="stack"><p class="hint">Chargement…</p></div>`;
   $$("[data-w]", box).forEach(b => b.addEventListener("click", () => { gridW = +b.dataset.w; paintGrid(p); }));
+  $$("[data-v]", box).forEach(b => b.addEventListener("click", () => { gridPage = b.dataset.v === "page"; paintGrid(p); }));
   await loadLive();
   if (!$("#gBlocks") || cur !== p.id) return;
   const host = $("#gBlocks"); host.textContent = "";
-  const blocks = homeBlocks(p);
+  const blocks = homeBlocks(p, gridPage);
   if (!LIVE) host.insertAdjacentHTML("beforeend", '<p class="hint" style="margin:0">Site en ligne injoignable : l\'ordre montré est celui de vos éditions, avant le rangement automatique par couleur.</p>');
-  blocks.forEach(b => {
+  blocks.forEach((b, bi) => {
     const sec = document.createElement("div"); sec.className = "gblock";
-    sec.innerHTML = `<p class="gtitle"><b>${esc(b.title)}</b> <span class="hint">${esc(b.note)}${b.feat != null ? ` · photo d'ouverture ${n3(b.feat)} au-dessus, en grand` : ""}</span></p>`;
+    sec.innerHTML = `<div class="row" style="justify-content:space-between;gap:8px"><p class="gtitle" style="margin:0"><b>${esc(b.title)}</b> <span class="hint">${esc(b.note)}${b.feat != null ? ` · photo d'ouverture ${n3(b.feat)} au-dessus, en grand` : ""}</span></p>${b.fixed ? `<span class="row" style="gap:8px"><span class="pill">Ordre manuel</span><button type="button" class="btn small" data-reset>Revenir au rangement par couleur</button></span>` : ""}</div>`;
+    const rs = $("[data-reset]", sec); if (rs) rs.addEventListener("click", () => { resetOrder(p, b); repaintGrid(p); A().toast(LIVE ? "Rangement par couleur rétabli (calculé à la publication)." : "Rangement par couleur rétabli."); });
     const frame = document.createElement("div"); frame.className = "gframe" + (gridW === W_PHONE ? " phone" : "");
     const stage = document.createElement("div"); stage.className = "gstage"; stage.style.width = gridW + "px";
-    const { pos, H } = mosaicLayout(b.imgs.map(arOf), gridW);
+    const { pos, H } = mosaicLayout(b.imgs.map(i => arOf(i, gridPage)), gridW, b.imgs.map(sizeOf));
     b.imgs.forEach((i, k) => {
-      const [x, y, w, h] = pos[k], t = document.createElement("button"), sh = (C.portfolio.data.shape || {})[i];
-      t.type = "button"; t.className = "gt" + (shapeCur === i ? " on" : "") + (sh ? " forced" : ""); t.dataset.i = i;
+      const [x, y, w, h] = pos[k], t = document.createElement("button"), sh = !gridPage && (C.portfolio.data.shape || {})[i], z = sizeOf(i);
+      t.type = "button"; t.className = "gt" + (shapeCur === i ? " on" : "") + (sh ? " forced" : ""); t.dataset.i = i; t.dataset.k = k; t.dataset.b = bi;
       Object.assign(t.style, { left: x.toFixed(1) + "px", top: y.toFixed(1) + "px", width: w.toFixed(1) + "px", height: h.toFixed(1) + "px" });
-      t.setAttribute("aria-label", `Photo ${i}${sh ? (sh.r === "v" ? ", affichée en vertical" : ", affichée en horizontal") : ""} : changer sa forme`);
+      t.setAttribute("aria-label", `Photo ${i}, position ${k + 1} sur ${b.imgs.length}${z ? ", taille " + SIZES.find(s => s[0] === z)[1].toLowerCase() : ""}${sh ? (sh.r === "v" ? ", affichée en vertical" : ", affichée en horizontal") : ""} : choisir sa taille, la déplacer`);
       const im = thumbImg(i); if (sh) im.style.objectPosition = `${sh.x ?? 50}% ${sh.y ?? 50}%`; t.appendChild(im);
-      t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}${sh ? (sh.r === "v" ? " · V" : " · H") : ""}</span>`);
-      t.addEventListener("click", () => { shapeCur = i; paintShape(p); $$(".gt", host).forEach(z => z.classList.toggle("on", +z.dataset.i === i)); });
+      t.insertAdjacentHTML("beforeend", `<span class="no">${n3(i)}${sh ? (sh.r === "v" ? " · V" : " · H") : ""}${z ? " · " + { s: "P", l: "G", xl: "PL" }[z] : ""}</span>`);
+      t.addEventListener("click", ev => { if (t.dataset.dragged) { delete t.dataset.dragged; ev.preventDefault(); return; } shapeCur = i; paintShape(p); $$(".gt", host).forEach(zz => zz.classList.toggle("on", +zz.dataset.i === i)); });
+      t.addEventListener("keydown", ev => { if (shapeCur === i && (ev.key === "ArrowLeft" || ev.key === "ArrowRight")) { ev.preventDefault(); nudge(p, ev.key === "ArrowLeft" ? -1 : 1); } });
+      dragTile(p, b, t, stage);
       stage.appendChild(t);
     });
     stage.style.height = H.toFixed(1) + "px";
@@ -700,24 +739,62 @@ async function paintGrid(p) {
   if (!blocks.some(b => b.imgs.length)) host.insertAdjacentHTML("beforeend", '<p class="hint" style="margin:0">Aucune photo publiée dans ce projet.</p>');
   paintShape(p);
 }
+// glisser-déposer dans l'aperçu (souris, doigt ou stylet) : la photo prend la place de celle sur laquelle on la lâche
+function dragTile(p, b, t, stage) {
+  t.addEventListener("pointerdown", ev => {
+    if (ev.button !== 0) return;
+    const x0 = ev.clientX, y0 = ev.clientY, from = +t.dataset.k; let on = false, over = null;
+    const move = e => {
+      if (!on) { if (Math.hypot(e.clientX - x0, e.clientY - y0) < 6) return; on = true; t.classList.add("drag"); try { t.setPointerCapture(ev.pointerId); } catch {} }
+      e.preventDefault();
+      const s = stage.getBoundingClientRect().width / stage.offsetWidth || 1;
+      t.style.transform = `translate(${(e.clientX - x0) / s}px, ${(e.clientY - y0) / s}px)`;
+      const el = document.elementsFromPoint(e.clientX, e.clientY).find(z => z.classList && z.classList.contains("gt") && z !== t && z.parentNode === stage);
+      if (over !== el) { if (over) over.classList.remove("drop"); over = el || null; if (over) over.classList.add("drop"); }
+    };
+    const up = e => {
+      removeEventListener("pointermove", move); removeEventListener("pointerup", up); removeEventListener("pointercancel", up);
+      if (!on) return;
+      t.dataset.dragged = "1"; t.classList.remove("drag"); t.style.transform = ""; if (over) over.classList.remove("drop");
+      if (!over || e.type === "pointercancel") return;
+      const to = +over.dataset.k, imgs = b.imgs.slice(); imgs.splice(to, 0, imgs.splice(from, 1)[0]);
+      shapeCur = +t.dataset.i; setOrder(p, b, imgs); repaintGrid(p);
+    };
+    addEventListener("pointermove", move, { passive: false }); addEventListener("pointerup", up); addEventListener("pointercancel", up);
+  });
+}
+// ← / → : déplace la photo choisie d'une place dans son bloc
+function nudge(p, d) {
+  const i = shapeCur, blocks = homeBlocks(p, gridPage), b = blocks.find(x => x.imgs.includes(i)); if (!b) return;
+  const k = b.imgs.indexOf(i), to = k + d; if (to < 0 || to >= b.imgs.length) return;
+  const imgs = b.imgs.slice(); imgs.splice(to, 0, imgs.splice(k, 1)[0]); setOrder(p, b, imgs);
+  repaintGrid(p).then(() => { const el = $(`#gBlocks .gt[data-i="${i}"]`); if (el) el.focus({ preventScroll: true }); });
+}
 function paintShape(p) {
   const box = $("#gShape"); if (!box) return;
-  const i = shapeCur, all = new Set(homeBlocks(p).flatMap(b => b.imgs));
-  if (i == null || !all.has(i)) { box.innerHTML = ""; return; }
-  const sh = (C.portfolio.data.shape || {})[i], r = sh ? sh.r : "o", m = C.meta && C.meta[i];
-  box.innerHTML = `<div class="shapebox"><div class="shprev ${r}"><img alt=""></div><div class="stack" style="gap:8px;flex:1;min-width:200px">
-    <p style="margin:0"><b>Photo ${n3(i)}</b> <span class="hint">${m ? `${m[0]} × ${m[1]} px, ${m[0] > m[1] ? "horizontale" : m[0] < m[1] ? "verticale" : "carrée"}` : ""}</span></p>
-    <div class="seg" role="radiogroup" aria-label="Forme sur l'accueil">${[["o", "Original"], ["v", "Vertical (2:3)"], ["h", "Horizontal (3:2)"]].map(([k, l]) => `<button type="button" class="btn small" role="radio" data-r="${k}" aria-checked="${r === k}">${l}</button>`).join("")}</div>
+  const i = shapeCur, blocks = homeBlocks(p, gridPage), b = blocks.find(x => x.imgs.includes(i));
+  if (i == null || !b) { box.innerHTML = ""; return; }
+  const sh = (C.portfolio.data.shape || {})[i], r = sh ? sh.r : "o", m = C.meta && C.meta[i], z = sizeOf(i), k = b.imgs.indexOf(i);
+  box.innerHTML = `<div class="shapebox"><div class="shprev ${gridPage ? "o" : r}"><img alt=""></div><div class="stack" style="gap:8px;flex:1;min-width:200px">
+    <p style="margin:0"><b>Photo ${n3(i)}</b> <span class="hint">${m ? `${m[0]} × ${m[1]} px, ${m[0] > m[1] ? "horizontale" : m[0] < m[1] ? "verticale" : "carrée"}` : ""} · place ${k + 1} sur ${b.imgs.length}</span></p>
+    <div class="row" style="gap:8px"><button type="button" class="btn small" data-mv="-1" aria-label="Déplacer vers la gauche (plus tôt)"${k ? "" : " disabled"}>←</button><button type="button" class="btn small" data-mv="1" aria-label="Déplacer vers la droite (plus tard)"${k < b.imgs.length - 1 ? "" : " disabled"}>→</button>
+    <div class="seg" role="radiogroup" aria-label="Taille sur la mosaïque">${SIZES.map(([v, l]) => `<button type="button" class="btn small" role="radio" data-z="${v}" aria-checked="${z === v}">${l}</button>`).join("")}</div></div>
+    ${gridPage ? "" : `<div class="seg" role="radiogroup" aria-label="Forme sur l'accueil">${[["o", "Original"], ["v", "Vertical (2:3)"], ["h", "Horizontal (3:2)"]].map(([kk, l]) => `<button type="button" class="btn small" role="radio" data-r="${kk}" aria-checked="${r === kk}">${l}</button>`).join("")}</div>
     <label class="field"><span>Cadrage horizontal : <b data-o="x">${sh ? sh.x ?? 50 : 50}</b> % (gauche 0, droite 100)</span><input type="range" min="0" max="100" step="1" data-a="x" value="${sh ? sh.x ?? 50 : 50}"${sh ? "" : " disabled"}></label>
-    <label class="field"><span>Cadrage vertical : <b data-o="y">${sh ? sh.y ?? 50 : 50}</b> % (haut 0, bas 100)</span><input type="range" min="0" max="100" step="1" data-a="y" value="${sh ? sh.y ?? 50 : 50}"${sh ? "" : " disabled"}></label>
+    <label class="field"><span>Cadrage vertical : <b data-o="y">${sh ? sh.y ?? 50 : 50}</b> % (haut 0, bas 100)</span><input type="range" min="0" max="100" step="1" data-a="y" value="${sh ? sh.y ?? 50 : 50}"${sh ? "" : " disabled"}></label>`}
   </div></div>`;
-  const pv = $(".shprev img", box); pv.src = thumbImg(i).src; pv.style.objectPosition = sh ? `${sh.x ?? 50}% ${sh.y ?? 50}%` : ""; if (!sh && m) $(".shprev", box).style.aspectRatio = `${m[0]} / ${m[1]}`;
-  const repaint = () => { const y = $("#pGrid").getBoundingClientRect().top; paintGrid(p).then(() => { const d = $("#pGrid").getBoundingClientRect().top - y; if (d) scrollBy(0, d); }); };
-  $$("[data-r]", box).forEach(b => b.addEventListener("click", () => {
+  const pv = $(".shprev img", box); pv.src = thumbImg(i).src; pv.style.objectPosition = sh && !gridPage ? `${sh.x ?? 50}% ${sh.y ?? 50}%` : ""; if ((gridPage || !sh) && m) $(".shprev", box).style.aspectRatio = `${m[0]} / ${m[1]}`;
+  $$("[data-mv]", box).forEach(bt => bt.addEventListener("click", () => nudge(p, +bt.dataset.mv)));
+  $$("[data-z]", box).forEach(bt => bt.addEventListener("click", () => {
+    const d = C.portfolio.data, v = bt.dataset.z;
+    if (!v) { if (d.size) { delete d.size[i]; if (!Object.keys(d.size).length) delete d.size; } } else (d.size ||= {})[i] = v;
+    mark(); repaintGrid(p);
+  }));
+  $$("[data-r]", box).forEach(bt => bt.addEventListener("click", () => {
     const d = C.portfolio.data;
-    if (b.dataset.r === "o") { if (d.shape) { delete d.shape[i]; if (!Object.keys(d.shape).length) delete d.shape; } }
-    else { const o = (d.shape ||= {})[i] || {}; d.shape[i] = { r: b.dataset.r, ...(o.x != null && o.x !== 50 ? { x: o.x } : {}), ...(o.y != null && o.y !== 50 ? { y: o.y } : {}) }; }
-    mark(); repaint();
+    if (bt.dataset.r === "o") { if (d.shape) { delete d.shape[i]; if (!Object.keys(d.shape).length) delete d.shape; } }
+    else { const o = (d.shape ||= {})[i] || {}; d.shape[i] = { r: bt.dataset.r, ...(o.x != null && o.x !== 50 ? { x: o.x } : {}), ...(o.y != null && o.y !== 50 ? { y: o.y } : {}) }; }
+    mark(); repaintGrid(p);
   }));
   $$("input[type=range]", box).forEach(el => el.addEventListener("input", () => {
     const s2 = C.portfolio.data.shape && C.portfolio.data.shape[i]; if (!s2) return;
@@ -1042,7 +1119,7 @@ function swapId(o, n) {
     if (p.cover === o) p.cover = n; if (p.featuredCover === o) p.featuredCover = n;
     L(p.selection); K(p.selFocus); Object.values(p.homePicks || {}).forEach(L);
   }));
-  L(d.unpublished); K(d.alt); K(d.shape);
+  L(d.unpublished); K(d.alt); K(d.shape); K(d.size);
   L(H.hero); L(H.about); L(H.wall); K(H.heroLab); K(H.cap);
   if (H.me === o) H.me = n;
 }

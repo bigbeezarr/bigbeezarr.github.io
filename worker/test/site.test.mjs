@@ -164,6 +164,11 @@ await refuse(d => { d.shape = { 1: { r: "v", x: 120 } }; }, "cadrage hors de 0 �
 await refuse(d => { d.shape = { 1: { r: "v", style: "x" } }; }, "champ inconnu dans une forme refusé", /champ inconnu/);
 await refuse(d => { d.shape = { 99: { r: "h" } }; }, "forme d'une photo utilisée nulle part refusée", /99/);
 await refuse(d => { d.shape = { "1x": { r: "h" } }; }, "forme : numéro invalide refusé", /numéro/);
+await refuse(d => { d.size = { 1: "m" }; }, "taille inconnue refusée", /taille de la photo 1/);
+await refuse(d => { d.size = { 99: "l" }; }, "taille d'une photo utilisée nulle part refusée", /99/);
+await refuse(d => { d.size = { "a": "s" }; }, "taille : numéro invalide refusé", /numéro/);
+await refuse(d => { d.chapters[0].projects[0].homeFixed = "2024"; }, "ordre manuel de l'accueil illisible refusé", /ordre manuel/);
+await refuse(d => { d.size = ["s"]; }, "tailles en liste refusées", /tailles/);
 await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "site", label: "Site", url: "http://exemple.com" }]; }, "lien non https refusé", /https/);
 await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "site", label: "Site", url: "javascript:alert(1)" }]; }, "lien javascript: refusé", /https/);
 await refuse(d => { d.chapters[0].projects[0].links = [{ kind: "site", label: "Site", url: "https://exemple.com/\"><script>" }]; }, "lien avec guillemets ou chevrons refusé", /https/);
@@ -187,12 +192,12 @@ await refuse(d => { const q = d.chapters[0].projects[0]; q.hidden = false; q.eds
   C = (await call("GET", "/api/admin/content", { token: A })).data; }
 // sélection prise ailleurs (photo retirée), réordonnée ; forme imposée sur l'accueil ; liens du projet
 { const d = P(), q = d.chapters[0].projects[0]; q.selection = [3, 1, 2]; q.selFocus = { 3: 30 };
-  d.shape = { 1: { r: "h", x: 50, y: 20 }, 3: { r: "v" } };
+  d.shape = { 1: { r: "h", x: 50, y: 20 }, 3: { r: "v" } }; d.size = { 1: "xl", 2: "s" };
   q.links = [{ kind: "site", label: "Site web", url: "https://bashment.example/" }, { kind: "instagram", label: "Instagram @thebashment", url: "https://www.instagram.com/thebashment/" }];
   r = await putF([{ file: "portfolio", data: d, sha: C.portfolio.sha }], "Test : sélection, formes, liens");
   check(r.status === 200, "sélection avec une photo de « Photos retirées », formes de la mosaïque et liens acceptés", r.data);
   const w = await fileOf("content/portfolio.json");
-  check(w.chapters[0].projects[0].selection.join() === "3,1,2" && w.shape["1"].r === "h" && w.chapters[0].projects[0].links.length === 2, "écrits tels quels (ordre de la sélection gardé)");
+  check(w.chapters[0].projects[0].selection.join() === "3,1,2" && w.shape["1"].r === "h" && w.size["1"] === "xl" && w.chapters[0].projects[0].links.length === 2, "écrits tels quels (ordre de la sélection gardé)");
   C = (await call("GET", "/api/admin/content", { token: A })).data;
   const d2 = P(); d2.chapters[0].projects[0].selection = [2, 1]; delete d2.chapters[0].projects[0].selFocus; delete d2.shape[3];
   r = await putF([{ file: "portfolio", data: d2, sha: C.portfolio.sha }], "Test : sélection remise");

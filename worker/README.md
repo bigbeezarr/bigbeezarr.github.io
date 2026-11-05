@@ -117,6 +117,13 @@ enregistrement qui casserait le site est refusé avec un message en français, e
   (largeurs Ordinateur 1178 px / Téléphone 358 px, ordre du site en ligne). Toucher une photo : « Original »,
   « Vertical » (2:3) ou « Horizontal » (3:2) et cadrage x/y de 0 à 100 → `shape` dans `content/portfolio.json`
   (`{"714": {"r": "v", "x": 30, "y": 50}}`). La visionneuse montre toujours la photo entière.
+  Bascule « Accueil / Page du projet » (même mosaïque que `assets/projet.js`). **Arrangement** : glisser une photo
+  dans l'aperçu, ou la toucher puis ←/→ : l'édition passe en `order: "fixed"` (« Ordre manuel », bouton « Revenir au
+  rangement par couleur ») ; pour un projet à la une, l'ordre des 10 photos d'une année va dans `homePicks[année]` et
+  l'année dans `homeFixed`. **Taille** : « Petite / Normale / Grande / Pleine largeur » → `size` dans
+  `content/portfolio.json` (`{"714": "xl"}` ; `s` empilée par deux de préférence, `l` jamais empilée et sur une rangée
+  plus haute, environ deux fois la surface, `xl` seule sur sa rangée, hauteur plafonnée ; normale = absente). Sans
+  `size`, la mosaïque est identique au pixel près.
 - **Sélection** : ordre par glisser-déposer ou ←/→ ; « Ajouter à la sélection… » prend une photo d'un autre projet ou
   des « Photos retirées » ; « Ajouter depuis mon ordinateur » envoie la photo dans « Photos retirées » puis la met dans
   la sélection. 8 au plus, sans doublon, toute photo du portfolio (pas les photos de l'accueil seules).

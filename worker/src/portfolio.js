@@ -152,6 +152,7 @@ export function validateContent(file, d) {
             const out = l.find(i => !mine.has(i)); if (out != null) err(`photos d'accueil de ${p.id} (${y}) : la photo ${out} n'est pas dans ce projet`);
           }
         }
+        if (p.homeFixed != null && (!Array.isArray(p.homeFixed) || p.homeFixed.length > 40 || p.homeFixed.some(y => typeof y !== "string" || [...y].length > 40))) err(`ordre manuel de l'accueil de ${p.id}`);
       }
     }
     if (d.unpublished != null) imgList(d.unpublished, "photos retirées");
@@ -179,6 +180,13 @@ export function validateContent(file, d) {
         if (!v || typeof v !== "object" || Array.isArray(v) || !["v", "h"].includes(v.r)) err(`forme de la photo ${k} : « v » (vertical) ou « h » (horizontal)`);
         for (const a of ["x", "y"]) if (v[a] != null && !(typeof v[a] === "number" && v[a] >= 0 && v[a] <= 100)) err(`cadrage de la photo ${k} : ${a} de 0 à 100`);
         if (Object.keys(v).some(a => !["r", "x", "y"].includes(a))) err(`forme de la photo ${k} : champ inconnu`);
+      }
+    }
+    if (d.size != null) {
+      if (typeof d.size !== "object" || Array.isArray(d.size) || Object.keys(d.size).length > 5000) err("tailles de la mosaïque illisibles");
+      for (const [k, v] of Object.entries(d.size)) {
+        if (!/^\d{1,5}$/.test(k)) err(`taille sur la mosaïque : numéro de photo invalide (${oneLine(k, 12)})`);
+        if (!["s", "l", "xl"].includes(v)) err(`taille de la photo ${k} : « s » (petite), « l » (grande) ou « xl » (pleine largeur)`);
       }
     }
     if (d.alt && (typeof d.alt !== "object" || Object.values(d.alt).some(v => !isT(v)))) err("textes alternatifs");
@@ -231,6 +239,8 @@ export function validateUsage(port, home, metaIds) {
   if (dup.length) err(dup[0]);
   const ghost = Object.keys(port.shape || {}).map(Number).find(i => !where.has(i));
   if (ghost != null) err(`forme de la mosaïque : la photo ${ghost} n'est utilisée nulle part`);
+  const ghostZ = Object.keys(port.size || {}).map(Number).find(i => !where.has(i));
+  if (ghostZ != null) err(`taille sur la mosaïque : la photo ${ghostZ} n'est utilisée nulle part`);
   if (!metaIds) return;
   const unknown = [...where.keys()].find(i => !metaIds.has(i));
   if (unknown != null) err(`photo ${unknown} inconnue : elle n'est pas dans le catalogue (meta.json)`);
