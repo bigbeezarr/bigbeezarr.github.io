@@ -7,7 +7,7 @@
   650,
   656,
   565,
-  977,
+  1053,
   465,
   973,
   706,
@@ -183,13 +183,6 @@
     "en": "Jelani Caribbean Edition, Dakar 2024"
    }
   },
-  "977": {
-   "name": "Ashs the Best",
-   "meta": {
-    "fr": "Jelani Coachella Edition, Saly 2026",
-    "en": "Jelani Coachella Edition, Saly 2026"
-   }
-  },
   "978": {
    "name": "El Hadj Diallo",
    "meta": {
@@ -216,6 +209,13 @@
    "meta": {
     "fr": "BAL × Wave, Dakar 2026",
     "en": "BAL × Wave, Dakar 2026"
+   }
+  },
+  "1053": {
+   "name": "Ashs the Best",
+   "meta": {
+    "fr": "Jelani Coachella Edition, Saly 2026",
+    "en": "Jelani Coachella Edition, Saly 2026"
    }
   }
  },
