@@ -112,6 +112,23 @@ for c in CHAPTERS:
     for p in c["projects"]:
         if p.get("links") is not None: links_ok(p["links"], p["id"])
 if SITE.get("links") is not None: links_ok(SITE["links"], "site")
+# ---- section Contact (même contrôle que worker/src/portfolio.js) : courriel, téléphone, comptes Instagram, textes, cadrage du portrait ----
+EMAIL_RE = r'[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,190}\.[A-Za-z]{2,24}'
+assert isinstance(SITE.get("email"), str) and re.fullmatch(EMAIL_RE, SITE["email"]), "courriel du site"
+PHONE, PHONE_HREF = SITE.get("phone") or "", SITE.get("phoneHref") or ""
+assert isinstance(PHONE, str) and len(PHONE) <= 30 and re.fullmatch(r'[0-9 +().-]*', PHONE) and (not PHONE or re.search(r'\d', PHONE)), "téléphone affiché : chiffres, espaces, + ( ) . - (30 au plus)"
+assert isinstance(PHONE_HREF, str) and (re.fullmatch(r'\+[1-9][0-9]{6,14}', PHONE_HREF) or not PHONE_HREF), "téléphone international : + puis 7 à 15 chiffres"
+assert bool(PHONE) == bool(PHONE_HREF), "téléphone : les deux formats ensemble, ou aucun"
+IG = SITE.get("instagram") or []
+assert isinstance(IG, list) and len(IG) <= 6 and len(set(IG)) == len(IG) and all(isinstance(h, str) and re.fullmatch(r'[A-Za-z0-9._]{1,30}', h) for h in IG), "comptes Instagram : 6 au plus, lettres, chiffres, . et _"
+CT = SITE.get("contact") or {}
+CT_MAX = {"title": 80, "text": 400}
+assert isinstance(CT, dict) and set(CT) <= set(CT_MAX), "textes de la section Contact"
+for k, v in CT.items():
+    assert isinstance(v, dict) and set(v) <= {"fr", "en"} and all(isinstance(x, str) and len(x) <= CT_MAX[k] and not re.search(r'[\x00-\x1f\x7f]', x) for x in v.values()), f"texte « {k} » de la section Contact : {CT_MAX[k]} caractères au plus"
+ME_FOCUS = HOME.get("meFocus")
+if ME_FOCUS is not None:
+    assert isinstance(ME_FOCUS, dict) and set(ME_FOCUS) <= {"x", "y", "z"} and all(isinstance(ME_FOCUS.get(a, 50), (int, float)) and 0 <= ME_FOCUS.get(a, 50) <= 100 for a in ("x", "y")) and isinstance(ME_FOCUS.get("z", 100), (int, float)) and 100 <= ME_FOCUS.get("z", 100) <= 300, "cadrage du portrait : x et y de 0 à 100, zoom de 100 à 300"
 missing = sorted(set(meta) - set(used))
 extra = sorted(set(used) - set(meta))
 assert not dups and not missing and not extra, (dups, missing, extra)
@@ -257,6 +274,7 @@ for c in CHAPTERS:
 
 DATA = {
   "hero": HERO, "heroLab": HERO_LAB, "about": ABOUT, "wall": WALL, "me": ME, "cap": CAP, "chapters": CHAPTERS,
+  **({"meFocus": ME_FOCUS} if ME_FOCUS is not None else {}),
   "featured": FEATURED, "pages": bool(SITE.get("projectPages", True)),
   "alt": PORT.get("alt", {}),
   "site": {k: SITE.get(k) for k in ("email", "phone", "phoneHref", "instagram", "api", "booking", "legalOk", "turnstile")},
@@ -268,6 +286,26 @@ DATA = {
 os.makedirs(os.path.join(BASE, 'build'), exist_ok=True)
 json.dump(DATA, open(os.path.join(BASE, 'build', 'data.json'), 'w'), ensure_ascii=False, separators=(',', ':'))
 src = open(os.path.join(BASE, 'src.html')).read()
+
+# ---- section Contact : coordonnées de content/site.json, textes remplaçables (site.json « contact », vide = texte d'origine) ----
+COPY_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 3.5V3a1.5 1.5 0 0 0-1.5-1.5H4A1.5 1.5 0 0 0 2.5 3v5A1.5 1.5 0 0 0 4 9.5h.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>'
+def phone_copy(h):
+    m = re.fullmatch(r'\+1(\d{3})(\d{3})(\d{4})', h)
+    return f"+1 {m[1]} {m[2]} {m[3]}" if m else h
+EM = SITE["email"]
+rows_ct = [f'<div><dt data-t="contact.email"></dt><dd><a class="c-val plain" href="mailto:{EM}">{EM}</a><button class="copy" type="button" data-copy="{EM}">{COPY_SVG}<span data-t="copy"></span></button></dd></div>']
+if PHONE: rows_ct.append(f'<div><dt data-t="contact.phone"></dt><dd><a class="c-val plain" href="tel:{PHONE_HREF}">{PHONE}</a><button class="copy" type="button" data-copy="{phone_copy(PHONE_HREF)}">{COPY_SVG}<span data-t="copy"></span></button></dd></div>')
+if IG: rows_ct.append('<div><dt>Instagram</dt><dd class="ig">' + ''.join(f'<a class="c-val" href="https://www.instagram.com/{h}/" target="_blank" rel="noopener noreferrer">@{h}</a>' for h in IG) + '</dd></div>')
+a = src.index('<dl class="c-list">\n') + len('<dl class="c-list">\n'); b = src.index('\n      </dl>', a)
+src = src[:a] + '\n'.join('        ' + r for r in rows_ct) + src[b:]
+src = src.replace('baeypro@gmail.com', EM)  # courriel des textes (formulaire de réservation) et du bouton « Écrire »
+for lang, nxt in (('fr', '\n  en: {'), ('en', '\n};')):
+    a = src.index('const T = {'); a = src.index(f'{lang}: {{', a); b = src.index(nxt, a)
+    part = src[a:b]
+    for k, key in (('title', 'contact.h'), ('text', 'contact.p')):
+        v = (CT.get(k) or {}).get(lang, '').strip()
+        if v: part = re.sub(r'"' + re.escape(key) + r'":\s*"(?:[^"\\]|\\.)*"', lambda m: f'"{key}": ' + json.dumps(v, ensure_ascii=False).replace('<', '\\u003c'), part, count=1)
+    src = src[:a] + part + src[b:]
 
 # ---- texte présent dans le HTML avant le script : moteurs de recherche, aperçus, lecteurs d'écran sans JavaScript ----
 import html as _html

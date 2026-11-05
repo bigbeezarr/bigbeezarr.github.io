@@ -2677,6 +2677,8 @@ if (!calm() && "IntersectionObserver" in window) {
 /* contact: Mamadou's portrait as a holo card */
 {
   const f = tile(DATA.me); $("#ctMe").appendChild(f);
+  const mf = DATA.meFocus; // cadrage choisi dans l'administration : carte portrait 2:3, point de cadrage x/y, zoom
+  if (mf) { const im = f.querySelector("img"), o = `${mf.x ?? 50}% ${mf.y ?? 50}%`; f.style.setProperty("--ar", (2 / 3).toFixed(4)); im.style.objectPosition = o; if ((mf.z || 100) > 100) { im.style.transformOrigin = o; im.style.scale = String(mf.z / 100); } }
   const tg = mk("span", "card-tag", f); tg.setAttribute("aria-hidden", "true"); tg.textContent = "Mamadou Beye";
 }
 
