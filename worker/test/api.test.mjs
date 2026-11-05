@@ -8,6 +8,7 @@ import { execFileSync } from "node:child_process";
 const API = process.env.API || "http://127.0.0.1:8787";
 const SRC = process.argv.slice(2);
 let ok = 0, bad = 0;
+const thumb0P = b => b; // le banc d'essai envoie le fichier lui-même comme aperçu
 const check = (cond, label, extra) => { if (cond) { ok++; console.log("  ✓", label); } else { bad++; console.log("  ✗", label, extra ?? ""); } };
 const sha = b => crypto.createHash("sha256").update(b).digest("hex");
 async function call(method, path, { token, body, raw, headers = {} } = {}) {
@@ -102,6 +103,26 @@ check(srcA.status === 200 && srcA.headers.get("content-type") === "image/jpeg" &
 check((await call("GET", `/api/admin/photos/${ph0.id}/site-source`)).status === 401, "aperçu pour le portfolio fermé sans jeton admin");
 const thumb = await call("GET", ph0.t);
 check(thumb.status === 200 && thumb.data.length > 1000, "aperçu servi");
+
+console.log("Retouche de l'aperçu client");
+const ej = fs.readFileSync(process.env.EDIT_JPG).toString("base64");
+const detail = async () => (await call("GET", `/api/admin/galleries/${G.id}`, { token: A })).data.photos.find(x => x.id === ph0.id);
+const before = await detail();
+check((await call("PUT", `/api/admin/photos/${ph0.id}/edit`, { body: { p: ej, t: ej } })).status === 401, "retouche fermée sans jeton admin");
+check((await call("PUT", `/api/admin/photos/${ph0.id}/edit`, { token: A, body: { p: ej, t: b0.toString("base64") } })).status === 400, "retouche : vignette de plus de 640 px refusée");
+check((await call("PUT", `/api/admin/photos/${ph0.id}/edit`, { token: A, body: { p: "AAAA", t: ej } })).status === 400, "retouche : fichier qui n'est pas une image refusé");
+const ed = await call("PUT", `/api/admin/photos/${ph0.id}/edit`, { token: A, body: { p: ej, t: ej } });
+const after = await detail();
+check(ed.status === 200 && after.edited === 1 && after.version === before.version + 1 && after.p !== before.p, "retouche enregistrée, nouvelle adresse d'aperçu", ed.data);
+const pe = await call("GET", after.p);
+check(pe.status === 200 && sha(pe.data) === sha(Buffer.from(ej, "base64")), "aperçu retouché servi au client");
+await call("PUT", `/api/admin/photos/${ph0.id}/edit`, { token: A, body: { p: ej, t: ej } });
+const og = await call("GET", ph0.o);
+check(og.status === 200 && sha(og.data) === sha(b0), "original intact après retouche");
+const rv = await call("DELETE", `/api/admin/photos/${ph0.id}/edit`, { token: A });
+const back = await detail(), pb = await call("GET", back.p);
+check(rv.status === 200 && !back.edited && sha(pb.data) === sha(thumb0P(b0)), "« Revenir à l'original » rend l'aperçu généré");
+check((await call("DELETE", `/api/admin/photos/${ph0.id}/edit`, { token: A })).status === 409, "rien à annuler sans retouche");
 
 console.log("ZIP");
 const z = await call("POST", `/api/g/${G.slug}/zip`, { token: V1, body: { all: true } });

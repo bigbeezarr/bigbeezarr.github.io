@@ -27,6 +27,7 @@ b.resize((1800, 1200)).save(f"{t}/site.webp", "WEBP", quality=82)
 a.resize((800, 1200)).save(f"{t}/site.jpg", quality=88)
 b.resize((2400, 1600)).save(f"{t}/big.webp", "WEBP", quality=60)
 b.resize((16, 11)).save(f"{t}/lqip.webp", "WEBP", quality=50)
+c.resize((600, 400)).save(f"{t}/edit.jpg", quality=80)
 PY
 
 # Un ancien serveur de test resté allumé fausserait tout : on refuse de démarrer si un port est déjà pris.
@@ -50,7 +51,7 @@ wait_up http://127.0.0.1:9922/
 
 echo "== Galeries, téléchargements, ZIP =="
 start_api bare
-DATA="$T/data" node --no-warnings test/api.test.mjs "$T/photo1.jpg" "$T/photo2.jpg" "$T/photo3.jpg" "$T/fichier.NEF"
+DATA="$T/data" EDIT_JPG="$T/edit.jpg" node --no-warnings test/api.test.mjs "$T/photo1.jpg" "$T/photo2.jpg" "$T/photo3.jpg" "$T/fichier.NEF"
 
 echo "== Réservations, clients, sélections, statistiques, contenu =="
 start_api full

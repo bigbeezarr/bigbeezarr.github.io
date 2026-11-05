@@ -181,7 +181,7 @@ async function stats() {
 // va dans « Photos retirées » (content/portfolio.json → unpublished), jamais à la corbeille. Les galeries client ne
 // rejoignent le portfolio que par « Ajouter depuis une galerie client », photo par photo.
 let C = null, cur = null, dirty = false, sel = new Set();
-const LOCAL = {}; // vignettes des photos envoyées pendant cette visite (pas encore sur le site)
+const LOCAL = {}, LOCALB = {}; // vignettes (et fichiers) des photos envoyées pendant cette visite (pas encore sur le site)
 const T2 = (v, l) => v == null ? "" : typeof v === "string" ? v : (v[l] ?? "");
 const setT = (obj, k, fr, en) => { if (!fr && !en) { delete obj[k]; return; } obj[k] = fr === en ? fr : { fr, en: en || fr }; };
 const projOf = id => { for (const c of C.portfolio.data.chapters) for (const p of c.projects) if (p.id === id) return { c, p }; return null; };
@@ -194,7 +194,14 @@ const unpub = () => (C.portfolio.data.unpublished ||= []);
 const badge = on => on ? "" : ' <span class="pill red">Non publié</span>';
 // loupe : ouvre la photo en grand (la vignette elle-même garde la sélection au toucher)
 const ZOOM_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.6" cy="8.6" r="5.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12.8 12.8 17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
-function zoomBtn(i) {
+const PEN_SVG = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 6.5h9.5a.5.5 0 0 1 .5.5v9.5M6.5 3.5V13a.5.5 0 0 0 .5.5h9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
+function editBtn(i) {
+  const b = document.createElement("button"); b.type = "button"; b.className = "pedit"; b.draggable = false; b.innerHTML = PEN_SVG; b.dataset.edit = i;
+  b.title = "Modifier la photo"; b.setAttribute("aria-label", `Modifier la photo ${i} (recadrer, tourner, zoomer)`); return b;
+}
+// loupe + « Modifier la photo » côte à côte (fragment : s'ajoute comme un seul élément)
+function zoomBtn(i) { const f = document.createDocumentFragment(); f.append(zoomOnly(i), editBtn(i)); return f; }
+function zoomOnly(i) {
   const b = document.createElement("button"); b.type = "button"; b.className = "zoom"; b.draggable = false; b.innerHTML = ZOOM_SVG;
   b.dataset.src = LOCAL[i] || `../img/f/${n3(i)}.webp`; b.dataset.t = `Photo ${n3(i)}`; b.setAttribute("aria-label", `Voir la photo ${i} en grand`);
   const a = C && C.portfolio && (C.portfolio.data.alt || {})[i]; if (a) b.dataset.sub = T2(a, "fr");
@@ -913,7 +920,7 @@ function paintFeat() {
     const ci = d.chapters.findIndex(c => c.projects.includes(p)), ch = d.chapters[ci], f = p.featuredFocus || {}, i = cardCover(p);
     const c = document.createElement("div"); c.className = "fc"; c.dataset.k = k;
     c.innerHTML = `<div class="fcard" draggable="true" aria-label="Carte ${k + 1} : ${esc(T2(p.title, "fr"))}"><img alt=""><span class="fc-txt"><span class="fc-n">${String(ci + 1).padStart(2, "0")} · ${esc(T2(ch.short || ch.name, "fr"))}</span><span class="fc-t"></span><span class="fc-m"></span><span class="fc-go">Voir le projet</span></span></div>
-      <div class="row hcbar"><button class="btn small" type="button" data-a="l" aria-label="Carte ${k + 1} avant"${k ? "" : " disabled"}>←</button><button class="btn small" type="button" data-a="r" aria-label="Carte ${k + 1} après"${k < list.length - 1 ? "" : " disabled"}>→</button><button class="btn small" type="button" data-a="ph">Changer la photo…</button>${p.featuredCover != null ? '<button class="btn small" type="button" data-a="def">Photo du projet</button>' : ""}<button class="btn small danger" type="button" data-a="rm">Retirer</button></div>
+      <div class="row hcbar"><button class="btn small" type="button" data-a="l" aria-label="Carte ${k + 1} avant"${k ? "" : " disabled"}>←</button><button class="btn small" type="button" data-a="r" aria-label="Carte ${k + 1} après"${k < list.length - 1 ? "" : " disabled"}>→</button><button class="btn small" type="button" data-a="ph">Changer la photo…</button><button class="btn small" type="button" data-edit="${i}">Modifier la photo</button>${p.featuredCover != null ? '<button class="btn small" type="button" data-a="def">Photo du projet</button>' : ""}<button class="btn small danger" type="button" data-a="rm">Retirer</button></div>
       <p class="hint" style="margin:0">Photo ${n3(i)}${p.featuredCover != null ? " (choisie pour la carte)" : " (couverture du projet)"}</p>
       <label class="field"><span>Cadrage horizontal : <b data-o="x">${f.x ?? 50}</b> %</span><input type="range" min="0" max="100" step="1" data-a="x" value="${f.x ?? 50}"></label>
       <label class="field"><span>Cadrage vertical : <b data-o="y">${f.y ?? 50}</b> %</span><input type="range" min="0" max="100" step="1" data-a="y" value="${f.y ?? 50}"></label>
@@ -964,7 +971,8 @@ const canvasOf = (src, w, h) => { const c = document.createElement("canvas"); c.
 const toBlob = (c, type, q) => new Promise(r => c.toBlob(r, type, q));
 const blobB64 = b => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = rej; r.readAsDataURL(b); });
 async function prepare(blob) {
-  let bmp; try { bmp = await createImageBitmap(blob, { imageOrientation: "from-image" }); } catch { throw new Error("Format illisible par ce navigateur."); }
+  let bmp; if (blob instanceof HTMLCanvasElement) bmp = blob; // sortie de l'éditeur
+  else try { bmp = await createImageBitmap(blob, { imageOrientation: "from-image" }); } catch { throw new Error("Format illisible par ce navigateur."); }
   try {
     const s = Math.min(1, 1800 / Math.max(bmp.width, bmp.height)), w = Math.round(bmp.width * s), h = Math.round(bmp.height * s);
     if (Math.max(w, h) < 300) throw new Error("Photo trop petite (moins de 300 px).");
@@ -988,13 +996,19 @@ async function addFiles(items, target, origin = "ordinateur", keepDraft = false)
   if (dirty && !keepDraft) { A().toast("Publiez d'abord les modifications en cours : l'ajout de photos enregistre directement sur le site.", true); return; }
   if (busy) { A().toast("Un envoi est déjà en cours.", true); return; }
   busy = true;
-  const st = $("#pState"), done = [], errs = [];
+  const st = $("#pState"), done = [], errs = []; let skipped = 0;
   try {
     for (const [k, it] of items.entries()) {
       st.textContent = `Photo ${k + 1}/${items.length} : préparation…`;
-      let pr; try { pr = await (it.prep ? it.prep() : prepare(it.blob)); } catch (e) { errs.push(`${it.name} : ${e.message}`); continue; }
+      let pr; try {
+        // chaque photo passe par l'éditeur (recadrer, tourner, zoomer) avant l'envoi ; « Annuler » la laisse de côté
+        const src = it.src ? await it.src() : it.blob;
+        const cv = it.canvas || (window.BBZE ? await window.BBZE.open(src, { title: `${it.name}${items.length > 1 ? ` (${k + 1}/${items.length})` : ""}`, okLabel: "Envoyer" }) : src);
+        if (!cv) { skipped++; continue; }
+        pr = await prepare(cv);
+      } catch (e) { errs.push(`${it.name} : ${e.message}`); continue; }
       st.textContent = `Photo ${k + 1}/${items.length} : envoi…`;
-      const body = { data: pr.data, lqip: pr.lqip, hash: pr.hash, target, origin };
+      const body = { data: pr.data, lqip: pr.lqip, hash: pr.hash, target, origin, ...(it.force ? { force: true } : {}) };
       let r;
       try { r = await A().api("/api/admin/site-photos", { method: "POST", body }); }
       catch (e) {
@@ -1003,16 +1017,57 @@ async function addFiles(items, target, origin = "ordinateur", keepDraft = false)
         } else { if (e.code !== "near_duplicate") errs.push(`${it.name} : ${A().errText(e)}`); continue; }
       }
       // le serveur a ajouté la photo au même endroit : même changement ici, avec la nouvelle version du fichier
-      LOCAL[r.id] = URL.createObjectURL(pr.blob); (C.meta ||= {})[r.id] = [r.w, r.h];
+      LOCAL[r.id] = URL.createObjectURL(pr.blob); LOCALB[r.id] = pr.blob; (C.meta ||= {})[r.id] = [r.w, r.h];
       if (target) edsOf(projOf(target.project).p)[target.ed].imgs.push(r.id); else unpub().push(r.id);
       C.portfolio.sha = r.shas.portfolio; done.push(r.id);
     }
   } finally { busy = false; }
+  if (skipped && !done.length && !errs.length) { st.textContent = ""; return done; }
   st.textContent = done.length ? `${done.length} photo${done.length > 1 ? "s" : ""} ajoutée${done.length > 1 ? "s" : ""} (n° ${done.join(", ")}). Le site se met à jour dans quelques minutes.` : "";
   if (errs.length) A().toast(errs.slice(0, 2).join(" · "), true); else if (done.length) A().toast("Photos ajoutées au site.");
   refreshTree();
   return done;
 }
+// ---------- modifier une photo du site : nouvelle version sous un nouveau numéro ----------
+// Les numéros ne changent jamais de contenu (cache des navigateurs) : la photo modifiée reçoit un nouveau numéro qui
+// prend la place de l'ancien partout (éditions, vedette, couverture, sélection, accueil, cartes, contact, textes
+// alternatifs, cadrages), et l'ancien va dans « Photos retirées » (restaurable). Un seul enregistrement du contenu.
+function swapId(o, n) {
+  const d = C.portfolio.data, H = C.home.data;
+  const L = a => { if (Array.isArray(a)) a.forEach((x, k) => { if (x === o) a[k] = n; }); };
+  const K = m => { if (m && typeof m === "object" && o in m) { m[n] = m[o]; delete m[o]; } };
+  d.chapters.forEach(c => c.projects.forEach(p => {
+    edsOf(p).forEach(e => { L(e.imgs); if (e.feature && e.feature.img === o) e.feature.img = n; });
+    if (p.lead && p.lead.img === o) p.lead.img = n;
+    if (p.cover === o) p.cover = n; if (p.featuredCover === o) p.featuredCover = n;
+    L(p.selection); K(p.selFocus); Object.values(p.homePicks || {}).forEach(L);
+  }));
+  L(d.unpublished); K(d.alt); K(d.shape);
+  L(H.hero); L(H.about); L(H.wall); K(H.heroLab); K(H.cap);
+  if (H.me === o) H.me = n;
+}
+async function editSitePhoto(i) {
+  if (busy) { A().toast("Un envoi est déjà en cours.", true); return; }
+  if (dirty) { A().toast("Publiez d'abord les modifications en cours : la photo modifiée est enregistrée directement sur le site.", true); return; }
+  let blob = LOCALB[i];
+  if (!blob) { const r = await fetch(`../img/f/${n3(i)}.webp`); if (!r.ok) { A().toast(`Fichier de la photo ${i} introuvable (publication en cours ?).`, true); return; } blob = await r.blob(); }
+  let cv; try { cv = await window.BBZE.open(blob, { title: `Photo ${n3(i)} · nouvelle version`, okLabel: "Enregistrer", maxSide: 1800 }); } catch (e) { A().toast(e.message, true); return; }
+  if (!cv) return;
+  if (!cv.edited && !confirm("Aucune modification. Enregistrer quand même une nouvelle version ?")) return;
+  const done = await addFiles([{ name: `Photo ${n3(i)}`, canvas: cv, force: true }], null, "retouche", true);
+  const n = done && done[0]; if (n == null) return;
+  // le serveur a mis la nouvelle version dans « Photos retirées » : elle prend la place de l'ancienne
+  C.portfolio.data.unpublished = unpub().filter(x => x !== n);
+  swapId(i, n); unpub().push(i); if (C.meta && C.meta[i] == null) C.meta[i] = C.meta[n];
+  sel.delete(i); mark("portfolio"); mark("home");
+  if (!await save(`Administration : photo ${i} modifiée, remplacée par ${n} (l'ancienne va dans les photos retirées)`)) { refreshTree(); return; }
+  refreshTree(); A().toast(`Photo modifiée : n° ${n} remplace ${i} partout. L'ancienne version est dans « Photos retirées ».`);
+}
+document.addEventListener("click", e => {
+  const b = e.target.closest && e.target.closest("[data-edit]"); if (!b || !C || !$("#vPort") || !$("#vPort").contains(b)) return;
+  e.preventDefault(); e.stopPropagation(); editSitePhoto(+b.dataset.edit);
+}, true);
+document.addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.closest && e.target.closest(".pedit")) e.stopPropagation(); }, true);
 async function fromGallery(target) {
   if (dirty) { A().toast("Publiez d'abord les modifications en cours.", true); return; }
   const d = $("#galDlg"), gs = $("#galS"), grid = $("#galGrid"), go = $("#galGo"), picked = new Set();
@@ -1036,10 +1091,10 @@ async function fromGallery(target) {
   };
   go.onclick = () => {
     const list = [...picked]; d.close();
-    addFiles(list.map(ph => ({ name: ph.name, prep: async () => {
+    addFiles(list.map(ph => ({ name: ph.name, src: async () => {
       const r = await fetch(A().API + `/api/admin/photos/${encodeURIComponent(ph.id)}/site-source`, { headers: { Authorization: "Bearer " + A().token() } });
       if (!r.ok) throw new Error("aperçu introuvable");
-      return prepare(await r.blob());
+      return r.blob();
     } })), target, "galerie");
   };
   $("#galWhere").textContent = target ? targets(false).find(t => t.project === target.project && t.ed === target.ed).label : "Photos retirées (hors du site)";
@@ -1095,7 +1150,7 @@ function editContact() {
     <div class="edbox"><h2 class="s" style="margin:0">Aperçu de la section Contact</h2><p class="hint" style="margin:0">Telle qu'elle s'affiche en bas de l'accueil (version française ; la version anglaise suit le même modèle). Mise à jour à chaque frappe ; rien n'est en ligne avant « Publier les modifications ».</p>
       <div class="ctp" id="ctPrev" aria-label="Aperçu de la section Contact"><div class="ctp-main"><h3 class="ctp-t" data-p="t"></h3><p class="ctp-p" data-p="p"></p><div class="ctp-ctas"><span class="ctp-btn pri">Demander une date</span><span class="ctp-btn">Écrire un courriel</span></div><dl class="ctp-list" data-p="list"></dl></div><div class="ctp-me"><div class="ctp-card" data-p="card"><img alt=""><span class="card-tag">Mamadou Beye</span></div></div></div></div>
     <div class="edbox"><h2 class="s" style="margin:0">Photo de contact</h2><p class="hint" style="margin:0">La carte portrait à droite de la section. Remplacez-la par n'importe quelle photo du portfolio, des « Photos retirées » ou de votre ordinateur : l'ancienne va dans « Photos retirées ».</p>
-      <div class="row"><span class="hint" data-o="me">Photo ${n3(H.me)}</span><button class="btn small primary" type="button" data-a="me">Changer la photo…</button></div>
+      <div class="row"><span class="hint" data-o="me">Photo ${n3(H.me)}</span><button class="btn small primary" type="button" data-a="me">Changer la photo…</button><button class="btn small" type="button" data-edit="${H.me}">Modifier la photo</button></div>
       <label class="check"><input type="checkbox" data-a="crop"${crop ? " checked" : ""}><span>Recadrer en portrait 2:3 (sinon la photo garde ses proportions)</span></label>
       <div class="two" data-o="crop" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px"${crop ? "" : " hidden"}>
         <label class="field"><span>Cadrage horizontal : <b data-o="x">${f.x ?? 50}</b> %</span><input type="range" min="0" max="100" step="1" data-a="x" value="${f.x ?? 50}"></label>
@@ -1190,21 +1245,24 @@ function check() {
   probs.push(...contactProbs());
   return probs;
 }
-async function save() {
+async function save(msg) {
   prune();
   const probs = check();
-  if (probs.length) { A().toast("À corriger : " + probs.slice(0, 3).join(", "), true); return; }
+  if (probs.length) { A().toast("À corriger : " + probs.slice(0, 3).join(", "), true); return false; }
   if (!C.portfolio.data.unpublished || !C.portfolio.data.unpublished.length) delete C.portfolio.data.unpublished;
   const files = ["portfolio", "home", "site"].filter(k => C[k].dirty).map(file => ({ file, data: C[file].data, sha: C[file].sha }));
-  if (!files.length) return;
+  if (!files.length) return true;
+  let ok = false;
   $("#pSave").disabled = true; $("#pState").textContent = "Publication…";
   try {
-    const r = await A().api("/api/admin/content", { method: "PUT", body: { files, message: `Administration : ${files.map(f => ({ portfolio: "portfolio", home: "accueil", site: "réglages du site" })[f.file]).join(", ")} mis à jour` } });
+    const r = await A().api("/api/admin/content", { method: "PUT", body: { files, message: typeof msg === "string" ? msg : `Administration : ${files.map(f => ({ portfolio: "portfolio", home: "accueil", site: "réglages du site" })[f.file]).join(", ")} mis à jour` } });
     for (const f of files) { C[f.file].sha = r.shas[f.file]; C[f.file].dirty = false; }
+    ok = true;
     dirty = false; $("#pState").textContent = "Publié. Le site se met à jour dans quelques minutes."; A().toast("Modifications envoyées. Publication en cours.");
   } catch (e) {
     $("#pSave").disabled = false; $("#pState").textContent = "";
     A().toast(e.code === "content_changed" ? "Le contenu a changé entre-temps (par exemple l'ajout automatique de photos). Rechargez la page : vos modifications sont perdues si vous ne les refaites pas." : e.code === "invalid_content" ? "Contenu refusé : " + (e.data && e.data.detail) : A().errText(e), true);
   }
+  return ok;
 }
 })();

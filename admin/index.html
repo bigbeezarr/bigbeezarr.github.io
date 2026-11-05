@@ -129,6 +129,24 @@ h2.s{margin:0 0 12px;font-family:var(--font-d);font-weight:800;font-size:1.2rem}
 .vw-stage img.on{opacity:1}.vw.zoomed .vw-stage{cursor:grab}
 .vw-nav{position:fixed;top:50%;margin-top:-22px;background:rgba(10,10,10,.6)}.vw-nav.p{left:12px}.vw-nav.n{right:12px}
 @media (max-width:700px){.vw-nav{top:auto;bottom:max(14px,env(safe-area-inset-bottom));margin:0}}
+.pe{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;background:#0b0b0b;color:#fff;display:none;grid-template-rows:auto minmax(0,1fr) auto}
+.pe[open]{display:grid}.pe::backdrop{background:#000}
+.pe-top{display:flex;align-items:center;gap:8px;padding:10px max(12px,env(safe-area-inset-left)) 10px;border-bottom:1px solid #222}
+.pe-t{flex:1;margin:0;font-family:var(--font-d);font-weight:700;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pe-stage{position:relative;min-height:0;touch-action:none;cursor:grab;outline:none}.pe-stage:focus-visible{box-shadow:inset 0 0 0 2px var(--accent-text)}
+.pe-stage canvas{position:absolute;inset:0;display:block}
+.pe-ba{position:absolute;left:12px;top:12px;padding:4px 10px;border-radius:999px;background:rgba(0,0,0,.7);font-family:var(--font-d);font-weight:700;font-size:.8rem}
+.pe-ctl{display:grid;gap:10px;padding:10px 12px max(12px,env(safe-area-inset-bottom));border-top:1px solid #222;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))}
+.pe-ratios{display:flex;gap:6px;overflow-x:auto;grid-column:1/-1;scrollbar-width:none}
+.pe .chip{color:#fff;border-color:#444;flex:0 0 auto}.pe .chip[aria-checked="true"]{background:var(--accent);border-color:var(--accent)}
+.pe-row{display:flex;flex-wrap:wrap;gap:6px;grid-column:1/-1}.pe-row .btn svg{width:16px;height:16px;vertical-align:-3px;margin-right:4px}
+.pe .btn:not(.primary){background:#1c1c1c;color:#fff;border-color:#3a3a3a}.pe .btn[aria-pressed="true"]{border-color:var(--accent);color:#fff;background:#3a1a1a}
+.pe-sl{display:grid;gap:4px;font-size:.84rem}.pe-sl span{display:flex;justify-content:space-between}.pe-sl input{width:100%;accent-color:var(--accent)}
+@media (max-width:520px){.pe-row .btn span{display:none}.pe-row .btn svg{margin:0}}
+.pedit{all:unset;box-sizing:border-box;position:absolute;right:38px;bottom:4px;z-index:2;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:rgba(10,10,10,.78);color:#fff;cursor:pointer}
+.pedit svg{width:16px;height:16px}.pedit:focus-visible{outline:2px solid var(--accent-text)}
+.th .pedit{bottom:auto;top:30px;right:38px}.th.sel2 .pedit{top:36px}.hcfig .pedit{top:6px;right:40px;bottom:auto}
+.thumbs .th.edited::after,.ed-tag{content:"Retouchée";position:absolute;left:4px;bottom:4px;padding:1px 6px;border-radius:999px;background:rgba(10,10,10,.78);color:#fff;font-size:.7rem;font-weight:700}
 .fbar{display:grid;gap:8px;margin:8px 0}.chips{display:flex;flex-wrap:wrap;gap:6px}
 .chip{all:unset;box-sizing:border-box;min-height:36px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);font-family:var(--font-d);font-weight:700;font-size:.84rem;cursor:pointer}
 .chip[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}.chip[aria-selected="true"] .hint{color:#fff}.chip.add{color:var(--ink-3);border-style:dashed}.chip:focus-visible{outline:2px solid var(--accent-text)}
@@ -317,6 +335,8 @@ button.th.dim{opacity:.4;cursor:default}
           <button class="btn small" id="pAll" type="button">Tout</button>
           <button class="btn small" id="pCover" type="button">Couverture</button>
           <button class="btn small" id="pReplace" type="button">Remplacer</button>
+          <button class="btn small" id="pEdit" type="button">Modifier la photo</button>
+          <button class="btn small" id="pRevert" type="button">Revenir à l'original</button>
           <button class="btn small" id="pOpenAll" type="button" hidden>Téléchargeable par tous</button>
           <button class="btn small" id="pAssign" type="button" hidden>Attribuer à…</button>
           <select class="input small" id="pMove" aria-label="Déplacer les photos sélectionnées vers un dossier"></select>
@@ -457,6 +477,7 @@ button.th.dim{opacity:.4;cursor:default}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script src="../galerie/config.js"></script>
 <script src="viewer.js"></script>
+<script src="editor.js"></script>
 <script src="site.js"></script>
 <script src="admin.js"></script>
 </body>

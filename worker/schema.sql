@@ -156,3 +156,10 @@ CREATE TABLE IF NOT EXISTS photo_folder (
   folder_id TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS photo_folder_folder ON photo_folder(folder_id);
+
+-- Aperçus retouchés dans l'administration (recadrage, rotation…) : l'original n'est jamais modifié ; les aperçus générés
+-- d'origine sont gardés dans g/<galerie>/p0/ et g/<galerie>/t0/ pour « Revenir à l'original ».
+CREATE TABLE IF NOT EXISTS photo_edits (
+  photo_id TEXT PRIMARY KEY,
+  created_at INTEGER NOT NULL
+);

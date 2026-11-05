@@ -130,6 +130,20 @@ enregistrement qui casserait le site est refusé avec un message en français, e
   aucun), comptes Instagram (6 au plus), liens du site, titre et texte FR/EN (`contact: {title: {fr, en}, text: {fr, en}}`
   dans `content/site.json` ; vide = texte d'origine de `src.html`, 80 et 400 caractères au plus). `build.py` écrit ces
   coordonnées dans le HTML ; « Réglages du site » ne garde que le serveur, Turnstile et les pages.
+- **Éditeur de photo** (`admin/editor.js`) : recadrage libre ou Original, 2:3, 3:2, 4:5, 1:1, 16:9 ; zoom (curseur,
+  pincer, molette) ; déplacer au glisser ; rotation 90° ; redresser ±15° ; miroir ; réinitialiser ; avant/après (B).
+  Souris, toucher et clavier (flèches, + −, [ ], H, R, Alt + flèches pour le cadre libre, Entrée). Rendu sur un canevas
+  depuis la meilleure source, puis le traitement habituel (1800 px WebP, JPEG sous Safari, aperçu flou, empreinte).
+  - Il s'ouvre à **chaque ajout** au site (ordinateur ou galerie client) avant l'envoi ; « Annuler » laisse la photo de côté.
+  - **Modifier la photo** (bouton à côté de la loupe, sur les cartes À la une et la photo de contact) sur toute photo du
+    portfolio, de l'accueil ou des « Photos retirées » : la nouvelle version part de `img/f` et reçoit un **nouveau numéro**
+    (les numéros ne changent jamais de contenu, pour le cache) qui remplace l'ancien partout (éditions, vedette, lead,
+    couverture, sélection, `selFocus`, `homePicks`, `shape`, ouverture et `heroLab`, coups de cœur, `about`, `cap`, `me`,
+    `featuredCover`, textes alternatifs) ; l'ancien va dans « Photos retirées » (restaurable). Un seul enregistrement du contenu.
+  - **Galeries client** : « Modifier la photo » retouche l'aperçu 2048 px et la vignette 640 px montrés au client
+    (`PUT /api/admin/photos/:id/edit` `{ p, t }` en base64 JPEG/WebP, 12 Mo / 2 Mo au plus) ; **l'original n'est jamais
+    modifié**. Les aperçus générés sont gardés (`g/<galerie>/p0/`, `t0/`, table `photo_edits`) : « Revenir à l'original »
+    (`DELETE …/edit`) les rétablit. Pastille « Retouchée ».
 - **Loupe** sur chaque vignette (portfolio et galeries client) : visionneuse plein écran (← → Échap, + −, F, pincer,
   toucher deux fois, balayer), avec les aperçus signés 2048 px pour les galeries.
 

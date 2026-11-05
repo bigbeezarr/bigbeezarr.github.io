@@ -301,7 +301,7 @@ export async function addSitePhoto(req, env) {
   if (b.lqip) { let q; try { q = unb64Bytes(b.lqip); } catch { fail(400, "bad_image"); } const qi = imageInfo(q); if (q.length > 2048 || !qi || qi.type !== "webp" || Math.max(qi.w, qi.h) > 32) fail(400, "bad_image"); lqip = bytesB64(q); }
   const hash = /^\d{1,20}$/.test(String(b.hash || "")) && BigInt(b.hash) < 1n << 64n ? BigInt(b.hash) : null;
   const target = b.target && typeof b.target === "object" ? { project: String(b.target.project || ""), ed: Number(b.target.ed) } : null;
-  const origin = b.origin === "galerie" ? "une galerie client" : "l'ordinateur";
+  const origin = b.origin === "galerie" ? "une galerie client" : b.origin === "retouche" ? "l'éditeur de photo de l'administration" : "l'ordinateur";
 
   // 1) catalogue et contenu actuels (branche du pipeline)
   let head = await headOf(g, g.branch);

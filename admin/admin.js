@@ -187,6 +187,7 @@ function selectTab(name) { tab = name; $$("#atabs button").forEach(b => b.setAtt
 
 // photos
 const TICK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3.5 8.4 3 3 6-6.6" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const PEN = '<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3.5 6.5h9.5a.5.5 0 0 1 .5.5v9.5M6.5 3.5V13a.5.5 0 0 0 .5.5h9.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 const ZOOM = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="8.6" cy="8.6" r="5.6" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12.8 12.8 17 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
 function paintPhotos() {
   const grid = $("#pgrid"); grid.textContent = ""; grid.classList.toggle("picking", picking);
@@ -196,10 +197,11 @@ function paintPhotos() {
     if (!inFolder(p)) continue;
     const el = document.createElement("div"); el.className = "pt" + (pickSel.has(p.id) ? " on" : ""); el.dataset.id = p.id; el.title = `${p.name} · ${fmtBytes(p.size)}`;
     const ext = (p.name.split(".").pop() || "").toUpperCase();
-    el.innerHTML = (p.t ? `<img alt="" loading="lazy" src="${esc(p.t)}">` : `<span class="raw"><b>${esc(ext.slice(0, 5))}</b>${esc(p.name)}</span>`) + `<span class="ck">${TICK}</span><span class="tags"></span>` + (p.t ? `<button type="button" class="zoom" data-src="${esc(p.p || p.t)}" data-alt="${esc(p.t)}" data-t="${esc(p.name)}" data-sub="${esc(fmtBytes(p.size))}" aria-label="Voir ${esc(p.name)} en grand">${ZOOM}</button>` : "");
+    el.innerHTML = (p.t ? `<img alt="" loading="lazy" src="${esc(p.t)}">` : `<span class="raw"><b>${esc(ext.slice(0, 5))}</b>${esc(p.name)}</span>`) + `<span class="ck">${TICK}</span><span class="tags"></span>` + (p.t ? `<button type="button" class="zoom" data-src="${esc(p.p || p.t)}" data-alt="${esc(p.t)}" data-t="${esc(p.name)}" data-sub="${esc(fmtBytes(p.size))}" aria-label="Voir ${esc(p.name)} en grand">${ZOOM}</button><button type="button" class="pedit" data-edit="${esc(p.id)}" aria-label="Modifier l'aperçu de ${esc(p.name)}" title="Modifier la photo">${PEN}</button>` : "");
     const tags = [];
     if (p.status !== "ready") tags.push("Import inachevé");
     if (G.cover_photo === p.id) tags.push('<span class="cov">Couverture</span>');
+    if (p.edited) tags.push("Retouchée");
     if (p.downloads) tags.push(`${p.downloads} ↓`);
     if (G.kind === "restricted" && p.allow_all) tags.push("Pour tous");
     if (G.kind === "restricted" && assigned.get(p.id)) tags.push(`${assigned.get(p.id)} invité${assigned.get(p.id) > 1 ? "s" : ""}`);
@@ -213,10 +215,13 @@ function paintPhotos() {
   $("#pSelN").textContent = `${pickSel.size} sélectionnée${pickSel.size > 1 ? "s" : ""}`;
   $("#pOpenAll").hidden = $("#pAssign").hidden = G.kind !== "restricted";
   $("#pReplace").disabled = pickSel.size !== 1; $("#pCover").disabled = pickSel.size !== 1;
+  const one = pickSel.size === 1 ? P.find(x => x.id === [...pickSel][0]) : null;
+  $("#pEdit").disabled = !(one && one.t); $("#pRevert").disabled = !(one && one.edited);
   ["#pDel", "#pOpenAll", "#pAssign", "#pMove"].forEach(s => $(s).disabled = !pickSel.size);
   $("#pMove").innerHTML = `<option value="">Déplacer vers…</option><option value="-">Sans dossier</option>` + FOLDERS.map(f => `<option value="${esc(f.id)}">${esc(f.name)}</option>`).join("");
 }
 $("#pgrid").addEventListener("click", e => {
+  const ed = e.target.closest(".pedit[data-edit]"); if (ed) { e.stopPropagation(); editPreview(ed.dataset.edit); return; }
   const el = e.target.closest(".pt"); if (!el) return;
   if (!picking) { picking = true; }
   pickSel.has(el.dataset.id) ? pickSel.delete(el.dataset.id) : pickSel.add(el.dataset.id);
@@ -237,6 +242,27 @@ $("#pOpenAll").addEventListener("click", async () => {
   await refresh(); toast(on ? "Téléchargeables par tous les invités." : "Réservées aux invités attribués.");
 });
 $("#pReplace").addEventListener("click", () => $("#inReplace").click());
+// Retouche de l'aperçu montré au client (2048 px + vignette 640 px) ; l'original n'est jamais modifié.
+let editing = false;
+async function editPreview(id) {
+  const ph = P.find(x => x.id === id); if (!ph || editing) return; editing = true;
+  try {
+    const r = await fetch(API + `/api/admin/photos/${encodeURIComponent(id)}/site-source`, { headers: { Authorization: "Bearer " + auth.get() } });
+    if (!r.ok) throw new Error("Aperçu introuvable.");
+    const c = await window.BBZE.open(await r.blob(), { title: `${ph.name} · aperçu client`, maxSide: 2048, okLabel: "Enregistrer" });
+    if (!c) return;
+    const b64 = b => new Promise((res, rej) => { const f = new FileReader(); f.onload = () => res(String(f.result).split(",")[1] || ""); f.onerror = rej; f.readAsDataURL(b); });
+    const [pv, th] = await Promise.all([canvasBlob(c, 2048, .86), canvasBlob(c, 640, .8)]);
+    await api(`/api/admin/photos/${encodeURIComponent(id)}/edit`, { method: "PUT", body: { p: await b64(pv), t: await b64(th) } });
+    await refresh(); toast("Aperçu modifié. L'original n'a pas changé ; « Revenir à l'original » annule la retouche.");
+  } catch (e) { toast(e.message && !e.code ? e.message : errText(e), true); }
+  finally { editing = false; }
+}
+$("#pEdit").addEventListener("click", () => editPreview([...pickSel][0]));
+$("#pRevert").addEventListener("click", async () => {
+  const id = [...pickSel][0]; if (!id || !confirm("Revenir à l'aperçu généré depuis l'original ? La retouche sera perdue.")) return;
+  try { await api(`/api/admin/photos/${encodeURIComponent(id)}/edit`, { method: "DELETE" }); await refresh(); toast("Aperçu d'origine rétabli."); } catch (e) { toast(errText(e), true); }
+});
 $("#inReplace").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) enqueue([f], [...pickSel][0]); });
 $("#pAssign").addEventListener("click", () => {
   if (!GUESTS.length) { toast("Ajoutez d'abord un invité (onglet Invités)."); selectTab("guests"); return; }

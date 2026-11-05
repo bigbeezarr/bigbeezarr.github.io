@@ -21,6 +21,7 @@ const DAY = 86400;
 const okey = (gid, pid) => `g/${gid}/o/${pid}`;
 const pkey = (gid, pid) => `g/${gid}/p/${pid}`;
 const tkey = (gid, pid) => `g/${gid}/t/${pid}`;
+const p0key = (gid, pid) => `g/${gid}/p0/${pid}`, t0key = (gid, pid) => `g/${gid}/t0/${pid}`; // aperçus d'origine d'une photo retouchée
 const isExpired = g => !!(g.expires_at && g.expires_at <= now());
 const passKey = g => g.pass_hash ? g.pass_hash.slice(-10) : "";
 const galleryLink = (env, g, code) => `${env.SITE_ORIGIN}/galerie/?g=${g.slug}${code ? `&c=${code}` : ""}`;
@@ -150,6 +151,8 @@ async function route(req, env, ctx) {
       if (is("PUT", "api", "admin", "photos", "*", "original")) return putOriginal(req, env, ph);
       if (is("PUT", "api", "admin", "photos", "*", "preview")) return putRendition(req, env, ph, "p");
       if (is("PUT", "api", "admin", "photos", "*", "thumb")) return putRendition(req, env, ph, "t");
+      if (is("PUT", "api", "admin", "photos", "*", "edit")) return editPreview(req, env, ph);
+      if (is("DELETE", "api", "admin", "photos", "*", "edit")) return revertPreview(env, ph);
       if (is("POST", "api", "admin", "photos", "*", "mpu")) return mpuCreate(env, ph);
       if (is("PUT", "api", "admin", "photos", "*", "mpu", "*", "*")) return mpuPart(req, env, ph, p[5], +p[6]);
       if (is("POST", "api", "admin", "photos", "*", "mpu", "*", "complete")) return mpuComplete(req, env, ph, p[5]);
@@ -463,7 +466,7 @@ async function relink(env, g) {
 }
 
 async function galleryDetail(env, url, g) {
-  const { results: photos } = await env.DB.prepare("SELECT p.*, pf.folder_id folder FROM photos p LEFT JOIN photo_folder pf ON pf.photo_id = p.id WHERE p.gallery_id = ? ORDER BY p.sort, p.created_at").bind(g.id).all();
+  const { results: photos } = await env.DB.prepare("SELECT p.*, pf.folder_id folder, (SELECT 1 FROM photo_edits pe WHERE pe.photo_id = p.id) edited FROM photos p LEFT JOIN photo_folder pf ON pf.photo_id = p.id WHERE p.gallery_id = ? ORDER BY p.sort, p.created_at").bind(g.id).all();
   const { results: folders } = await env.DB.prepare("SELECT id, name, sort FROM folders WHERE gallery_id = ? ORDER BY sort, created_at").bind(g.id).all();
   const { results: guests } = await env.DB.prepare("SELECT * FROM guests WHERE gallery_id = ? ORDER BY created_at").bind(g.id).all();
   const { results: assign } = await env.DB.prepare("SELECT gp.guest_id, gp.photo_id FROM guest_photos gp JOIN guests g ON g.id = gp.guest_id WHERE g.gallery_id = ?").bind(g.id).all();
@@ -491,6 +494,7 @@ async function deleteGallery(env, gid) {
     env.DB.prepare("DELETE FROM guests WHERE gallery_id = ?").bind(gid),
     env.DB.prepare("DELETE FROM photo_folder WHERE folder_id IN (SELECT id FROM folders WHERE gallery_id = ?)").bind(gid),
     env.DB.prepare("DELETE FROM folders WHERE gallery_id = ?").bind(gid),
+    env.DB.prepare("DELETE FROM photo_edits WHERE photo_id IN (SELECT id FROM photos WHERE gallery_id = ?)").bind(gid),
     env.DB.prepare("DELETE FROM photos WHERE gallery_id = ?").bind(gid),
     env.DB.prepare("DELETE FROM zip_tickets WHERE gallery_id = ?").bind(gid),
     env.DB.prepare("DELETE FROM events WHERE gallery_id = ?").bind(gid),
@@ -526,7 +530,8 @@ async function createPhoto(req, env, g) {
 
 async function replacePhoto(req, env, ph) {
   const m = photoMeta(await readJson(req));
-  await env.BUCKET.delete([pkey(ph.gallery_id, ph.id), tkey(ph.gallery_id, ph.id)]);
+  await env.BUCKET.delete([pkey(ph.gallery_id, ph.id), tkey(ph.gallery_id, ph.id), p0key(ph.gallery_id, ph.id), t0key(ph.gallery_id, ph.id)]);
+  await env.DB.prepare("DELETE FROM photo_edits WHERE photo_id = ?").bind(ph.id).run();
   await env.DB.prepare("UPDATE photos SET name = ?, mime = ?, size = ?, crc32 = ?, w = ?, h = ?, mtime = ?, status = 'uploading', version = version + 1, has_preview = 0, extra_size = 0, updated_at = ? WHERE id = ?")
     .bind(m.name, m.mime, m.size, m.crc32, m.w, m.h, m.mtime, now(), ph.id).run();
   return json({ id: ph.id, ...uploadPlan(env, m.size) });
@@ -538,6 +543,46 @@ async function putOriginal(req, env, ph) {
   if (len !== ph.size || len > singleMax(env) || !req.body) fail(400, "bad_length");
   await env.BUCKET.put(okey(ph.gallery_id, ph.id), req.body, { httpMetadata: { contentType: ph.mime } });
   return json({ ok: true });
+}
+
+// Retouche de l'aperçu montré au client (2048 px) et de sa vignette (640 px) : l'original reste intact. Au premier
+// passage, les aperçus générés sont mis de côté (p0/t0) ; « version » change pour que les navigateurs rechargent.
+async function editPreview(req, env, ph) {
+  if (!ph.has_preview) fail(409, "no_preview");
+  const b = await readJson(req, 20 * 1024 * 1024);
+  const img = (s, max, side) => {
+    let x; try { x = Uint8Array.from(atob(String(s || "")), c => c.charCodeAt(0)); } catch { fail(400, "bad_image"); }
+    const i = portfolio.imageInfo(x);
+    if (!x.length || x.length > max || !i || Math.max(i.w, i.h) > side || Math.min(i.w, i.h) < 16) fail(400, "bad_image");
+    return { x, type: i.type === "webp" ? "image/webp" : "image/jpeg" };
+  };
+  const p = img(b.p, 12 * 1024 * 1024, 2048), t = img(b.t, 2 * 1024 * 1024, 640);
+  const g = ph.gallery_id;
+  if (!(await env.DB.prepare("SELECT 1 FROM photo_edits WHERE photo_id = ?").bind(ph.id).first())) {
+    for (const [from, to] of [[pkey, p0key], [tkey, t0key]]) {
+      const o = await env.BUCKET.get(from(g, ph.id));
+      if (o) await env.BUCKET.put(to(g, ph.id), await o.arrayBuffer(), { httpMetadata: o.httpMetadata });
+    }
+    await env.DB.prepare("INSERT OR IGNORE INTO photo_edits (photo_id, created_at) VALUES (?, ?)").bind(ph.id, now()).run();
+  }
+  await env.BUCKET.put(pkey(g, ph.id), p.x, { httpMetadata: { contentType: p.type } });
+  await env.BUCKET.put(tkey(g, ph.id), t.x, { httpMetadata: { contentType: t.type } });
+  await env.DB.prepare("UPDATE photos SET version = version + 1, updated_at = ? WHERE id = ?").bind(now(), ph.id).run();
+  return json({ ok: true, edited: true });
+}
+async function revertPreview(env, ph) {
+  const g = ph.gallery_id;
+  if (!(await env.DB.prepare("SELECT 1 FROM photo_edits WHERE photo_id = ?").bind(ph.id).first())) fail(409, "not_edited");
+  for (const [from, to] of [[p0key, pkey], [t0key, tkey]]) {
+    const o = await env.BUCKET.get(from(g, ph.id));
+    if (o) await env.BUCKET.put(to(g, ph.id), await o.arrayBuffer(), { httpMetadata: o.httpMetadata });
+  }
+  await env.BUCKET.delete([p0key(g, ph.id), t0key(g, ph.id)]);
+  await env.DB.batch([
+    env.DB.prepare("DELETE FROM photo_edits WHERE photo_id = ?").bind(ph.id),
+    env.DB.prepare("UPDATE photos SET version = version + 1, updated_at = ? WHERE id = ?").bind(now(), ph.id),
+  ]);
+  return json({ ok: true, edited: false });
 }
 
 async function putRendition(req, env, ph, kind) {
@@ -586,8 +631,9 @@ async function updatePhoto(req, env, ph) {
 }
 
 async function deletePhoto(env, ph) {
-  await env.BUCKET.delete([okey(ph.gallery_id, ph.id), pkey(ph.gallery_id, ph.id), tkey(ph.gallery_id, ph.id)]);
+  await env.BUCKET.delete([okey(ph.gallery_id, ph.id), pkey(ph.gallery_id, ph.id), tkey(ph.gallery_id, ph.id), p0key(ph.gallery_id, ph.id), t0key(ph.gallery_id, ph.id)]);
   await env.DB.batch([
+    env.DB.prepare("DELETE FROM photo_edits WHERE photo_id = ?").bind(ph.id),
     env.DB.prepare("DELETE FROM guest_photos WHERE photo_id = ?").bind(ph.id),
     env.DB.prepare("DELETE FROM photo_folder WHERE photo_id = ?").bind(ph.id),
     env.DB.prepare("DELETE FROM photos WHERE id = ?").bind(ph.id),
