@@ -3,27 +3,27 @@
   1050,
   3,
   564,
-  565,
-  465,
   649,
+  650,
   656,
-  1047,
-  1051,
-  566,
+  565,
+  1053,
+  465,
+  973,
   706,
+  1051,
+  567,
+  1047,
+  566,
   652,
   976,
   655,
-  977,
-  975,
   974,
+  975,
   663,
-  973,
-  567,
   978,
-  572,
-  650,
   568,
+  572,
   570,
   569,
   571
@@ -183,13 +183,6 @@
     "en": "Jelani Caribbean Edition, Dakar 2024"
    }
   },
-  "977": {
-   "name": "Ashs the Best",
-   "meta": {
-    "fr": "Jelani Coachella Edition, Saly 2026",
-    "en": "Jelani Coachella Edition, Saly 2026"
-   }
-  },
   "978": {
    "name": "El Hadj Diallo",
    "meta": {
@@ -216,6 +209,13 @@
    "meta": {
     "fr": "BAL × Wave, Dakar 2026",
     "en": "BAL × Wave, Dakar 2026"
+   }
+  },
+  "1053": {
+   "name": "Ashs the Best",
+   "meta": {
+    "fr": "Jelani Coachella Edition, Saly 2026",
+    "en": "Jelani Coachella Edition, Saly 2026"
    }
   }
  },
