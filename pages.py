@@ -227,6 +227,8 @@ def project_page(site, D, c, ci, p, NCH, all_projects, SITE):
     if place: ld["contentLocation"] = {"@type": "Place", "name": place}
     if ys: ld["temporalCoverage"] = ys.replace("–", "/")
     pdata = {"id": pid, "base": up, "img": imgs, "eds": pd_eds, "alt": {k: v for k, v in (D.get("alt") or {}).items() if k in imgs}}
+    sz = {k: v for k, v in (D.get("size") or {}).items() if k in imgs}
+    if sz: pdata["size"] = sz
     chap_fr, chap_en = T(c["name"], "fr"), T(c["name"], "en")
     n_ph = count(p)
     page = head(up, page_title, desc, path, f"{path}og.jpg", f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>\n') + f'''

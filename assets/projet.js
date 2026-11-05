@@ -57,23 +57,37 @@
     const mob = W < 640, g = mob ? 6 : W < 1000 ? 8 : 10, T0 = mob ? 210 : W < 1000 ? 270 : 330, pats = mob ? PAT_M : PAT_D, t = m.t, n = t.length;
     const tgt = par => mob ? T0 : T0 * (par ? .82 : 1.22);
     const best = [[], []]; best[0][n] = best[1][n] = { c: 0 };
+    /* taille choisie dans l'administration (« size ») : même calcul que l'accueil (src.html, layoutMosaic) */
+    const Z = k => t[k].z, sized = m.sized;
     for (let i = n - 1; i >= 0; i--) for (const par of [0, 1]) {
       let bb = null;
+      if (sized && Z(i) === "xl") { const nx = best[par][i + 1]; best[par][i] = nx ? { c: nx.c, r: { xl: 1, need: 1 } } : null; continue; }
       for (const p of pats) {
         let need = 0; for (const c of p) need += c === "D" ? 2 : 1; if (i + need > n) continue;
         let k = i; const bl = [];
         for (const c of p) { if (c === "S") bl.push({ t: "S", a: t[k].a, k: [k++] }); else { bl.push({ t: "D", a1: t[k].a, a2: t[k + 1].a, k: [k, k + 1] }); k += 2; } }
-        const H = rowHeight(bl, W, g), T = tgt(par), d = Math.log(H / T); let c = d * d * 4;
-        for (const b of bl) if (b.t === "D" && (b.a1 < 1 || b.a2 < 1)) c += .4;
+        let zl = 0, zc = 0, bad = false;
+        if (sized) for (const b of bl) {
+          const z1 = Z(b.k[0]), z2 = b.t === "D" ? Z(b.k[1]) : null;
+          if (z1 === "xl" || z2 === "xl" || (b.t === "D" && (z1 === "l" || z2 === "l"))) bad = true;
+          if (b.t === "S") { if (z1 === "l") zl = 1; else if (z1 === "s") zc += .5; }
+          else if (z1 === "s" && z2 === "s") zc -= .8; else if (z1 === "s" || z2 === "s") zc -= .3;
+        }
+        if (bad) continue;
+        const H = rowHeight(bl, W, g), T = zl ? tgt(par) * 1.4 : tgt(par), d = Math.log(H / T); let c = d * d * 4;
+        for (const b of bl) if (b.t === "D" && (b.a1 < 1 || b.a2 < 1) && !(sized && Z(b.k[0]) === "s" && Z(b.k[1]) === "s")) c += .4;
         if (H > T * 1.6 || H < T * .6) c += 12 + d * d * 20;
+        if (sized) c += zc;
         const nx = best[1 - par][i + need]; if (!nx) continue;
-        if (!bb || c + nx.c < bb.c) bb = { c: c + nx.c, r: { bl, H, need } };
+        if (!bb || c + nx.c < bb.c) bb = { c: c + nx.c, r: { bl, H, need, T } };
       }
       best[par][i] = bb;
     }
     let i = 0, y = 0, par = 0;
     while (i < n) {
-      const r = best[par][i].r, T = tgt(par); let H = r.H, cap = false; if (H > T * 1.7) { H = T * 1.2; cap = true; }
+      const r = best[par][i].r;
+      if (r.xl) { const a = t[i].a, H = Math.min(W / a, T0 * 2.4), w = a * H; Object.assign(t[i].f.style, { left: ((W - w) / 2).toFixed(1) + "px", top: y.toFixed(1) + "px", width: w.toFixed(1) + "px", height: H.toFixed(1) + "px" }); y += H + g; i += 1; continue; }
+      const T = r.T; let H = r.H, cap = false; if (H > T * 1.7) { H = T * 1.2; cap = true; }
       const out = []; let x = 0;
       for (const b of r.bl) {
         if (b.t === "S") { const w = b.a * H; out.push([b.k[0], x, y, w, H]); x += w + g; }
@@ -87,7 +101,8 @@
   }
   const mosaics = $$(".gallery[data-imgs]").map(el => {
     const ids = el.dataset.imgs.split(",").map(Number);
-    const m = { el, w: 0, t: ids.map(i => { const f = tile(i); el.appendChild(f); return { i, f, a: D.img[i][0] / D.img[i][1] }; }) };
+    const m = { el, w: 0, t: ids.map(i => { const f = tile(i); el.appendChild(f); return { i, f, a: D.img[i][0] / D.img[i][1], z: (D.size || {})[i] }; }) };
+    m.sized = m.t.some(x => x.z);
     return m;
   });
   const ro = new ResizeObserver(es => es.forEach(e => { const m = mosaics.find(x => x.el === e.target); if (m) layout(m); }));

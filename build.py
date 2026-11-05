@@ -101,6 +101,12 @@ assert isinstance(SHAPE, dict), "shape"
 for k, v in SHAPE.items():
     assert re.fullmatch(r'\d{1,5}', k) and int(k) in meta, f"forme : photo {k} inconnue"
     assert isinstance(v, dict) and v.get("r") in ("v", "h") and all(isinstance(v.get(x, 50), (int, float)) and 0 <= v.get(x, 50) <= 100 for x in ("x", "y")), f"forme de la photo {k}"
+# taille sur les mosaïques (« size ») : "s" petite, "l" grande, "xl" pleine largeur ; normale = absente
+SIZE = PORT.get("size") or {}
+assert isinstance(SIZE, dict), "size"
+for k, v in SIZE.items():
+    assert re.fullmatch(r'\d{1,5}', k) and int(k) in meta, f"taille : photo {k} inconnue"
+    assert v in ("s", "l", "xl"), f"taille de la photo {k} : s, l ou xl"
 LINK_KINDS = ("site", "instagram", "tiktok", "youtube", "facebook", "x", "autre")
 def links_ok(l, where):
     assert isinstance(l, list) and len(l) <= 6, f"liens de {where} : 6 au plus"
@@ -235,6 +241,8 @@ HOME_N = 10
 for c in CHAPTERS:
     for p in c["projects"]:
         picks = p.pop("homePicks", None) or {}
+        hfix = p.pop("homeFixed", None) or []  # années dont l'ordre des photos de l'accueil a été rangé à la main
+        assert isinstance(hfix, list) and len(hfix) <= 40 and all(isinstance(y, str) and len(y) <= 40 for y in hfix), f"ordre manuel de l'accueil de {p['id']}"
         if p["id"] not in FEATURED or not SITE.get("projectPages", True): continue
         eds = p.get("eds") or [p]
         years_order, by = [], {}
@@ -256,7 +264,8 @@ for c in CHAPTERS:
             want += [i for i, _ in pool if i not in want][:n - len(want)]
             feat = next((eds[k]["feature"] for k in ks if eds[k].get("feature") and eds[k]["feature"]["img"] in want), None)
             imgs = [i for i in want if not feat or i != feat["img"]]
-            if any(eds[k].get("order") == "fixed" for k in ks): imgs = [i for i, _ in pool if i in imgs]
+            if y in hfix: imgs = [i for i in want if i in imgs]
+            elif any(eds[k].get("order") == "fixed" for k in ks): imgs = [i for i, _ in pool if i in imgs]
             else: imgs = gradient(imgs)
             b = {"year": y, "imgs": imgs, "from": {str(i): src_of[i] for i in want}, "n": len(pool), "k": ks,
                  "anchor": f"ed-{ks[0] + 1}" if p.get("eds") else "h-all"}
@@ -279,6 +288,7 @@ DATA = {
   "alt": PORT.get("alt", {}),
   "site": {k: SITE.get(k) for k in ("email", "phone", "phoneHref", "instagram", "api", "booking", "legalOk", "turnstile")},
   **({"shape": {k: v for k, v in SHAPE.items() if int(k) in shown}} if any(int(k) in shown for k in SHAPE) else {}),
+  **({"size": {k: v for k, v in SIZE.items() if int(k) in shown}} if any(int(k) in shown for k in SIZE) else {}),
   **({"links": SITE["links"]} if SITE.get("links") else {}),
   "img": {str(i): [meta[i]["w"], meta[i]["h"], meta[i]["q"], colors[str(i)][3]] for i in meta},
   "total": len(shown),

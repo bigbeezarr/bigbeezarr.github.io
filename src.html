@@ -1183,7 +1183,7 @@ const imgRO = "ResizeObserver" in window ? new ResizeObserver(es => es.forEach(e
   if (!img._sz || sz > img._sz) { img._sz = sz; img.sizes = sz + "px"; if (!img.srcset) img.srcset = srcsetOf(+img.dataset.i); }
 })) : null;
 /* forme imposée dans l'administration pour la mosaïque (vertical 2:3, horizontal 3:2, cadrage x/y) ; la visionneuse garde la photo entière */
-const SHAPE = DATA.shape || {};
+const SHAPE = DATA.shape || {}, SIZE = DATA.size || {};
 const arOf = (i, shaped) => { const s = shaped && SHAPE[i]; return s ? (s.r === "v" ? 2 / 3 : 3 / 2) : DATA.img[i][0] / DATA.img[i][1]; };
 function tile(i, k, shaped) {
   const [w, h, q, col] = DATA.img[i];
@@ -1234,6 +1234,9 @@ function layoutMosaic(m, cw) {
      middle of an empty band; a capped row only remains for a gallery too small to fill the width */
   const rowsAt = (i, par) => {
     const out = [];
+    /* taille choisie dans l'administration (« size ») : "xl" seule sur sa rangée, "l" jamais empilée et sur une
+       rangée plus haute (environ deux fois la surface), "s" plutôt empilée par deux */
+    if (t[i].z === "xl") return [{ xl: 1, need: 1, cost: 0 }];
     for (const p of pats) {
       let need = 0; for (const c of p) need += c === "D" ? 2 : 1;
       if (i + need > n) continue;
@@ -1242,11 +1245,20 @@ function layoutMosaic(m, cw) {
         if (c === "S") blocks.push({ t: "S", a: t[k].a, k: [k++] });
         else { blocks.push({ t: "D", a1: t[k].a, a2: t[k + 1].a, k: [k, k + 1] }); k += 2; }
       }
-      const H = rowHeight(blocks, W, g), T = tgt(par), d = Math.log(H / T);
+      let zl = 0, zc = 0, bad = false;
+      if (m.sized) for (const b of blocks) {
+        const z1 = t[b.k[0]].z, z2 = b.t === "D" ? t[b.k[1]].z : null;
+        if (z1 === "xl" || z2 === "xl" || (b.t === "D" && (z1 === "l" || z2 === "l"))) bad = true;
+        if (b.t === "S") { if (z1 === "l") zl = 1; else if (z1 === "s") zc += .5; }
+        else if (z1 === "s" && z2 === "s") zc -= .8; else if (z1 === "s" || z2 === "s") zc -= .3;
+      }
+      if (bad) continue;
+      const H = rowHeight(blocks, W, g), T = zl ? tgt(par) * 1.4 : tgt(par), d = Math.log(H / T);
       let cost = d * d * 4;
-      for (const b of blocks) if (b.t === "D" && (b.a1 < 1 || b.a2 < 1)) cost += .4;
+      for (const b of blocks) if (b.t === "D" && (b.a1 < 1 || b.a2 < 1) && !(m.sized && t[b.k[0]].z === "s" && t[b.k[1]].z === "s")) cost += .4;
       if (H > T * HI || H < T * LO) cost += 12 + d * d * 20;
-      out.push({ p, blocks, H, need, cost });
+      if (m.sized) cost += zc;
+      out.push({ p, blocks, H, need, cost, T });
     }
     return out;
   };
@@ -1254,7 +1266,7 @@ function layoutMosaic(m, cw) {
   for (let i = n - 1; i >= 0; i--) for (const par of [0, 1]) {
     let b = null;
     for (const r of rowsAt(i, par)) {
-      const nx = best[1 - par][i + r.need]; if (!nx) continue;
+      const nx = best[r.xl ? par : 1 - par][i + r.need]; if (!nx) continue;
       const c = r.cost + nx.cost;
       if (!b || c < b.cost) b = { cost: c, r };
     }
@@ -1262,7 +1274,12 @@ function layoutMosaic(m, cw) {
   }
   let i = 0, y = 0, par = 0;
   while (i < n) {
-    const r = best[par][i].r, T = tgt(par);
+    const r = best[par][i].r;
+    if (r.xl) { /* pleine largeur, sans dépasser une hauteur raisonnable : centrée si elle est plafonnée */
+      const a = t[i].a, H = Math.min(W / a, T0 * 2.4), w = a * H;
+      t[i].pos = [(W - w) / 2, y, w, H]; y += H + g; i += 1; continue;
+    }
+    const T = r.T;
     let H = r.H, capped = false;
     if (H > T * 1.7) { H = T * 1.2; capped = true; }
     const out = [];
@@ -1305,7 +1322,8 @@ const buildIO = "IntersectionObserver" in window ? new IntersectionObserver(es =
 const buildAll = () => mosaics.forEach(buildMosaic);
 const mosaicRO = "ResizeObserver" in window ? new ResizeObserver(es => es.forEach(e => { const m = mosaics.find(x => x.gal === e.target); if (m) layoutMosaic(m, e.contentRect.width); })) : null;
 function mosaic(gal, ids) {
-  const m = { gal, w: 0, built: false, tiles: ids.map(i => ({ i, f: null, a: arOf(i, true) })) };
+  const m = { gal, w: 0, built: false, tiles: ids.map(i => ({ i, f: null, a: arOf(i, true), z: SIZE[i] })) };
+  m.sized = m.tiles.some(x => x.z);
   mosaics.push(m);
   if (buildIO) buildIO.observe(gal); else buildMosaic(m);
   if (mosaicRO) mosaicRO.observe(gal); /* the observer reports the first size itself: no forced layout per gallery */
